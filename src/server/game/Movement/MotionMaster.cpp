@@ -252,7 +252,7 @@ void MotionMaster::MoveRandom(float spawndist)
     }
 }
 
-void MotionMaster::MoveFollow(Unit* target, float dist, ChaseAngle angle, MovementSlot slot)
+void MotionMaster::MoveFollow(Unit* target, float dist, float angle, MovementSlot slot)
 {
     // ignore movement request if target not exist
     if (!target || target == _owner)

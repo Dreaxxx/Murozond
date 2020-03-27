@@ -30,7 +30,7 @@ class FollowMovementGenerator : public MovementGenerator, public AbstractFollowe
     public:
         MovementGeneratorType GetMovementGeneratorType() const override { return FOLLOW_MOTION_TYPE; }
 
-        FollowMovementGenerator(Unit* target, float range, ChaseAngle angle);
+        FollowMovementGenerator(Unit* target, float range, float angle);
         ~FollowMovementGenerator();
 
         void Initialize(Unit* owner) override;
@@ -38,21 +38,15 @@ class FollowMovementGenerator : public MovementGenerator, public AbstractFollowe
         bool Update(Unit* owner, uint32 diff) override;
         void Finalize(Unit* owner) override;
 
-        void UnitSpeedChanged() override { _lastTargetPosition.reset(); }
-
     private:
-        static constexpr uint32 CHECK_INTERVAL = 500;
-// static inline const when?
-#define FOLLOW_RANGE_TOLERANCE 1.0f
-
-        void UpdatePetSpeed(Unit* owner);
+        static constexpr uint32 FOLLOW_MOVEMENT_INTERVAL = 800; // sniffed (2 batch update cycles)
 
         float const _range;
-        ChaseAngle const _angle;
-
-        uint32 _checkTimer = CHECK_INTERVAL;
-        std::unique_ptr<PathGenerator> _path;
-        Optional<Position> _lastTargetPosition;
+        float const _angle;
+        bool _hasStopped;
+        bool _canCatchUp;
+        
+        TimeTrackerSmall _followMovementTimer;
 };
 
 #endif

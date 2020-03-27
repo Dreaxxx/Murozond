@@ -78,7 +78,7 @@ bool FollowMovementGenerator::Update(Unit* owner, uint32 diff)
         {
             Position dest = target->GetPosition();
 
-            target->MovePositionToFirstCollision(dest, _range, _angle);
+            target->MovePositionToFirstCollision(dest, _range + target->GetBoundaryRadius() + owner->GetBoundaryRadius(), _angle);
 
             // Determine our follow speed
             float velocity = target->IsWalking() ? target->GetSpeed(MOVE_WALK) : target->GetSpeed(MOVE_RUN);
@@ -112,7 +112,7 @@ bool FollowMovementGenerator::Update(Unit* owner, uint32 diff)
     if (!_hasStopped && target->movespline->Finalized() && !target->isMoving())
     {
         Position dest = target->GetPosition();
-        target->MovePositionToFirstCollision(dest, _range, _angle);
+        target->MovePositionToFirstCollision(dest, _range + target->GetBoundaryRadius() + owner->GetBoundaryRadius(), _angle);
         float velocity = target->IsWalking() ? target->GetSpeed(MOVE_WALK) : target->GetSpeed(MOVE_RUN);
 
         Movement::MoveSplineInit init(owner);

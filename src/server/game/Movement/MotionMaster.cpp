@@ -35,6 +35,7 @@
 #include "MoveSplineInit.h"
 #include "PathGenerator.h"
 #include "Player.h"
+#include "PetFollowMovementGenerator.h"
 #include "PointMovementGenerator.h"
 #include "RandomMovementGenerator.h"
 #include "ScriptSystem.h"
@@ -252,14 +253,18 @@ void MotionMaster::MoveRandom(float spawndist)
     }
 }
 
-void MotionMaster::MoveFollow(Unit* target, float dist, float angle, MovementSlot slot)
+void MotionMaster::MoveFollow(Unit* target, float dist, ChaseAngle angle, bool petFollowMovement /*= false*/, MovementSlot slot)
 {
     // ignore movement request if target not exist
     if (!target || target == _owner)
         return;
 
     TC_LOG_DEBUG("movement.motionmaster", "MotionMaster::MoveFollow: '%s', starts following '%s'", _owner->GetGUID().ToString().c_str(), target->GetGUID().ToString().c_str());
-    Mutate(new FollowMovementGenerator(target, dist, angle), slot);
+
+    if (!petFollowMovement)
+        Mutate(new FollowMovementGenerator(target, dist, angle), slot);
+    else
+        Mutate(new PetFollowMovementGenerator(target, dist, angle.RelativeAngle), slot);
 }
 
 void MotionMaster::MoveChase(Unit* target, Optional<ChaseRange> dist, Optional<ChaseAngle> angle)

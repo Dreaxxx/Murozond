@@ -17,7 +17,6 @@
 
 #include "FollowMovementGenerator.h"
 #include "CreatureAI.h"
-#include "G3DPosition.hpp"
 #include "MoveSpline.h"
 #include "MoveSplineInit.h"
 #include "PathGenerator.h"
@@ -25,10 +24,8 @@
 #include "Unit.h"
 #include "Util.h"
 
-FollowMovementGenerator::FollowMovementGenerator(Unit* target, float range, float angle) : AbstractFollower(ASSERT_NOTNULL(target)),
-    _range(range), _angle(angle), _hasStopped(false), _canCatchUp(false) { }
-
-FollowMovementGenerator::~FollowMovementGenerator() { }
+FollowMovementGenerator::FollowMovementGenerator(Unit* target, float range, ChaseAngle angle) : AbstractFollower(ASSERT_NOTNULL(target)), _range(range), _angle(angle) {}
+FollowMovementGenerator::~FollowMovementGenerator() {}
 
 static void DoMovementInform(Unit* owner, Unit* target)
 {
@@ -38,15 +35,17 @@ static void DoMovementInform(Unit* owner, Unit* target)
         static_cast<CreatureAI*>(ai)->MovementInform(FOLLOW_MOTION_TYPE, target->GetGUID().GetCounter());
 }
 
+static bool PositionOkay(Unit* owner, Unit* target, float range, Optional<ChaseAngle> angle = {})
+{
+    if (owner->GetExactDistSq(target) > square(owner->GetCombatReach() + target->GetCombatReach() + range))
+        return false;
+    return !angle || angle->IsAngleOkay(target->GetRelativeAngle(owner));
+}
+
 void FollowMovementGenerator::Initialize(Unit* owner)
 {
     owner->AddUnitState(UNIT_STATE_FOLLOW);
-    _followMovementTimer.Reset(0);
-    _hasStopped = false;
-
-    if (TempSummon const* summon = owner->ToTempSummon())
-        if ((summon->m_Properties && summon->m_Properties->Control != SUMMON_CATEGORY_WILD) || summon->IsPet())
-            _canCatchUp = true;
+    _lastTargetPosition.reset();
 }
 
 bool FollowMovementGenerator::Update(Unit* owner, uint32 diff)
@@ -63,83 +62,68 @@ bool FollowMovementGenerator::Update(Unit* owner, uint32 diff)
     if (owner->HasUnitState(UNIT_STATE_NOT_MOVE) || owner->IsMovementPreventedByCasting())
     {
         owner->StopMoving();
-        _hasStopped = true;
-        _followMovementTimer.Reset(0);
+        _lastTargetPosition.reset();
         return true;
     }
 
-    _followMovementTimer.Update(diff);
-    if (_followMovementTimer.Passed())
+    if (owner->HasUnitState(UNIT_STATE_FOLLOW_MOVE))
     {
-        _followMovementTimer.Reset(FOLLOW_MOVEMENT_INTERVAL);
-
-        // Follow target is moving
-        if (!target->movespline->Finalized() || target->isMoving())
+        if (_checkTimer > diff)
+            _checkTimer -= diff;
+        else
         {
-            Position dest = target->GetPosition();
-
-            target->MovePositionToFirstCollision(dest, _range + target->GetBoundaryRadius() + owner->GetBoundaryRadius(), _angle);
-
-            // Determine our follow speed
-            float velocity = owner->GetSpeed(MOVE_RUN);
-
-            // Allied summons such as pets, minions, companions, quest related summons etc have their follow speed based on their follow target
-            if (_canCatchUp)
+            _checkTimer = CHECK_INTERVAL;
+            if (PositionOkay(owner, target, _range, _angle))
             {
-                velocity = target->IsWalking() ? target->GetSpeed(MOVE_WALK) : target->GetSpeed(MOVE_RUN);
+                owner->StopMoving();
+                DoMovementInform(owner, target);
+                return true;
+            }
+        }
+    }
 
-                // Determine catchup speed rate
-                if (!dest.HasInArc(float(M_PI), owner)) // follower is behind follow target
-                {
-                    // Limit catchup speed to a total of 1.5 times of the follow target's velocity
-                    float distance = owner->GetExactDist2d(dest);
-                    float distMod = 1.f + std::min<float>(distance * 0.1f, 0.5f);
-                    velocity *= distMod;
-                }
+    if (owner->HasUnitState(UNIT_STATE_FOLLOW_MOVE) && owner->movespline->Finalized())
+    {
+        owner->ClearUnitState(UNIT_STATE_FOLLOW_MOVE);
+        DoMovementInform(owner, target);
+    }
+
+    if (!_lastTargetPosition || _lastTargetPosition->GetExactDistSq(target->GetPosition()) > 0.0f)
+    {
+        _lastTargetPosition = target->GetPosition();
+        if (owner->HasUnitState(UNIT_STATE_FOLLOW_MOVE) || !PositionOkay(owner, target, _range + FOLLOW_RANGE_TOLERANCE))
+        {
+            float x, y, z;
+
+            // select angle
+            float tAngle;
+            float const curAngle = target->GetRelativeAngle(owner);
+            if (_angle.IsAngleOkay(curAngle))
+                tAngle = curAngle;
+            else
+            {
+                float const diffUpper = Position::NormalizeOrientation(curAngle - _angle.UpperBound());
+                float const diffLower = Position::NormalizeOrientation(_angle.LowerBound() - curAngle);
+                if (diffUpper < diffLower)
+                    tAngle = _angle.UpperBound();
+                else
+                    tAngle = _angle.LowerBound();
             }
 
-            // Now we predict our follow destination by moving ahead (according to sniff spline distances are roundabout velocity * 2)
-            target->MovePositionToFirstCollision(dest, velocity * 2, 0.f);
+            target->GetNearPoint(owner, x, y, z, _range, target->NormalizeOrientation(target->GetOrientation() + tAngle));
 
-            Movement::MoveSplineInit init(owner);
-            init.MoveTo(PositionToVector3(dest));
-            init.SetVelocity(velocity);
-            init.Launch();
+            if (owner->IsHovering())
+                owner->UpdateAllowedPositionZ(x, y, z);
 
             owner->AddUnitState(UNIT_STATE_FOLLOW_MOVE);
-            _hasStopped = false;
 
-            return true;
+            Movement::MoveSplineInit init(owner);
+            init.MoveTo(x, y, z);
+            init.SetWalk(target->IsWalking());
+            init.SetFacing(target->GetOrientation());
+            init.Launch();
         }
-
     }
-
-    // Follow target has stopped moving, allign to current position and inform AI
-    if (!_hasStopped && target->movespline->Finalized() && !target->isMoving())
-    {
-        Position dest = target->GetPosition();
-        target->MovePositionToFirstCollision(dest, _range + target->GetBoundaryRadius() + owner->GetBoundaryRadius(), _angle);
-
-        float velocity = owner->GetSpeed(MOVE_RUN);
-        if (_canCatchUp)
-            velocity = target->IsWalking() ? target->GetSpeed(MOVE_WALK) : target->GetSpeed(MOVE_RUN);
-
-        Movement::MoveSplineInit init(owner);
-        init.MoveTo(PositionToVector3(dest));
-        init.SetFacing(dest.GetOrientation());
-        init.SetVelocity(velocity);
-        init.Launch();
-
-        if (owner->HasUnitState(UNIT_STATE_FOLLOW_MOVE))
-        {
-            owner->ClearUnitState(UNIT_STATE_FOLLOW_MOVE);
-            DoMovementInform(owner, target);
-        }
-
-        _hasStopped = true;
-        return true;
-    }
-
     return true;
 }
 

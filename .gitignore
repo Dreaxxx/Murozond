@@ -22,3 +22,7 @@ nbproject/*
 .vscode
 cmake-build-*/
 .vs
+sql/base/TDB_full_hotfixes_434.20021_2020_02_21.sql
+sql/base/TDB_full_hotfixes_434.20021_2020_02_21.sql.7z
+sql/base/TDB_full_world_434.20021_2020_02_21.sql
+sql/base/TDB_full_world_434.20021_2020_02_21.sql.7z

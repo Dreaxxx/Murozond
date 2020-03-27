@@ -81,15 +81,21 @@ bool FollowMovementGenerator::Update(Unit* owner, uint32 diff)
             target->MovePositionToFirstCollision(dest, _range + target->GetBoundaryRadius() + owner->GetBoundaryRadius(), _angle);
 
             // Determine our follow speed
-            float velocity = target->IsWalking() ? target->GetSpeed(MOVE_WALK) : target->GetSpeed(MOVE_RUN);
+            float velocity = owner->GetSpeed(MOVE_RUN);
 
-            // Determine catchup speed for pets, minions and allied summons
-            if (_canCatchUp && !dest.HasInArc(float(M_PI), owner)) // pet is behind follow target
+            // Allied summons such as pets, minions, companions, quest related summons etc have their follow speed based on their follow target
+            if (_canCatchUp)
             {
-                // Limit catchup speed to a total of 1.5 times of the follow target's velocity
-                float distance = owner->GetExactDist2d(dest);
-                float distMod = 1.f + std::min<float>(distance * 0.1f, 0.5f);
-                velocity *= distMod;
+                velocity = target->IsWalking() ? target->GetSpeed(MOVE_WALK) : target->GetSpeed(MOVE_RUN);
+
+                // Determine catchup speed rate
+                if (!dest.HasInArc(float(M_PI), owner)) // follower is behind follow target
+                {
+                    // Limit catchup speed to a total of 1.5 times of the follow target's velocity
+                    float distance = owner->GetExactDist2d(dest);
+                    float distMod = 1.f + std::min<float>(distance * 0.1f, 0.5f);
+                    velocity *= distMod;
+                }
             }
 
             // Now we predict our follow destination by moving ahead (according to sniff spline distances are roundabout velocity * 2)
@@ -113,7 +119,10 @@ bool FollowMovementGenerator::Update(Unit* owner, uint32 diff)
     {
         Position dest = target->GetPosition();
         target->MovePositionToFirstCollision(dest, _range + target->GetBoundaryRadius() + owner->GetBoundaryRadius(), _angle);
-        float velocity = target->IsWalking() ? target->GetSpeed(MOVE_WALK) : target->GetSpeed(MOVE_RUN);
+
+        float velocity = owner->GetSpeed(MOVE_RUN);
+        if (_canCatchUp)
+            velocity = target->IsWalking() ? target->GetSpeed(MOVE_WALK) : target->GetSpeed(MOVE_RUN);
 
         Movement::MoveSplineInit init(owner);
         init.MoveTo(PositionToVector3(dest));

@@ -366,7 +366,7 @@ namespace WorldPackets
         class QuestUpdateFailedTimer final : public ServerPacket
         {
         public:
-            QuestUpdateFailedTimer() : ServerPacket(SMSG_QUESTUPDATE_FAILEDTIMER, 4) { }
+            QuestUpdateFailedTimer() : ServerPacket(SMSG_QUEST_UPDATE_FAILED_TIMER, 4) { }
 
             WorldPacket const* Write() override;
 

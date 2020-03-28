@@ -1,5 +1,5 @@
 /*
- * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -17,16 +17,5 @@
 
 #ifndef AllPackets_h__
 #define AllPackets_h__
-
-#include "AuthenticationPackets.h"
-#include "CharacterPackets.h"
-#include "GuildPackets.h"
-#include "LFGPackets.h"
-#include "MiscPackets.h"
-#include "MovementPackets.h"
-#include "NPCPackets.h"
-#include "QuestPackets.h"
-#include "QueryPackets.h"
-#include "SystemPackets.h"
 
 #endif // AllPackets_h__

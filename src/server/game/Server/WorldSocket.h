@@ -1,5 +1,6 @@
 /*
-* This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
+* Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+* Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
 *
 * This program is free software; you can redistribute it and/or modify it
 * under the terms of the GNU General Public License as published by the
@@ -18,7 +19,6 @@
 #ifndef __WORLDSOCKET_H__
 #define __WORLDSOCKET_H__
 
-#include "BigNumber.h"
 #include "Common.h"
 #include "WorldPacketCrypt.h"
 #include "ServerPktHeader.h"
@@ -33,18 +33,9 @@
 using boost::asio::ip::tcp;
 class EncryptablePacket;
 
-struct z_stream_s;
-
 namespace WorldPackets
 {
     class ServerPacket;
-    namespace Auth
-    {
-        class AuthSession;
-        class AuthContinuedSession;
-        class ConnectToFailed;
-        class Ping;
-    }
 }
 
 #pragma pack(push, 1)
@@ -65,13 +56,13 @@ struct AuthSession;
 class TC_GAME_API WorldSocket : public Socket<WorldSocket>
 {
     static std::string const ServerConnectionInitialize;
+
     static std::string const ClientConnectionInitialize;
 
     typedef Socket<WorldSocket> BaseSocket;
 
 public:
     WorldSocket(tcp::socket&& socket);
-    ~WorldSocket();
 
     WorldSocket(WorldSocket const& right) = delete;
     WorldSocket& operator=(WorldSocket const& right) = delete;
@@ -80,12 +71,8 @@ public:
     bool Update() override;
 
     void SendPacket(WorldPacket const& packet);
+
     void SetSendBufferSize(std::size_t sendBufferSize) { _sendBufferSize = sendBufferSize; }
-
-    ConnectionType GetConnectionType() const { return _type; }
-
-    void SendAuthResponseError(uint8 code);
-    void SetWorldSession(WorldSession* session);
 
 protected:
     void OnClose() override;
@@ -108,35 +95,26 @@ private:
     /// accessing WorldSession is not threadsafe, only do it when holding _worldSessionLock
     void LogOpcodeText(OpcodeClient opcode, std::unique_lock<std::mutex> const& guard) const;
     /// sends and logs network.opcode without accessing WorldSession
-    void SendPacketAndLogOpcode(WorldPacket const& packet);
+    void SendPacketAndLogOpcode(WorldPacket& packet);
     void HandleSendAuthSession();
-    void HandleAuthSession(std::shared_ptr<WorldPackets::Auth::AuthSession> authSession);
-    void HandleAuthSessionCallback(std::shared_ptr<WorldPackets::Auth::AuthSession> authSession, PreparedQueryResult result);
-    void HandleAuthContinuedSession(std::shared_ptr<WorldPackets::Auth::AuthContinuedSession> authSession);
-    void HandleAuthContinuedSessionCallback(std::shared_ptr<WorldPackets::Auth::AuthContinuedSession> authSession, PreparedQueryResult result);
+    void HandleAuthSession(WorldPacket& recvPacket);
+    void HandleAuthSessionCallback(std::shared_ptr<AuthSession> authSession, PreparedQueryResult result);
     void LoadSessionPermissionsCallback(PreparedQueryResult result);
-    void HandleConnectToFailed(WorldPackets::Auth::ConnectToFailed& connectToFailed);
-    bool HandlePing(WorldPackets::Auth::Ping& ping);
+    void SendAuthResponseError(uint8 code);
 
-    ConnectionType _type;
+    bool HandlePing(WorldPacket& recvPacket);
 
     uint32 _authSeed;
     WorldPacketCrypt _authCrypt;
-    BigNumber _encryptSeed;
-    BigNumber _decryptSeed;
 
     std::chrono::steady_clock::time_point _LastPingTime;
     uint32 _OverSpeedPings;
 
     std::mutex _worldSessionLock;
     WorldSession* _worldSession;
-    bool _authed;
 
     MessageBuffer _headerBuffer;
     MessageBuffer _packetBuffer;
-
-    z_stream_s* _compressionStream;
-
     MPSCQueue<EncryptablePacket> _bufferQueue;
     std::size_t _sendBufferSize;
 

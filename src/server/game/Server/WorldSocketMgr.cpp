@@ -1,5 +1,6 @@
 /*
- * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2005-2008 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -20,7 +21,6 @@
 #include "ScriptMgr.h"
 #include "WorldSocket.h"
 #include "WorldSocketMgr.h"
-#include "World.h"
 
 #include <boost/system/error_code.hpp>
 
@@ -44,13 +44,8 @@ public:
     }
 };
 
-WorldSocketMgr::WorldSocketMgr() : BaseSocketMgr(), _instanceAcceptor(nullptr), _socketSystemSendBufferSize(-1), _socketApplicationSendBufferSize(65536), _tcpNoDelay(true)
+WorldSocketMgr::WorldSocketMgr() : BaseSocketMgr(), _socketSystemSendBufferSize(-1), _socketApplicationSendBufferSize(65536), _tcpNoDelay(true)
 {
-}
-
-WorldSocketMgr::~WorldSocketMgr()
-{
-    ASSERT(!_instanceAcceptor, "StopNetwork must be called prior to WorldSocketMgr destruction");
 }
 
 WorldSocketMgr& WorldSocketMgr::Instance()
@@ -80,30 +75,9 @@ bool WorldSocketMgr::StartWorldNetwork(Trinity::Asio::IoContext& ioContext, std:
     if (!BaseSocketMgr::StartNetwork(ioContext, bindIp, port, threadCount))
         return false;
 
-    AsyncAcceptor* instanceAcceptor = nullptr;
-    try
-    {
-        instanceAcceptor = new AsyncAcceptor(ioContext, bindIp, sWorld->getIntConfig(CONFIG_PORT_INSTANCE));
-    }
-    catch (boost::system::system_error const& err)
-    {
-        TC_LOG_ERROR("network", "Exception caught in WorldSocketMgr::StartNetwork (%s:%u): %s", bindIp.c_str(), port, err.what());
-        return false;
-    }
-
-    if (!instanceAcceptor->Bind())
-    {
-        TC_LOG_ERROR("network", "StartNetwork failed to bind instance socket acceptor");
-        return false;
-    }
-
-    _instanceAcceptor = instanceAcceptor;
-
     _acceptor->SetSocketFactory(std::bind(&BaseSocketMgr::GetSocketForAccept, this));
-    _instanceAcceptor->SetSocketFactory(std::bind(&BaseSocketMgr::GetSocketForAccept, this));
 
     _acceptor->AsyncAcceptWithCallback<&OnSocketAccept>();
-    _instanceAcceptor->AsyncAcceptWithCallback<&OnSocketAccept>();
 
     sScriptMgr->OnNetworkStart();
     return true;
@@ -111,13 +85,7 @@ bool WorldSocketMgr::StartWorldNetwork(Trinity::Asio::IoContext& ioContext, std:
 
 void WorldSocketMgr::StopNetwork()
 {
-    if (_instanceAcceptor)
-        _instanceAcceptor->Close();
-
     BaseSocketMgr::StopNetwork();
-
-    delete _instanceAcceptor;
-    _instanceAcceptor = nullptr;
 
     sScriptMgr->OnNetworkStop();
 }

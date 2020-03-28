@@ -1,5 +1,5 @@
 /*
- * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -15,7 +15,6 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "GameTime.h"
 #include "PacketLog.h"
 #include "Config.h"
 #include "IpAddress.h"
@@ -97,7 +96,7 @@ void PacketLog::Initialize()
         header.Build = 15595;
         header.Locale[0] = 'e'; header.Locale[1] = 'n'; header.Locale[2] = 'U'; header.Locale[3] = 'S';
         std::memset(header.SessionKey, 0, sizeof(header.SessionKey));
-        header.SniffStartUnixtime = GameTime::GetGameTime();
+        header.SniffStartUnixtime = time(nullptr);
         header.SniffStartTicks = getMSTime();
         header.OptionalDataSize = 0;
 

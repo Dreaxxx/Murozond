@@ -1,5 +1,6 @@
 /*
- * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -55,6 +56,7 @@ struct DeclinedName;
 struct ItemTemplate;
 struct MovementInfo;
 struct TradeStatusInfo;
+struct z_stream_s;
 
 namespace lfg
 {
@@ -65,7 +67,6 @@ struct LfgQueueStatusData;
 struct LfgPlayerRewardData;
 struct LfgRoleCheck;
 struct LfgUpdateData;
-enum LfgTeleportResult : uint8;
 }
 
 namespace rbac
@@ -75,100 +76,6 @@ class RBACData;
 
 namespace WorldPackets
 {
-    namespace Auth
-    {
-        enum class ConnectToSerial : uint32;
-    }
-
-    namespace Character
-    {
-        class EnumCharacters;
-
-        enum class LoginFailureReason : uint8;
-    }
-
-    namespace LFG
-    {
-        class LFGJoin;
-        class LFGLeave;
-        class LFGProposalResponse;
-        class LFGSetRoles;
-        class LFGSetComment;
-        class LFGBootPlayerVote;
-        class LFGTeleport;
-        class LFGGetSystemInfo;
-        class LFGUpdateStatus;
-        class RoleChosen;
-        class LFGRoleCheckUpdate;
-        class LFGJoinResult;
-        class LFGQueueStatus;
-        class LFGPlayerReward;
-        class LfgBootPlayer;
-        class LFGOfferContinue;
-    }
-
-    namespace Guild
-    {
-        class GuildBankQueryResults;
-        class GuildBankActivate;
-        class GuildBankQueryTab;
-        class GuildBankBuyTab;
-        class GuildBankUpdateTab;
-        class GuildBankDepositMoney;
-        class GuildBankWithdrawMoney;
-        class GuildPermissionsQuery;
-        class GuildBankRemainingWithdrawMoneyQuery;
-        class GuildBankLogQuery;
-        class GuildBankSwapItems;
-        class GuildBankTextQuery;
-        class GuildBankSetTabText;
-        class GuildXPQuery;
-        class GuildGetRoster;
-        class GuildQueryRecipes;
-        class GuildQueryMembersForRecipe;
-        class GuildQueryMemberRecipes;
-        class GuildChallengeUpdateRequest;
-        class RequestGuildRewardsList;
-    }
-
-    namespace Misc
-    {
-        class CompleteCinematic;
-        class CompleteMovie;
-        class NextCinematicCamera;
-        class OpeningCinematic;
-    }
-
-    namespace Movement
-    {
-        class SuspendTokenResponse;
-    }
-
-    namespace NPC
-    {
-        class Hello;
-        class TrainerBuySpell;
-    }
-
-    namespace Quest
-    {
-        class QuestGiverAcceptQuest;
-        class QuestGiverChooseReward;
-        class QuestGiverCompleteQuest;
-        class QuestGiverHello;
-        class QuestGiverQueryQuest;
-        class QuestGiverRequestReward;
-        class QuestGiverStatusMultipleQuery;
-        class QuestGiverStatusQuery;
-        class QuestLogRemoveQuest;
-        class QuestConfirmAccept;
-        class QueryQuestInfo;
-    }
-
-    namespace Query
-    {
-        class DBQueryBulk;
-    }
 }
 
 enum AccountDataType
@@ -382,18 +289,17 @@ class TC_GAME_API WorldSession
         WorldSession(uint32 id, std::string&& name, uint32 battlenetAccountId, std::shared_ptr<WorldSocket> sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter);
         ~WorldSession();
 
-        bool PlayerLoading() const { return !m_playerLoading.IsEmpty(); }
+        bool PlayerLoading() const { return m_playerLoading; }
         bool PlayerLogout() const { return m_playerLogout; }
         bool PlayerLogoutWithSave() const { return m_playerLogout && m_playerSave; }
         bool PlayerRecentlyLoggedOut() const { return m_playerRecentlyLogout; }
-        bool PlayerDisconnected() const;
+        bool PlayerDisconnected() const { return !m_Socket; }
 
         void ReadAddonsInfo(ByteBuffer& data);
         void SendAddonsInfo();
         bool IsAddonRegistered(const std::string& prefix) const;
-        void SendPacket(WorldPacket const* packet, bool forced = false);
-        void AddInstanceConnection(std::shared_ptr<WorldSocket> sock) { m_Socket[1] = sock; }
 
+        void SendPacket(WorldPacket const* packet, bool forced = false);
         void SendNotification(const char *format, ...) ATTR_PRINTF(2, 3);
         void SendNotification(uint32 string_id, ...);
         void SendPetNameInvalid(uint32 error, std::string const& name, DeclinedName *declinedName);
@@ -424,8 +330,7 @@ class TC_GAME_API WorldSession
         void SetSecurity(AccountTypes security) { _security = security; }
         std::string const& GetRemoteAddress() const { return m_Address; }
         void SetPlayer(Player* player);
-        uint8 GetAccountExpansion() const { return m_accountExpansion; }
-        uint8 GetExpansion() const { return m_expansion; }
+        uint8 Expansion() const { return m_expansion; }
 
         void InitWarden(BigNumber* k, std::string const& os);
 
@@ -458,7 +363,8 @@ class TC_GAME_API WorldSession
 
         void SendNameQueryOpcode(ObjectGuid guid);
 
-        void SendTrainerList(Creature* npc, uint32 trainerId);
+        void SendTrainerList(ObjectGuid guid, uint32 index = 0);
+        void SendTrainerList(ObjectGuid guid, std::string const& strTitle, uint32 index = 0);
         void SendListInventory(ObjectGuid guid);
         void SendShowBank(ObjectGuid guid);
         bool CanOpenMailBox(ObjectGuid guid);
@@ -483,11 +389,9 @@ class TC_GAME_API WorldSession
         // Pet
         void SendPetNameQuery(ObjectGuid guid, uint32 petnumber);
         void SendStablePet(ObjectGuid guid);
+        void SendStablePetCallback(ObjectGuid guid, PreparedQueryResult result);
         void SendStableResult(uint8 guid);
         bool CheckStableMaster(ObjectGuid guid);
-        void UpdatePetSlot(uint32 petNumber, uint8 oldPetSlot, uint8 newPetSlot);
-        void SendPetSlotUpdated(int32 petNumberA, int32 petSlotA, int32 petNumberB, int32 petSlotB);
-        void SendPetAdded(int32 petSlot, int32 petNumber, int32 creatureID, int32 level, std::string name);
 
         // Account Data
         AccountData* GetAccountData(AccountDataType type) { return &m_accountData[type]; }
@@ -564,6 +468,8 @@ class TC_GAME_API WorldSession
         uint32 GetRecruiterId() const { return recruiterId; }
         bool IsARecruiter() const { return isRecruiter; }
 
+        z_stream_s* GetCompressionStream() { return _compressionStream; }
+
         // Time Synchronisation
         void ResetTimeSync();
         void SendTimeSync();
@@ -574,18 +480,13 @@ class TC_GAME_API WorldSession
         void Handle_EarlyProccess(WorldPacket& recvPacket); // just mark packets processed in WorldSocket::OnRead
         void Handle_ServerSide(WorldPacket& recvPacket);    // sever side only, can't be accepted from client
         void Handle_Deprecated(WorldPacket& recvPacket);    // never used anymore by client
-        void LogUnprocessedTail(WorldPacket const* packet);
 
-        void HandleCharEnum(PreparedQueryResult result);
-        void HandleCharEnumOpcode(WorldPackets::Character::EnumCharacters& /*enumCharacters*/);
+        void HandleCharEnumOpcode(WorldPacket& recvPacket);
         void HandleCharDeleteOpcode(WorldPacket& recvPacket);
         void HandleCharCreateOpcode(WorldPacket& recvPacket);
         void HandlePlayerLoginOpcode(WorldPacket& recvPacket);
-
-        void SendConnectToInstance(WorldPackets::Auth::ConnectToSerial serial);
-        void HandleContinuePlayerLogin();
-        void AbortLogin(WorldPackets::Character::LoginFailureReason reason);
         void HandleLoadScreenOpcode(WorldPacket& recvPacket);
+        void HandleCharEnum(PreparedQueryResult result);
         void HandlePlayerLogin(LoginQueryHolder* holder);
         void HandleCharFactionOrRaceChange(WorldPacket& recvData);
         void HandleCharFactionOrRaceChangeCallback(std::shared_ptr<CharacterFactionChangeInfo> factionChangeInfo, PreparedQueryResult result);
@@ -595,10 +496,10 @@ class TC_GAME_API WorldSession
         void HandleAlterAppearance(WorldPacket& recvData);
         void HandleCharCustomize(WorldPacket& recvData);
         void HandleCharCustomizeCallback(std::shared_ptr<CharacterCustomizeInfo> customizeInfo, PreparedQueryResult result);
-        void HandleOpeningCinematic(WorldPackets::Misc::OpeningCinematic& packet);
 
         void HandleRandomizeCharNameOpcode(WorldPacket& recvData);
         void HandleReorderCharacters(WorldPacket& recvData);
+        void HandleOpeningCinematic(WorldPacket& recvData);
         void SendCharCreate(ResponseCodes result);
         void SendCharDelete(ResponseCodes result);
         void SendCharRename(ResponseCodes result, CharacterRenameInfo const* renameInfo);
@@ -710,7 +611,6 @@ class TC_GAME_API WorldSession
 
         void HandleMoveWorldportAckOpcode(WorldPacket& recvPacket);
         void HandleMoveWorldportAck();                // for server-side calls
-        void HandleSuspendTokenResponse(WorldPackets::Movement::SuspendTokenResponse& suspendTokenResponse);
 
         void HandleMovementOpcodes(WorldPacket& recvPacket);
         void HandleSetActiveMoverOpcode(WorldPacket& recvData);
@@ -764,8 +664,8 @@ class TC_GAME_API WorldSession
         void HandleGuildAcceptOpcode(WorldPacket& recvPacket);
         void HandleGuildDeclineOpcode(WorldPacket& recvPacket);
         void HandleGuildEventLogQueryOpcode(WorldPacket& recvPacket);
-        void HandleGuildGetRosterOpcode(WorldPackets::Guild::GuildGetRoster& /*packet*/);
-        void HandleRequestGuildRewardsList(WorldPackets::Guild::RequestGuildRewardsList& /*packet*/);
+        void HandleGuildRosterOpcode(WorldPacket& recvPacket);
+        void HandleGuildRewardsQueryOpcode(WorldPacket& recvPacket);
         void HandleGuildPromoteOpcode(WorldPacket& recvPacket);
         void HandleGuildDemoteOpcode(WorldPacket& recvPacket);
         void HandleGuildAssignRankOpcode(WorldPacket& recvPacket);
@@ -778,9 +678,6 @@ class TC_GAME_API WorldSession
         void HandleGuildSetNoteOpcode(WorldPacket& recvPacket);
         void HandleGuildQueryRanksOpcode(WorldPacket& recvPacket);
         void HandleGuildQueryNewsOpcode(WorldPacket& recvPacket);
-        void HandleGuildQueryRecipesOpcode(WorldPackets::Guild::GuildQueryRecipes& packet);
-        void HandleGuildQueryMembersForRecipe(WorldPackets::Guild::GuildQueryMembersForRecipe& packet);
-        void HandleGuildQueryMemberRecipe(WorldPackets::Guild::GuildQueryMemberRecipes& packet);
         void HandleGuildSetRankPermissionsOpcode(WorldPacket& recvPacket);
         void HandleGuildAddRankOpcode(WorldPacket& recvPacket);
         void HandleGuildDelRankOpcode(WorldPacket& recvPacket);
@@ -791,12 +688,12 @@ class TC_GAME_API WorldSession
         void HandleGuildAchievementMembers(WorldPacket& recvPacket);
         void HandleGuildSwitchRank(WorldPacket& recvPacket);
         void HandleGuildRenameRequest(WorldPacket& recvPacket);
+        void HandleGuildChallengeRequest(WorldPacket& recvPacket);
         void SendGuildCancelInvite(std::string unkString, uint8 unkByte);
         void HandleGuildRenameCallback(std::string newName, PreparedQueryResult result);
         void HandleAutoDeclineGuildInvites(WorldPacket& recvPacket);
         void HandleGuildSwitchRankOpcode(WorldPacket& recvPacket);
-        void HandleGuildRequestChallengeUpdate(WorldPackets::Guild::GuildChallengeUpdateRequest& packet);
-        void HandleGuildXPQueryOpcode(WorldPackets::Guild::GuildXPQuery& packet);
+        void HandleGuildRequestChallengeUpdate(WorldPacket& recvPacket);
 
         // Guild Finder
         void HandleGuildFinderAddRecruit(WorldPacket& recvPacket);
@@ -818,8 +715,8 @@ class TC_GAME_API WorldSession
         void HandleTabardVendorActivateOpcode(WorldPacket& recvPacket);
         void HandleBankerActivateOpcode(WorldPacket& recvPacket);
         void HandleBuyBankSlotOpcode(WorldPacket& recvPacket);
-        void HandleTrainerListOpcode(WorldPackets::NPC::Hello& packet);
-        void HandleTrainerBuySpellOpcode(WorldPackets::NPC::TrainerBuySpell& packet);
+        void HandleTrainerListOpcode(WorldPacket& recvPacket);
+        void HandleTrainerBuySpellOpcode(WorldPacket& recvPacket);
         void HandlePetitionShowListOpcode(WorldPacket& recvPacket);
         void HandleGossipHelloOpcode(WorldPacket& recvPacket);
         void HandleGossipSelectOptionOpcode(WorldPacket& recvPacket);
@@ -827,8 +724,14 @@ class TC_GAME_API WorldSession
         void HandleNpcTextQueryOpcode(WorldPacket& recvPacket);
         void HandleBinderActivateOpcode(WorldPacket& recvPacket);
         void HandleListStabledPetsOpcode(WorldPacket& recvPacket);
-        void HandleSetPetSlot(WorldPacket& recvPacket);
+        void HandleStablePet(WorldPacket& recvPacket);
+        void HandleStablePetCallback(PreparedQueryResult result);
+        void HandleUnstablePet(WorldPacket& recvPacket);
+        void HandleUnstablePetCallback(uint32 petId, PreparedQueryResult result);
+        void HandleBuyStableSlot(WorldPacket& recvPacket);
         void HandleStableRevivePet(WorldPacket& recvPacket);
+        void HandleStableSwapPet(WorldPacket& recvPacket);
+        void HandleStableSwapPetCallback(uint32 petId, PreparedQueryResult result);
         void SendTrainerBuyFailed(uint64 guid, uint32 spellId, uint32 reason);
 
         void HandleDuelAcceptedOpcode(WorldPacket& recvPacket);
@@ -902,19 +805,19 @@ class TC_GAME_API WorldSession
         void HandleTalentWipeConfirmOpcode(WorldPacket& recvPacket);
         void HandleUnlearnSkillOpcode(WorldPacket& recvPacket);
 
-        void HandleQuestgiverStatusQueryOpcode(WorldPackets::Quest::QuestGiverStatusQuery& packet);
-        void HandleQuestgiverStatusMultipleQuery(WorldPackets::Quest::QuestGiverStatusMultipleQuery& packet);
-        void HandleQuestgiverHelloOpcode(WorldPackets::Quest::QuestGiverHello& packet);
-        void HandleQuestgiverAcceptQuestOpcode(WorldPackets::Quest::QuestGiverAcceptQuest& packet);
-        void HandleQuestgiverQueryQuestOpcode(WorldPackets::Quest::QuestGiverQueryQuest& packet);
-        void HandleQuestgiverChooseRewardOpcode(WorldPackets::Quest::QuestGiverChooseReward& packet);
-        void HandleQuestgiverRequestRewardOpcode(WorldPackets::Quest::QuestGiverRequestReward& packet);
-        void HandleQuestQueryOpcode(WorldPackets::Quest::QueryQuestInfo& packet);
+        void HandleQuestgiverStatusQueryOpcode(WorldPacket& recvPacket);
+        void HandleQuestgiverStatusMultipleQuery(WorldPacket& recvPacket);
+        void HandleQuestgiverHelloOpcode(WorldPacket& recvPacket);
+        void HandleQuestgiverAcceptQuestOpcode(WorldPacket& recvPacket);
+        void HandleQuestgiverQueryQuestOpcode(WorldPacket& recvPacket);
+        void HandleQuestgiverChooseRewardOpcode(WorldPacket& recvPacket);
+        void HandleQuestgiverRequestRewardOpcode(WorldPacket& recvPacket);
+        void HandleQuestQueryOpcode(WorldPacket& recvPacket);
         void HandleQuestgiverCancel(WorldPacket& recvData);
         void HandleQuestLogSwapQuest(WorldPacket& recvData);
-        void HandleQuestLogRemoveQuest(WorldPackets::Quest::QuestLogRemoveQuest& packet);
-        void HandleQuestConfirmAccept(WorldPackets::Quest::QuestConfirmAccept& packet);
-        void HandleQuestgiverCompleteQuest(WorldPackets::Quest::QuestGiverCompleteQuest& packet);
+        void HandleQuestLogRemoveQuest(WorldPacket& recvData);
+        void HandleQuestConfirmAccept(WorldPacket& recvData);
+        void HandleQuestgiverCompleteQuest(WorldPacket& recvData);
         void HandleQuestgiverQuestAutoLaunch(WorldPacket& recvPacket);
         void HandlePushQuestToParty(WorldPacket& recvPacket);
         void HandleQuestPushResult(WorldPacket& recvPacket);
@@ -959,9 +862,9 @@ class TC_GAME_API WorldSession
         void HandleSetChannelWatch(WorldPacket& recvPacket);
         void HandleUnsetChannelWatch(WorldPacket& recvPacket);
 
-        void HandleCompleteCinematic(WorldPackets::Misc::CompleteCinematic& packet);
-        void HandleNextCinematicCamera(WorldPackets::Misc::NextCinematicCamera& packet);
-        void HandleCompleteMovie(WorldPackets::Misc::CompleteMovie& packet);
+        void HandleCompleteMovie(WorldPacket& recvPacket);
+        void HandleCompleteCinematic(WorldPacket& recvPacket);
+        void HandleNextCinematicCamera(WorldPacket& recvPacket);
 
         void HandlePageTextQueryOpcode(WorldPacket& recvPacket);
 
@@ -1040,16 +943,16 @@ class TC_GAME_API WorldSession
         void HandleSetCurrencyFlags(WorldPacket& recvData);
 
         // Looking for Dungeon/Raid
-        void HandleLfgJoinOpcode(WorldPackets::LFG::LFGJoin& lfgJoin);
-        void HandleLfgLeaveOpcode(WorldPackets::LFG::LFGLeave& lfgLeave);
-        void HandleLfgProposalResultOpcode(WorldPackets::LFG::LFGProposalResponse& lfgProposalResponse);
-        void HandleLfgSetRolesOpcode(WorldPackets::LFG::LFGSetRoles& lfgSetRoles);
-        void HandleLfgSetCommentOpcode(WorldPackets::LFG::LFGSetComment& lfgSetComment);
-        void HandleLfgSetBootVoteOpcode(WorldPackets::LFG::LFGBootPlayerVote& lfgBootPlayerVote);
-        void HandleLfgTeleportOpcode(WorldPackets::LFG::LFGTeleport& lfgTeleport);
-        void HandleLfgGetLockInfoOpcode(WorldPackets::LFG::LFGGetSystemInfo& lfgGetSystemInfo);
+        void HandleLfgSetCommentOpcode(WorldPacket& recvData);
+        void HandleLfgGetLockInfoOpcode(WorldPacket& recvData);
         void SendLfgPlayerLockInfo();
         void SendLfgPartyLockInfo();
+        void HandleLfgJoinOpcode(WorldPacket& recvData);
+        void HandleLfgLeaveOpcode(WorldPacket& recvData);
+        void HandleLfgSetRolesOpcode(WorldPacket& recvData);
+        void HandleLfgProposalResultOpcode(WorldPacket& recvData);
+        void HandleLfgSetBootVoteOpcode(WorldPacket& recvData);
+        void HandleLfgTeleportOpcode(WorldPacket& recvData);
         void HandleLfrJoinOpcode(WorldPacket& recvData);
         void HandleLfrLeaveOpcode(WorldPacket& recvData);
         void HandleLfgGetStatus(WorldPacket& recvData);
@@ -1065,7 +968,7 @@ class TC_GAME_API WorldSession
         void SendLfgUpdateProposal(lfg::LfgProposal const& proposal);
         void SendLfgDisabled();
         void SendLfgOfferContinue(uint32 dungeonEntry);
-        void SendLfgTeleportError(lfg::LfgTeleportResult err);
+        void SendLfgTeleportError(uint8 err);
 
         // Arena Team
         void HandleInspectArenaTeamsOpcode(WorldPacket& recvData);
@@ -1101,18 +1004,20 @@ class TC_GAME_API WorldSession
         void HandleSetTaxiBenchmarkOpcode(WorldPacket& recvData);
 
         // Guild Bank
-        void HandleGuildPermissionsQuery(WorldPackets::Guild::GuildPermissionsQuery& packet);
-        void HandleGuildBankMoneyWithdrawn(WorldPackets::Guild::GuildBankRemainingWithdrawMoneyQuery& packet);
-        void HandleGuildBankActivate(WorldPackets::Guild::GuildBankActivate& packet);
-        void HandleGuildBankQueryTab(WorldPackets::Guild::GuildBankQueryTab& packet);
-        void HandleGuildBankLogQuery(WorldPackets::Guild::GuildBankLogQuery& packet);
-        void HandleGuildBankDepositMoney(WorldPackets::Guild::GuildBankDepositMoney& packet);
-        void HandleGuildBankWithdrawMoney(WorldPackets::Guild::GuildBankWithdrawMoney& packet);
-        void HandleGuildBankSwapItems(WorldPackets::Guild::GuildBankSwapItems& packet);
-        void HandleGuildBankUpdateTab(WorldPackets::Guild::GuildBankUpdateTab& packet);
-        void HandleGuildBankBuyTab(WorldPackets::Guild::GuildBankBuyTab& packet);
-        void HandleGuildBankTextQuery(WorldPackets::Guild::GuildBankTextQuery& packet);
-        void HandleGuildBankSetTabText(WorldPackets::Guild::GuildBankSetTabText& packet);
+        void HandleGuildPermissions(WorldPacket& recvData);
+        void HandleGuildBankMoneyWithdrawn(WorldPacket& recvData);
+        void HandleGuildBankerActivate(WorldPacket& recvData);
+        void HandleGuildBankQueryTab(WorldPacket& recvData);
+        void HandleGuildBankLogQuery(WorldPacket& recvData);
+        void HandleGuildBankDepositMoney(WorldPacket& recvData);
+        void HandleGuildBankWithdrawMoney(WorldPacket& recvData);
+        void HandleGuildBankSwapItems(WorldPacket& recvData);
+
+        void HandleGuildBankUpdateTab(WorldPacket& recvData);
+        void HandleGuildBankBuyTab(WorldPacket& recvData);
+        void HandleQueryGuildBankTabText(WorldPacket& recvData);
+        void HandleSetGuildBankTabText(WorldPacket& recvData);
+        void HandleGuildQueryXPOpcode(WorldPacket& recvData);
 
         // Refer-a-Friend
         void HandleGrantLevel(WorldPacket& recvData);
@@ -1171,6 +1076,7 @@ class TC_GAME_API WorldSession
         void HandleEjectPassenger(WorldPacket& data);
         void HandleEnterPlayerVehicle(WorldPacket& data);
         void HandleUpdateProjectilePosition(WorldPacket& recvPacket);
+        void HandleRequestHotfix(WorldPacket& recvPacket);
         void HandleUpdateMissileTrajectory(WorldPacket& recvPacket);
         void HandleViolenceLevel(WorldPacket& recvPacket);
         void HandleObjectUpdateFailedOpcode(WorldPacket& recvPacket);
@@ -1178,23 +1084,6 @@ class TC_GAME_API WorldSession
         void SendStreamingMovie();
         void HandleRequestResearchHistory(WorldPacket& recv_data);
         int32 HandleEnableNagleAlgorithm();
-
-        // Query
-        void HandleDBQueryBulk(WorldPackets::Query::DBQueryBulk& packet);
-
-        union ConnectToKey
-        {
-            struct
-            {
-                uint64 AccountId : 32;
-                uint64 ConnectionType : 1;
-                uint64 Key : 31;
-            } Fields;
-
-            uint64 Raw;
-        };
-
-        uint64 GetConnectToInstanceKey() const { return _instanceConnectKey.Raw; }
 
     public:
         QueryCallbackProcessor& GetQueryProcessor() { return _queryProcessor; }
@@ -1250,6 +1139,7 @@ class TC_GAME_API WorldSession
 
         // logging helper
         void LogUnexpectedOpcode(WorldPacket* packet, char const* status, const char *reason);
+        void LogUnprocessedTail(WorldPacket* packet);
 
         // EnumData helpers
         bool IsLegitCharacterForAccount(ObjectGuid lowGUID)
@@ -1263,7 +1153,7 @@ class TC_GAME_API WorldSession
 
         ObjectGuid::LowType m_GUIDLow;                      // set logined or recently logout player (while m_playerRecentlyLogout set)
         Player* _player;
-        std::shared_ptr<WorldSocket> m_Socket[2];
+        std::shared_ptr<WorldSocket> m_Socket;
         std::string m_Address;                              // Current Remote Address
      // std::string m_LAddress;                             // Last Attempted Remote Adress - we can not set attempted ip for a non-existing session!
 
@@ -1271,15 +1161,16 @@ class TC_GAME_API WorldSession
         uint32 _accountId;
         std::string _accountName;
         uint32 _battlenetAccountId;
-        uint8 m_accountExpansion;
         uint8 m_expansion;
+
+        typedef std::list<AddonInfo> AddonsList;
 
         // Warden
         Warden* _warden;                                    // Remains nullptr if Warden system is not enabled by config
 
         time_t _logoutTime;
         bool m_inQueue;                                     // session wait in auth.queue
-        ObjectGuid m_playerLoading;                         // code processed in LoginPlayer
+        bool m_playerLoading;                               // code processed in LoginPlayer
         bool m_playerLogout;                                // code processed in LogoutPlayer
         bool m_playerRecentlyLogout;
         bool m_playerSave;
@@ -1289,32 +1180,13 @@ class TC_GAME_API WorldSession
         AccountData m_accountData[NUM_ACCOUNT_DATA_TYPES];
         uint32 m_Tutorials[MAX_ACCOUNT_TUTORIAL_VALUES];
         uint8  m_TutorialsChanged;
-        struct Addons
-        {
-            struct SecureAddonInfo
-            {
-                enum SecureAddonStatus : uint8
-                {
-                    BANNED          = 0,
-                    SECURE_VISIBLE  = 1,
-                    SECURE_HIDDEN   = 2
-                };
-
-                std::string Name;
-                SecureAddonStatus Status = BANNED;
-                bool HasKey = false;
-            };
-
-            static uint32 constexpr MaxSecureAddons = 35;
-
-            std::vector<SecureAddonInfo> SecureAddons;
-            uint32 LastBannedAddOnTimestamp = 0;
-        } _addons;
+        AddonsList m_addonsList;
         std::vector<std::string> _registeredAddonPrefixes;
         bool _filterAddonMessages;
         uint32 recruiterId;
         bool isRecruiter;
         LockedQueue<WorldPacket*> _recvQueue;
+        z_stream_s* _compressionStream;
         rbac::RBACData* _RBACData;
         uint32 expireTime;
         bool forceExit;
@@ -1327,8 +1199,6 @@ class TC_GAME_API WorldSession
         std::map<uint32, uint32> _pendingTimeSyncRequests; // key: counter. value: server time when packet with that counter was sent.
         uint32 _timeSyncNextCounter;
         uint32 _timeSyncTimer;
-
-        ConnectToKey _instanceConnectKey;
 
         WorldSession(WorldSession const& right) = delete;
         WorldSession& operator=(WorldSession const& right) = delete;

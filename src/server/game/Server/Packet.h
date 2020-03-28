@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -19,6 +19,7 @@
 #define PacketBaseWorld_h__
 
 #include "WorldPacket.h"
+#include "PacketUtilities.h"
 
 namespace WorldPackets
 {
@@ -37,6 +38,7 @@ namespace WorldPackets
 
         WorldPacket const* GetRawPacket() const { return &_worldPacket; }
         size_t GetSize() const { return _worldPacket.size(); }
+        ConnectionType GetConnection() const { return _worldPacket.GetConnection(); }
 
     protected:
         WorldPacket _worldPacket;
@@ -45,7 +47,7 @@ namespace WorldPackets
     class TC_GAME_API ServerPacket : public Packet
     {
     public:
-        ServerPacket(OpcodeServer opcode, size_t initialSize = 200);
+        ServerPacket(OpcodeServer opcode, size_t initialSize = 200, ConnectionType connection = CONNECTION_TYPE_DEFAULT) : Packet(WorldPacket(opcode, initialSize, connection)) { }
 
         void Read() override final;
 

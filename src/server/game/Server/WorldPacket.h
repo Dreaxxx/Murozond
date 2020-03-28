@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -24,26 +23,28 @@
 #include "ByteBuffer.h"
 #include <chrono>
 
+struct z_stream_s;
+
 class WorldPacket : public ByteBuffer
 {
     public:
                                                             // just container for later use
-        WorldPacket() : ByteBuffer(0), m_opcode(NULL_OPCODE)
+        WorldPacket() : ByteBuffer(0), m_opcode(UNKNOWN_OPCODE), _connection(CONNECTION_TYPE_DEFAULT), _compressionStream(nullptr)
         {
         }
 
-        WorldPacket(uint16 opcode, size_t res = 200) : ByteBuffer(res),
-            m_opcode(opcode) { }
+        WorldPacket(uint16 opcode, size_t res = 200, ConnectionType connection = CONNECTION_TYPE_DEFAULT) : ByteBuffer(res),
+            m_opcode(opcode), _connection(connection), _compressionStream(nullptr) { }
 
-        WorldPacket(WorldPacket&& packet) : ByteBuffer(std::move(packet)), m_opcode(packet.m_opcode)
+        WorldPacket(WorldPacket&& packet) : ByteBuffer(std::move(packet)), m_opcode(packet.m_opcode), _connection(packet._connection), _compressionStream(nullptr)
         {
         }
 
-        WorldPacket(WorldPacket&& packet, std::chrono::steady_clock::time_point receivedTime) : ByteBuffer(std::move(packet)), m_opcode(packet.m_opcode), m_receivedTime(receivedTime)
+        WorldPacket(WorldPacket&& packet, std::chrono::steady_clock::time_point receivedTime) : ByteBuffer(std::move(packet)), m_opcode(packet.m_opcode), _connection(packet._connection), _compressionStream(nullptr), m_receivedTime(receivedTime)
         {
         }
 
-        WorldPacket(WorldPacket const& right) : ByteBuffer(right), m_opcode(right.m_opcode)
+        WorldPacket(WorldPacket const& right) : ByteBuffer(right), m_opcode(right.m_opcode), _connection(right._connection), _compressionStream(nullptr)
         {
         }
 
@@ -52,6 +53,7 @@ class WorldPacket : public ByteBuffer
             if (this != &right)
             {
                 m_opcode = right.m_opcode;
+                _connection = right._connection;
                 ByteBuffer::operator=(right);
             }
 
@@ -63,28 +65,40 @@ class WorldPacket : public ByteBuffer
             if (this != &right)
             {
                 m_opcode = right.m_opcode;
+                _connection = right._connection;
                 ByteBuffer::operator=(std::move(right));
             }
 
             return *this;
         }
 
-        WorldPacket(uint16 opcode, MessageBuffer&& buffer) : ByteBuffer(std::move(buffer)), m_opcode(opcode) { }
+        WorldPacket(uint16 opcode, MessageBuffer&& buffer, ConnectionType connection) : ByteBuffer(std::move(buffer)), m_opcode(opcode), _connection(connection), _compressionStream(nullptr)
+        {
+        }
 
-        void Initialize(uint16 opcode, size_t newres = 200)
+        void Initialize(uint16 opcode, size_t newres = 200, ConnectionType connection = CONNECTION_TYPE_DEFAULT)
         {
             clear();
             _storage.reserve(newres);
             m_opcode = opcode;
+            _connection = connection;
         }
 
         uint16 GetOpcode() const { return m_opcode; }
         void SetOpcode(uint16 opcode) { m_opcode = opcode; }
+        bool IsCompressed() const { return (m_opcode & COMPRESSED_OPCODE_MASK) != 0; }
+        void Compress(z_stream_s* compressionStream);
+        void Compress(z_stream_s* compressionStream, WorldPacket const* source);
+
+        ConnectionType GetConnection() const { return _connection; }
 
         std::chrono::steady_clock::time_point GetReceivedTime() const { return m_receivedTime; }
 
     protected:
         uint16 m_opcode;
+        ConnectionType _connection;
+        void Compress(void* dst, uint32 *dst_size, const void* src, int src_size);
+        z_stream_s* _compressionStream;
         std::chrono::steady_clock::time_point m_receivedTime; // only set for a specific set of opcodes, for performance reasons.
 };
 

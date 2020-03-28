@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -35,6 +34,8 @@ class TC_GAME_API WorldSocketMgr : public SocketMgr<WorldSocket>
     typedef SocketMgr<WorldSocket> BaseSocketMgr;
 
 public:
+    ~WorldSocketMgr();
+
     static WorldSocketMgr& Instance();
 
     /// Start network, listen at address:port .
@@ -53,6 +54,7 @@ protected:
     NetworkThread<WorldSocket>* CreateThreads() const override;
 
 private:
+    AsyncAcceptor* _instanceAcceptor;
     int32 _socketSystemSendBufferSize;
     int32 _socketApplicationSendBufferSize;
     bool _tcpNoDelay;

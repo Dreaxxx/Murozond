@@ -251,11 +251,11 @@ void WorldSession::SendPacket(WorldPacket const* packet, bool forced /*= false*/
         conIdx = packet->GetConnection();
     }
 
-    /* if (!m_Socket[conIdx])
+    if (!m_Socket[conIdx])
     {
         TC_LOG_ERROR("network.opcode", "Prevented sending of %s to non existent socket %u to %s", GetOpcodeNameForLogging(static_cast<OpcodeServer>(packet->GetOpcode())).c_str(), conIdx, GetPlayerInfo().c_str());
         return;
-    } */
+    }
 
     if (!forced)
     {

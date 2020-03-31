@@ -647,7 +647,7 @@ class spell_sinestra_wrack_jump : public SpellScriptLoader
                 targets.resize(2);
             }
 
-            void Hit(SpellMissInfo /*missInfo*/)
+            void Hit(SpellEffIndex /*effIndex*/)
             {
                 if (!GetHitUnit())
                     return;
@@ -672,7 +672,7 @@ class spell_sinestra_wrack_jump : public SpellScriptLoader
             {
                 OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_sinestra_wrack_jump_SpellScript::SelectTarget, EFFECT_0, TARGET_UNIT_SRC_AREA_ENTRY);
                 OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_sinestra_wrack_jump_SpellScript::SelectTarget, EFFECT_1, TARGET_UNIT_SRC_AREA_ENTRY);
-                OnEffectHitTarget += SpellEffectFn(spell_sinestra_wrack_jump_SpellScript::Hit, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+                OnEffectHitTarget += SpellEffectFn(spell_sinestra_wrack_jump_SpellScript::Hit, EFFECT_0, SPELL_EFFECT_APPLY_AURA);
             }
         };
 

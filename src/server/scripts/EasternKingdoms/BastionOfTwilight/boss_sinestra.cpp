@@ -424,7 +424,7 @@ class boss_sinestra : public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const override
         {
-            return new boss_sinestraAI(creature);
+            return GetBastionOfTwilightAI<boss_sinestraAI>(creature);
         }
 };
 
@@ -512,7 +512,7 @@ class npc_sinestra_twilight_whelp : public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const override
         {
-            return new npc_sinestra_twilight_whelpAI(creature);
+            return GetBastionOfTwilightAI<npc_sinestra_twilight_whelpAI>(creature);
         }
 };
 
@@ -581,7 +581,7 @@ class npc_sinestra_add : public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const override
         {
-            return new npc_sinestra_addAI(creature);
+            return GetBastionOfTwilightAI<npc_sinestra_addAI>(creature);
         }
 };
 

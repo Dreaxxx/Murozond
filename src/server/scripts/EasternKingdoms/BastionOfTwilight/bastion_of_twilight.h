@@ -1,188 +1,217 @@
 /*
- * Copyright (C) 2005 - 2011 MaNGOS <http://www.getmangos.org/>
- *
- * Copyright (C) 2008 - 2011 TrinityCore <http://www.trinitycore.org/>
- *
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- *
- * Copyright (C) 2008-2014 Forgotten Lands <http://www.forgottenlands.eu/>
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the
- * Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
+*
+* This program is free software; you can redistribute it and/or modify it
+* under the terms of the GNU General Public License as published by the
+* Free Software Foundation; either version 2 of the License, or (at your
+* option) any later version.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT
+* ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+* FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+* more details.
+*
+* You should have received a copy of the GNU General Public License along
+* with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
-#ifndef DEF_THE_BASTION_OF_TWILIGHT_H
-#define DEF_THE_BASTION_OF_TWILIGHT_H
+#ifndef DEF_BASTION_OF_TWILIGHT_H
+#define DEF_BASTION_OF_TWILIGHT_H
 
-enum Data
+#define DataHeader "BoT"
+#define BoTScriptName "instance_bastion_of_twilight"
+
+#include "CreatureAIImpl.h"
+
+uint32 const EncounterCountNormal = 4;
+uint32 const EncounterCountHeroic = 5;
+
+enum BoTDataTypes
 {
-    DATA_WYRMBREAKER_EVENT,
-    DATA_VALIONA_THERALION_EVENT,
-    DATA_COUNCIL_EVENT,
-    DATA_CHOGALL_EVENT,
-    DATA_SINESTRA_EVENT,
-    DATA_TEAM_IN_INSTANCE,
+    // Encounter Types
+    DATA_HALFUS_WYRMBREAKER             = 0,
+    DATA_THERALION_AND_VALIONA          = 1,
+    DATA_ASCENDANT_COUNCIL              = 2,
+    DATA_CHOGALL                        = 3,
+    DATA_SINESTRA                       = 4,
 
-    DATA_VALIONA_TERALION_HP = 201,
-    DATA_FIEND_KILLS = 202,
+    // Creature Types
+    DATA_PROTO_BEHEMOTH                 = 5,
+    DATA_THERALION                      = 6,
+    DATA_VALIONA                        = 7,
+    DATA_IGNACIOUS                      = 8,
+    DATA_FELUDIUS                       = 9,
+    DATA_TERRASTRA                      = 10,
+    DATA_ARION                          = 11,
+    DATA_ELEMENTIUM_MONSTROSITY         = 12,
+    DATA_ASCENDANT_COUNCIL_CONTROLLER   = 13,
+    DATA_CORRUPTION                     = 14,
+
+    // GameObject Types
+    DATA_GRIM_BATOL_RAID_TRAP_DOOR      = 15,
+
+    // Areatriggers
+    DATA_AT_HALFUS_INTRO                = 16,
+    DATA_AT_THERALION_AND_VALIONA_INTRO = 17,
+    DATA_AT_ASCENDANT_COUNCIL_INTRO_1   = 18,
+    DATA_AT_ASCENDANT_COUNCIL_INTRO_2   = 19,
+    DATA_AT_ASCENDANT_COUNCIL_INTRO_3   = 20,
+    DATA_AT_CHOGALL_INTRO               = 21,
+
+    // Encounter Related
+    /*Halfus Wyrmbreaker*/
+    DATA_UNRESPONSIVE_DRAGON_FIRST,
+    DATA_UNRESPONSIVE_DRAGON_SECOND,
+    DATA_CAST_DRAGON_BUFFS,
+    DATA_DRAGON_CAGE_ENABLED,
+    DATA_OPEN_ORPHANED_EMERALD_WHELP_CAGE,
+
+    /*Theralion and Valiona*/
+    DATA_RANDOM_VALIONA_DUMMY,
+    DATA_COLLAPSING_TWILIGHT_PORTAL_COUNT,
+    DATA_VALIONA_AURA_DUMMY,
+
+    /*Cho'Gall*/
+    DATA_FULL_HEROIC_ID
 };
 
-enum Data64
+enum BoTDataStates
 {
-    DATA_WYRMBREAKER,
-    DATA_VALIONA,
-    DATA_THERALION,
-    DATA_FELUDIUS,
-    DATA_IGNACIOUS,
-    DATA_ARION,
-    DATA_TERRASTRA,
-    DATA_MONSTROSITY,
-    DATA_CHOGALL,
-    DATA_SINESTRA,
+    DRAGON_BUFFS_HALFUS_WYRMBREAKER,
+    DRAGON_BUFFS_PROTO_BEHEMOTH,
 };
 
-enum CreatureIds
+enum BoTAreatriggerIndex
 {
-    //Bosses
-    BOSS_WYRMBREAKER = 44600,
-    BOSS_VALIONA = 45992,
-    BOSS_THERALION = 45993,
-    BOSS_FELUDIUS = 43687,
-    BOSS_IGNACIOUS = 43686,
-    BOSS_ARION = 43688,
-    BOSS_TERRASTRA = 43689,
-    BOSS_MONSTROSITY = 43735,
-    BOSS_CHOGALL = 43324,
-    BOSS_SINESRTA = 45213,
+    AT_INDEX_HALFUS_WYRMBREAKER_INTRO       = 1,
+    AT_INDEX_THERALION_AND_VALIONA_INTRO    = 2,
+    AT_INDEX_ASCENDANT_COUNCIL_INTRO_1      = 3,
+    AT_INDEX_ASCENDANT_COUNCIL_INTRO_2      = 4,
+    AT_INDEX_ASCENDANT_COUNCIL_INTRO_3      = 5,
+    AT_INDEX_CHOGALL_INTRO                  = 6,
+};
 
-    // Other NPC's
-    NPC_SLATE_DRAKE = 44652,
-    NPC_NETHER_SCION = 44645,
-    NPC_STORM_RIDER = 44650,
-    NPC_TIME_WARDEN = 44797,
-    NPC_ORPHANED_WHELP = 44641,
-    NPC_PROTO_BEHEMOTH = 44687,
+enum BoTCreatures
+{
+    // Bosses
+    BOSS_HALFUS_WYRMBREAKER             = 44600,
+    BOSS_THERALION                      = 45993,
+    BOSS_VALIONA                        = 45992,
+    BOSS_IGNACIOUS                      = 43686,
+    BOSS_FELUDIUS                       = 43687,
+    BOSS_TERRASTRA                      = 43689,
+    BOSS_ARION                          = 43688,
+    BOSS_ELEMENTIUM_MONSTROSITY         = 43735,
+    BOSS_CHOGALL                        = 43324,
+    BOSS_SINESTRA                       = 45213,
+
+    // Encounter related
+    /*Halfus Wyrmbreaker*/
+    NPC_PROTO_BEHEMOTH                  = 44687,
+    NPC_NETHER_SCION                    = 44645,
+    NPC_NETHER_SCION_ENCOUNTER          = 44828,
+    NPC_SLATE_DRAGON                    = 44652,
+    NPC_SLATE_DRAGON_ENCOUNTER          = 44829,
+    NPC_STORM_RIDER                     = 44650,
+    NPC_STORM_RIDER_ENCOUNTER           = 44826,
+    NPC_TIME_WARDEN                     = 44797,
+    NPC_TIME_WARDEN_ENCOUNTER           = 44653,
+    NPC_ORPHANED_EMERALD_WELP           = 44641,
+    NPC_SPIKE                           = 44765,
+
+    /*Theralion and Valiona*/
     NPC_THERALION_FLIGHT_TARGET_STALKER = 46364,
-    NPC_TWILIGHT_FLAME = 40718,
-    NPC_CYCLON_WIND = 45026,
-    NPC_FABOLOUS_FLAME = 46448,
+    NPC_CONVECTIVE_FLAMES               = 46588,
+    NPC_DAZZLING_DESTRUCTION_STALKER    = 46374,
+    NPC_FABULOUS_FLAMES                 = 46448,
+    NPC_COLLAPSING_TWILIGHT_PORTAL      = 46301,
+    NPC_VALIONA_DUMMY                   = 46147,
+    NPC_UNSTABLE_TWILIGHT               = 46304,
+    NPC_TWILIGHT_SENTRY                 = 50008,
+    NPC_TWILIGHT_RIFT                   = 50014,
+
+    /*Ascendant Council*/
+    NPC_ASCENDANT_COUNCIL_CONTROLLER    = 43691,
+    NPC_WATER_BOMB                      = 44201,
+    NPC_INFERNO_RUSH                    = 47501,
+    NPC_FROZEN_ORB                      = 49518,
+    NPC_LIQUID_ICE                      = 45452,
+
+    /*Cho'Gall*/
+    NPC_FIRE_PORTAL                     = 43393,
+    NPC_FIRE_ELEMENTAL                  = 43406,
+    NPC_CORRUPTION                      = 43999,
+    NPC_MALFORMATION                    = 43888,
+    NPC_SPIKED_TENTACLE_TRIGGER         = 50265,
+
+    // Generic Creatures
+    NPC_INVISIBLE_STALKER               = 42098
 };
 
-enum goId
+enum BoTGameObjects
 {
-    GO_TWILIGHT_PORTAL_1 = 205950,
-    GO_TWILIGHT_PORTAL_2 = 205951,
-};
-enum Spells
-{
-    SPELL_MALEVOLENT_STRIKES_DEBUFF = 83908,
-    SPELL_MALEVOLENT_STRIKES = 39171,
-    SPELL_FRENZIED_ASSAULT = 83693,
-    SPELL_SHADOW_WARPED = 83952,
-    SPELL_UNRESPONSIVE_DRAKE = 86003,
-    SPELL_UNRESPONSIVE_WHELP = 86022,
-    SPELL_BIND_WILL = 83432,
-    SPELL_DRAGON_VENGEANCE = 87683,
-    SPELL_BERSERK_HALFUS = 26662,
-    SPELL_FIREBALL_BARADGE = 83706,
-    SPELL_TIME_DILATION = 83601,
-    SPELL_FIREBALL = 83862,
-    SPELL_BERSERK_THERALION = 47008,
-    SPELL_DAZZLING_DESTRUCTION_MISSILE = 86386,
-    SPELL_DAZZLING_DESTRUCTION_SUMMON = 86385,
-    SPELL_DAZZLING_DESTRUCTION_VISUAL = 86383,
-    SPELL_ENGULFING_MAGIC = 86622,
-    SPELL_FABOLOUS_FLAMES = 86497,
-    SPELL_FABOLOUS_FLAME_VISUAL = 86506,
-    SPELL_TWILIGHT_METEORITE_TARGET = 88518,
-    SPELL_TWILIGHT_BLAST = 86369,
-    SPELL_TWILIGHT_SHIFT = 93051,
-    SPELL_SHIFTING_REALITY = 93055,
-    SPELL_BLACKOUT = 86788,
-    SPELL_BLACKOUT_DMG = 86825,
-    SPELL_DEVOURING_FLAMES = 86840,
-    SPELL_DEVOURING_FLAMES_TRG = 86844,
-    SPELL_DEEP_BREATH = 86059,
-    SPELL_TWILIGHT_METEORITE = 86013,
-    SPELL_TWILIGHT_FLAME = 86194,
-    //SPELL_HYDROLANCE = 82752,
-    //SPELL_WATERBOMB = 82699,
-    //SPELL_HEART_OF_ICE = 82655,
-    //SPELL_GLACIATE = 92508,
-    //SPELL_BURNING_BLOOD = 82660,
-    //SPELL_FLAME_TORRENT = 82777,
-    //SPELL_AEGIS_OF_FLAMES = 92512,
+    GO_HALFUS_ENTRANCE                  = 205222,
+    GO_HALFUS_EXIT                      = 205223,
+    GO_DRAGON_SIBLINGS_DOOR_ENTRANCE    = 205224,
+    GO_DRAGON_SIBLINGS_DOOR_EXIT        = 205225,
+    GO_ASCENDANT_COUNCIL_ENTRANCE       = 205226,
+    GO_ASCENDANT_COUNCIL_EXIT           = 205227,
+    GO_CHOGALL_ENTRANCE                 = 205228,
+    GO_WHELP_CAGE                       = 205087,
+    GO_WHELP_CAGE_BASE                  = 205088,
+    GO_GRIM_BATOL_RAID_TRAP_DOOR        = 205898
 };
 
-enum Defines
+enum BoTActions
 {
-    RANDOM_DRAGON_SLATE_DRAKE = 1,
-    RANDOM_DRAGON_NETHER_SCION = 2,
-    RANDOM_DRAGON_STORM_RIDER = 3,
-    RANDOM_DRAGON_TIME_WARDEN = 1,
-    RANDOM_DRAGON_ORPHANED_WHELP = 2,
+    // Halfus Wyrmbreaker
+    ACTION_ENABLE_MALEVOLENT_STRIKES        = 1,
+    ACTION_ENABLE_FRENZIED_ASSAULT          = 2,
+    ACTION_ENABLE_SHADOW_NOVA               = 3,
+    ACTION_ENABLE_FIREBALL_BARRAGE          = 1,
+    ACTION_ENABLE_SCORCHING_BREATH          = 2,
+    ACTION_CAST_DRAGONS_VENGEANCE           = 3,
+    ACTION_MOVE_OUT_OF_CAGE                 = 4,
+
+    // Theralion and Valiona
+    ACTION_START_ARGUMENT_INTRO             = 1,
+
+    // Cho'Gall (Non-Boss version)
+    ACTION_TALK_INTRO_HALFUS_WYRMBREAKER    = 1,
+
+    // Cho'Gall (Boss)
+    ACTION_TALK_THERALION_AND_VALIONA_INTRO = 1,
+    ACTION_TALK_THERALION_AND_VALIONA_DEAD  = 2,
+    ACTION_TALK_ASCENDANT_COUNCIL_INTRO_1   = 3,
+    ACTION_TALK_ASCENDANT_COUNCIL_INTRO_2   = 4,
+    ACTION_TALK_ASCENDANT_COUNCIL_INTRO_3   = 5,
+    ACTION_TALK_CHOGALL_INTRO               = 6
 };
 
-enum DataVar
+enum BoTEvents
 {
-    DATA_PHASE,
-    DATA_ENGULFING_COUNT,
-    DATA_DAZZLING_DESTRUCTION,
-    DATA_HB_VALIONA_THERALION = 10,
-    DATA_ORB_0 = 12,
-    DATA_ORB_1 = 13,
+    EVENT_CAST_DANCING_FLAMES = 1,
+    EVENT_CHOGALL_TALK_THERALION_AND_VALIONA_DEAD,
 };
 
-enum MovePoints
+enum BoTSpells
 {
-    POINT_VALIONA_TAKEOFF,
-    POINT_VALIONA_PLACE,
-    POINT_VALIONA_LAND,
-    POINT_THERALION_TAKEOFF,
-    POINT_THERALION_PLACE,
-    POINT_THERALION_LAND,
-    POINT_CYCLON_WIND,
+    SPELL_DANCING_FLAMES_VISUAL = 83962,
+    SPELL_BERSERK               = 26662
 };
 
-enum Actions
+template<class AI>
+AI* GetBastionOfTwilightAI(Creature* creature)
 {
-    ACTION_VALIONA_AIRBORNE,
-    ACTION_THERALION_AIRBORNE,
-    ACTION_IGNACIOUS_JUMPS,
-    ACTION_INGACIOUS_CHARGE,
-};
+    return GetInstanceAI<AI>(creature, BoTScriptName);
+}
 
-static const Position Positions[2] =
-{
-    {5.2541615f,1.5149917f,4.9161961f,0.0000001f},
-    {5.5616511f,1.1453654f,4.6541651f,0.0000001f},
-};
+#define RegisterBastionOfTwilightCreatureAI(ai_name) RegisterCreatureAIWithFactory(ai_name, GetBastionOfTwilightAI)
 
-enum Spells_Destruction
+template<class AI>
+AI* GetBastionOfTwilightAI(GameObject* go)
 {
-    SPELL_SUMMON_DESTRUCTION = 86385,
-    SPELL_DESTRUCTION_VISUAL = 86383,
-    SPELL_DESTRUCTION_PROCS  = 92926,
-};
-
-enum Waypoints
-{
-    WALK_FELUDIUS = 14,
-};
-
-enum Talks
-{
-    SAY_PHASE3_FELUDIUS = 4,
-};
+    return GetInstanceAI<AI>(go, BoTScriptName);
+}
 
 #endif

@@ -1,369 +1,520 @@
 /*
- * Copyright (C) 2017-2019 AshamaneProject <https://github.com/AshamaneProject>
- * Copyright (C) 2005 - 2011 MaNGOS <http://www.getmangos.org/>
- * Copyright (C) 2008 - 2011 TrinityCore <http://www.trinitycore.org/>
- * Copyright (C) 2011 - 2012 ArkCORE <http://www.arkania.net/>
- * Copyright (C) 2008-2014 Forgotten Lands <http://www.forgottenlands.eu/>
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the
- * Free Software Foundation; either version 2 of the License, or (at your
- * option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program. If not, see <http://www.gnu.org/licenses/>.
- */
+* This file is part of the TrinityCore Project. See AUTHORS file for Copyright information
+*
+* This program is free software; you can redistribute it and/or modify it
+* under the terms of the GNU General Public License as published by the
+* Free Software Foundation; either version 2 of the License, or (at your
+* option) any later version.
+*
+* This program is distributed in the hope that it will be useful, but WITHOUT
+* ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+* FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+* more details.
+*
+* You should have received a copy of the GNU General Public License along
+* with this program. If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #include "ScriptMgr.h"
+#include "CreatureAI.h"
 #include "bastion_of_twilight.h"
+#include "GameObject.h"
+#include "InstanceScript.h"
+#include "Map.h"
+#include "MotionMaster.h"
+#include "TemporarySummon.h"
+#include "VehicleDefines.h"
+#include "WorldPacket.h"
 
-#define MAX_ENCOUNTER 5
-
-class instance_the_bastion_of_twilight : public InstanceMapScript
+ObjectData const creatureData[] =
 {
-public:
-    instance_the_bastion_of_twilight() : InstanceMapScript("instance_the_bastion_of_twilight", 671) { }
+    { BOSS_HALFUS_WYRMBREAKER,          DATA_HALFUS_WYRMBREAKER             },
+    { BOSS_THERALION,                   DATA_THERALION                      },
+    { BOSS_VALIONA,                     DATA_VALIONA                        },
+    { BOSS_IGNACIOUS,                   DATA_IGNACIOUS                      },
+    { BOSS_FELUDIUS,                    DATA_FELUDIUS                       },
+    { BOSS_TERRASTRA,                   DATA_TERRASTRA                      },
+    { BOSS_ARION,                       DATA_ARION                          },
+    { BOSS_ELEMENTIUM_MONSTROSITY,      DATA_ELEMENTIUM_MONSTROSITY         },
+    { BOSS_CHOGALL,                     DATA_CHOGALL                        },
+    { BOSS_SINESTRA,                    DATA_SINESTRA                       },
+    { NPC_PROTO_BEHEMOTH,               DATA_PROTO_BEHEMOTH                 },
+    { NPC_ASCENDANT_COUNCIL_CONTROLLER, DATA_ASCENDANT_COUNCIL_CONTROLLER   },
+    { NPC_CORRUPTION,                   DATA_CORRUPTION                     },
+    { 0,                                0                                   } // END
+};
 
-    InstanceScript* GetInstanceScript(InstanceMap* map) const override
-    {
-        return new instance_the_bastion_of_twilight_InstanceMapScript(map);
-    }
+ObjectData const gameobjectData[] =
+{
+    { GO_GRIM_BATOL_RAID_TRAP_DOOR, DATA_GRIM_BATOL_RAID_TRAP_DOOR  },
+    { 0,                            0                               } // END
+};
 
-    struct instance_the_bastion_of_twilight_InstanceMapScript: public InstanceScript
-    {
-        instance_the_bastion_of_twilight_InstanceMapScript(InstanceMap* map) : InstanceScript(map) {}
+DoorData const doorData[] =
+{
+    { GO_HALFUS_ENTRANCE,                   DATA_HALFUS_WYRMBREAKER,        DOOR_TYPE_ROOM      },
+    { GO_HALFUS_EXIT,                       DATA_HALFUS_WYRMBREAKER,        DOOR_TYPE_PASSAGE   },
+    { GO_DRAGON_SIBLINGS_DOOR_ENTRANCE,     DATA_THERALION_AND_VALIONA,     DOOR_TYPE_ROOM      },
+    { GO_DRAGON_SIBLINGS_DOOR_EXIT,         DATA_THERALION_AND_VALIONA,     DOOR_TYPE_PASSAGE   },
+    { GO_ASCENDANT_COUNCIL_ENTRANCE,        DATA_ASCENDANT_COUNCIL,         DOOR_TYPE_ROOM      },
+    { GO_ASCENDANT_COUNCIL_EXIT,            DATA_ASCENDANT_COUNCIL,         DOOR_TYPE_PASSAGE   },
+    { GO_CHOGALL_ENTRANCE,                  DATA_CHOGALL,                   DOOR_TYPE_ROOM      },
+    { 0,                                    0,                              DOOR_TYPE_ROOM      } // END
+};
 
-        void Initialize() override
+uint32 HalfusDragonEntries[] =
+{
+    NPC_NETHER_SCION,
+    NPC_SLATE_DRAGON,
+    NPC_STORM_RIDER,
+    NPC_TIME_WARDEN,
+    NPC_ORPHANED_EMERALD_WELP
+};
+
+Position const BreathFlightTargetStalkerSortPos = { -740.677f, -592.328f, 859.455f };
+
+class instance_bastion_of_twilight : public InstanceMapScript
+{
+    public:
+        instance_bastion_of_twilight() : InstanceMapScript(BoTScriptName, 671) { }
+
+        struct instance_bastion_of_twilight_InstanceMapScript : public InstanceScript
         {
-             for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
-                 uiEncounter[i] = NOT_STARTED;
-
-             uiFiendKills = 0;
-             uiTeralionValionaHP = 0;
-             uiAscendantCouncilPhase = 1;
-        }
-
-        bool IsEncounterInProgress() const override
-        {
-            for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
-                if (uiEncounter[i] == IN_PROGRESS)
-                    return true;
-
-             return false;
-        }
-
-        void OnCreatureCreate(Creature* creature) override
-        {
-            Map::PlayerList const &players = instance->GetPlayers();
-
-            if (!players.isEmpty())
+            instance_bastion_of_twilight_InstanceMapScript(InstanceMap* map) : InstanceScript(map)
             {
-                if (Player* pPlayer = players.begin()->GetSource())
-                    uiTeamInInstance = pPlayer->GetTeam();
+                SetHeaders(DataHeader);
+                SetBossNumber(!map->IsHeroic() ? EncounterCountNormal : EncounterCountHeroic); // Sinestra only in heroic mode
+                LoadDoorData(doorData);
+                LoadObjectData(creatureData, gameobjectData);
+                _unresponsiveDragonEntryFirst = 0;
+                _unresponsiveDragonEntrySecond = 0;
+                _deadOrphanedEmeraldWhelps = 0;
+                _lastAreatriggerIndex = 0;
+                _fullHeroicId = instance->IsHeroic();
+                GenerateHalfusDragonData();
             }
 
-            switch (creature->GetEntry())
+            void GenerateHalfusDragonData()
             {
-                case BOSS_WYRMBREAKER:
-                    uiWyrmbreaker = creature->GetGUID();
-                    if (Creature * SlateDrake = GetCreature(NPC_SLATE_DRAKE))
-                    {
-                        if (!SlateDrake->HasAura(SPELL_UNRESPONSIVE_DRAKE))
-                        {
-                            SlateDrake->AddAura(SPELL_MALEVOLENT_STRIKES,creature);
-                        }
-                    }
-                    if (Creature * StormRider = GetCreature(NPC_STORM_RIDER))
-                    {
-                        if (!StormRider->HasAura(SPELL_UNRESPONSIVE_DRAKE))
-                        {
-                            StormRider->AddAura(SPELL_SHADOW_WARPED,creature);
-                        }
-                    }
-                    if (Creature * NetherScion = GetCreature(NPC_NETHER_SCION))
-                    {
-                        if (!NetherScion->HasAura(SPELL_UNRESPONSIVE_DRAKE))
-                        {
-                            NetherScion->AddAura(SPELL_FRENZIED_ASSAULT,creature);
-                        }
-                    }
-                    break;
-                case BOSS_VALIONA:
-                    uiValiona = creature->GetGUID();
-                    break;
-                case BOSS_THERALION:
-                    uiTheralion = creature->GetGUID();
-                    break;
-                case BOSS_FELUDIUS:
-                    uiFeludius = creature->GetGUID();
-                    break;
-                case BOSS_IGNACIOUS:
-                    uiIgnacious = creature->GetGUID();
-                    break;
-                case BOSS_ARION:
-                    uiArion = creature->GetGUID();
-                    break;
-                case BOSS_TERRASTRA:
-                    uiTerrastra = creature->GetGUID();
-                    break;
-                case BOSS_MONSTROSITY:
-                    uiMonstrosity = creature->GetGUID();
-                    break;
-                case BOSS_CHOGALL:
-                    uiChogall = creature->GetGUID();
-                    break;
-                case BOSS_SINESRTA:
-                    uiSinestra = creature->GetGUID();
-                    break;
-                case NPC_SLATE_DRAKE:
-                    if (uiRandomDragons[0] == RANDOM_DRAGON_SLATE_DRAKE || uiRandomDragons[1] == RANDOM_DRAGON_SLATE_DRAKE)
-                    {
-                        creature->AddAura(SPELL_UNRESPONSIVE_DRAKE,creature);
-                        creature->AddNpcFlag(UNIT_NPC_FLAG_GOSSIP);
-                    }
-                    uiSlateDrake = creature->GetGUID();
-                    creature->SetReactState(REACT_PASSIVE);
-                    creature->AddUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
-                    break;
-                case NPC_STORM_RIDER:
-                    if (uiRandomDragons[0] == RANDOM_DRAGON_STORM_RIDER || uiRandomDragons[1] == RANDOM_DRAGON_STORM_RIDER)
-                    {
-                        creature->AddAura(SPELL_UNRESPONSIVE_DRAKE,creature);
-                        creature->AddUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
-                    }
-                    uiStormRider = creature->GetGUID();
-                    creature->SetReactState(REACT_PASSIVE);
-                    creature->AddNpcFlag(UNIT_NPC_FLAG_GOSSIP);
-                    break;
-                case NPC_NETHER_SCION:
-                    if (uiRandomDragons[0] == RANDOM_DRAGON_NETHER_SCION || uiRandomDragons[1] == RANDOM_DRAGON_NETHER_SCION)
-                    {
-                        creature->AddAura(SPELL_UNRESPONSIVE_DRAKE,creature);
-                        creature->AddUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
-                    }
-                    uiNetherScion = creature->GetGUID();
-                    creature->SetReactState(REACT_PASSIVE);
-                    creature->AddNpcFlag(UNIT_NPC_FLAG_GOSSIP);
-                    break;
-                case NPC_TIME_WARDEN:
-                    uiTimeWarden = creature->GetGUID();
-                    creature->SetReactState(REACT_PASSIVE);
-                    creature->AddUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
-                    creature->AddNpcFlag(UNIT_NPC_FLAG_GOSSIP);
-                case NPC_PROTO_BEHEMOTH:
-                    uiProtoBehemoth = creature->GetGUID();
-                    if (Unit * TimeWarden = GetCreature(NPC_TIME_WARDEN))
-                    {
-                        if (!TimeWarden->HasAura(SPELL_UNRESPONSIVE_DRAKE))
-                        {
-                            // TimeWarden->AddAura(SPELL_DANCING_FLAMES,creature);
-                        }
-                    }
-                    break;
-                case NPC_CYCLON_WIND:
-                    uiCyclonWinds = creature->GetGUID();
-                    break;
-            }
-        }
-        void SetGuidData(uint32 id, ObjectGuid data) override
-        {
-            switch (id)
-            {
-                case DATA_HB_VALIONA_THERALION:
-                    uiValionaTheralionHealth = data ;
-                    break;
-                case DATA_ORB_0:
-                    uiOrb0 = data;
-                    break;
-                case DATA_ORB_1:
-                    uiOrb1 = data;
-                    break;
-            }
-        }
+                for (uint8 i = 0; i < 5; i++)
+                    _activeDragonEntries.insert(HalfusDragonEntries[i]);
 
-        ObjectGuid GetGuidData(uint32 identifier) const override
-        {
-            switch (identifier)
-            {
-                case DATA_WYRMBREAKER:                  return uiWyrmbreaker;
-                case DATA_VALIONA:                        return uiValiona;
-                case DATA_THERALION:                    return uiTheralion;
-                case DATA_FELUDIUS:                        return uiFeludius;
-                case DATA_IGNACIOUS:                    return uiIgnacious;
-                case DATA_ARION:                        return uiArion;
-                case DATA_TERRASTRA:                    return uiTerrastra;
-                case DATA_MONSTROSITY:                    return uiMonstrosity;
-                case DATA_CHOGALL:                        return uiChogall;
-                case DATA_SINESTRA:                     return uiSinestra;
-                case DATA_HB_VALIONA_THERALION:         return uiValionaTheralionHealth;
-                case DATA_ORB_0:                        return uiOrb0;
-                case DATA_ORB_1:                        return uiOrb1;
-                case NPC_SLATE_DRAKE:                    return uiSlateDrake;
-                case NPC_STORM_RIDER:                    return uiStormRider;
-                case NPC_NETHER_SCION:                    return uiNetherScion;
-                case NPC_TIME_WARDEN:                    return uiTimeWarden;
-                case NPC_PROTO_BEHEMOTH:                return uiProtoBehemoth;
-                case NPC_CYCLON_WIND:                   return uiCyclonWinds;
+                if (!instance->IsHeroic())
+                {
+                    for (uint8 i = 0; i < 2; i++)
+                    {
+                        uint32 entry = Trinity::Containers::SelectRandomContainerElement(_activeDragonEntries);
+                        _activeDragonEntries.erase(entry);
+                        if (i == 0)
+                            _unresponsiveDragonEntryFirst = entry;
+                        else
+                            _unresponsiveDragonEntrySecond = entry;
+                    }
+                }
             }
 
-            return ObjectGuid::Empty;
-        }
-
-        void SetData(uint32 type, uint32 data) override
-        {
-            switch (type)
+            void OnCreatureCreate(Creature* creature) override
             {
-                case DATA_WYRMBREAKER_EVENT:
-                    uiEncounter[0] = data;
-                    break;
-                case DATA_VALIONA_THERALION_EVENT:
-                    uiEncounter[1] = data;
-                    break;
-                case DATA_COUNCIL_EVENT:
-                    uiEncounter[2] = data;
-                    break;
-                case DATA_CHOGALL_EVENT:
-                    uiEncounter[3] = data;
-                    break;
-                case DATA_SINESTRA_EVENT:
-                    uiEncounter[4] = data;
-                    break;
-                case DATA_VALIONA_TERALION_HP:
-                    uiTeralionValionaHP = data;
-                    data = 0;
-                    break;
-                case DATA_FIEND_KILLS:
-                    uiFiendKills++;
-                    break;
-            }
+                InstanceScript::OnCreatureCreate(creature);
 
-            if (data == DONE)
-                SaveToDB();
-        }
-
-        uint32 GetData(uint32 type) const override
-        {
-            switch (type)
-            {
-                case DATA_WYRMBREAKER_EVENT:                return uiEncounter[0];
-                case DATA_VALIONA_THERALION_EVENT:            return uiEncounter[1];
-                case DATA_COUNCIL_EVENT:                    return uiEncounter[2];
-                case DATA_CHOGALL_EVENT:                    return uiEncounter[3];
-                case DATA_SINESTRA_EVENT:                   return uiEncounter[4];
-                case DATA_VALIONA_TERALION_HP:              return uiTeralionValionaHP;
-                case DATA_FIEND_KILLS:                      return uiFiendKills;
-            }
-
-            return 0;
-        }
-
-        void ChangeState(ObjectGuid guid,bool active,bool finalphase)
-        {
-            Creature * creature = instance->GetCreature(guid);
-            uint16 talkid;
-            uint16 wayid;
-            if (finalphase)
-            {
                 switch (creature->GetEntry())
                 {
-                case BOSS_FELUDIUS:
-                    talkid = SAY_PHASE3_FELUDIUS;
-                    wayid = WALK_FELUDIUS;
-                    break;
-                }
-                creature->AI()->Talk(talkid);
-                creature->UpdateWaypointID(wayid);
-            }
-            if (active)
-            {
-                creature->RemoveAura(creature->GetAura(8611,guid));
-            }
-            else
-            {
-                creature->AddAura(8611,creature);
-            }
-        }
-
-        void ShiftPhase()
-        {
-            uiAscendantCouncilPhase++;
-            if (uiAscendantCouncilPhase == 2)
-            {
-                ChangeState(GetGuidData(DATA_FELUDIUS),false,false);
-                ChangeState(GetGuidData(DATA_IGNACIOUS),false,false);
-                ChangeState(GetGuidData(DATA_ARION),true,false);
-                ChangeState(GetGuidData(DATA_TERRASTRA),true,false);
-            }
-            else if (uiAscendantCouncilPhase == 3)
-            {
-            }
-        }
-
-        void Update(uint32 const diff) override
-        {
-            if (uiHalfusNormalTimer <= diff)
-            {
-                uiRandomDragons[0] = rand() % 3 +1;
-                switch (uiRandomDragons[0])
-                {
-                    case RANDOM_DRAGON_STORM_RIDER:
-                        uiRandomDragons[1] = rand() % 1 + 1;
+                    case NPC_NETHER_SCION:
+                    case NPC_SLATE_DRAGON:
+                    case NPC_STORM_RIDER:
+                    case NPC_TIME_WARDEN:
+                        if (Creature* halfus = GetCreature(DATA_HALFUS_WYRMBREAKER))
+                            halfus->AI()->JustSummoned(creature);
+                    case NPC_ORPHANED_EMERALD_WELP:
+                    case NPC_SPIKE:
+                        _halfusEncounterGUIDs.insert(creature->GetGUID());
                         break;
-                    case RANDOM_DRAGON_NETHER_SCION:
-                        uiRandomDragons[1] = rand() % 1 + 2;
-                        if (uiRandomDragons[1] == RANDOM_DRAGON_NETHER_SCION)
+                    case NPC_INVISIBLE_STALKER:
+                        if (creature->GetPositionZ() < 850.0f)
+                            _dancingFlamesInvisibleStalkerGUIDs.insert(creature->GetGUID());
+                        break;
+                    case NPC_COLLAPSING_TWILIGHT_PORTAL:
+                        if (Creature* valiona = GetCreature(DATA_VALIONA))
+                            valiona->AI()->JustSummoned(creature);
+
+                        _collapsingTwilightPortalGUIDs.insert(creature->GetGUID());
+                        break;
+                    case NPC_CONVECTIVE_FLAMES:
+                    case NPC_TWILIGHT_SENTRY:
+                    case NPC_TWILIGHT_RIFT:
+                        if (Creature* valiona = GetCreature(DATA_VALIONA))
+                            valiona->AI()->JustSummoned(creature);
+                        break;
+                    case NPC_DAZZLING_DESTRUCTION_STALKER:
+                    case NPC_FABULOUS_FLAMES:
+                        if (Creature* theralion = GetCreature(DATA_THERALION))
+                            theralion->AI()->JustSummoned(creature);
+                        break;
+                    case NPC_VALIONA_DUMMY:
+                        _valionaDummyGUIDs.insert(creature->GetGUID());
+                        if (creature->GetOrientation() == 0.0f) // Blizzard uses a single dummy with 0.0f orientation as aura target dummy
+                            _valionaAuraDummyGUID = creature->GetGUID();
+                        break;
+                    case NPC_UNSTABLE_TWILIGHT:
+                        _unstableTwilightGUIDs.insert(creature->GetGUID());
+                        break;
+                    case BOSS_FELUDIUS:
+                    case BOSS_IGNACIOUS:
+                    case BOSS_ARION:
+                    case BOSS_TERRASTRA:
+                        if (creature->isDead() && GetBossState(DATA_ASCENDANT_COUNCIL) != DONE)
+                            creature->Respawn();
+                        break;
+                    case NPC_SPIKED_TENTACLE_TRIGGER:
+                        if (Creature* chogall = GetCreature(DATA_CHOGALL))
+                            chogall->AI()->JustSummoned(creature);
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            void OnGameObjectCreate(GameObject* go) override
+            {
+                InstanceScript::OnGameObjectCreate(go);
+
+                if (go->GetEntry() == GO_GRIM_BATOL_RAID_TRAP_DOOR && instance->IsHeroic() && _fullHeroicId && GetBossState(DATA_CHOGALL) == DONE)
+                    go->SetGoState(GO_STATE_ACTIVE);
+            }
+
+            bool SetBossState(uint32 type, EncounterState state) override
+            {
+                if (!InstanceScript::SetBossState(type, state))
+                    return false;
+
+                switch (type)
+                {
+                    case DATA_HALFUS_WYRMBREAKER:
+                        if (state == IN_PROGRESS)
                         {
-                            uiRandomNumber = rand() % 10 + 1;
-                            if (uiRandomNumber <= 5)
+                            for (ObjectGuid guid : _halfusEncounterGUIDs)
                             {
-                                uiRandomDragons[1] = RANDOM_DRAGON_STORM_RIDER;
-                            } else uiRandomDragons[1] = RANDOM_DRAGON_SLATE_DRAKE;
+                                if (Creature* creature = instance->GetCreature(guid))
+                                {
+                                    if (creature->GetEntry() != NPC_SPIKE
+                                        && creature->GetEntry() != _unresponsiveDragonEntryFirst
+                                        && creature->GetEntry() != _unresponsiveDragonEntrySecond)
+                                    {
+                                        switch (creature->GetEntry())
+                                        {
+                                            case NPC_NETHER_SCION:
+                                                creature->UpdateEntry(NPC_NETHER_SCION_ENCOUNTER);
+                                                break;
+                                            case NPC_SLATE_DRAGON:
+                                                creature->UpdateEntry(NPC_SLATE_DRAGON_ENCOUNTER);
+                                                break;
+                                            case NPC_STORM_RIDER:
+                                                creature->UpdateEntry(NPC_STORM_RIDER_ENCOUNTER);
+                                                break;
+                                            case NPC_TIME_WARDEN:
+                                                creature->UpdateEntry(NPC_TIME_WARDEN_ENCOUNTER);
+                                                break;
+                                            default:
+                                                break;
+                                        }
+
+                                        creature->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
+
+                                        if (creature->GetEntry() != NPC_ORPHANED_EMERALD_WELP)
+                                            creature->SetFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_SPELLCLICK);
+                                    }
+                                }
+                            }
+                        }
+                        else if (state == FAIL)
+                        {
+                            _halfusEncounterGUIDs.clear();
+                            _deadOrphanedEmeraldWhelps = 0;
+                            events.CancelEvent(EVENT_CAST_DANCING_FLAMES);
+                        }
+                        else if (state == DONE)
+                            events.CancelEvent(EVENT_CAST_DANCING_FLAMES);
+                        break;
+                    case DATA_THERALION_AND_VALIONA:
+                        if (state == FAIL)
+                        {
+                            for (ObjectGuid guid : _valionaDummyGUIDs)
+                                if (Creature* creature = instance->GetCreature(guid))
+                                    creature->DespawnOrUnsummon(Milliseconds(0), Seconds(30));
+
+                            for (ObjectGuid guid : _unstableTwilightGUIDs)
+                                if (Creature* creature = instance->GetCreature(guid))
+                                    creature->DespawnOrUnsummon(Milliseconds(0), Seconds(30));
+
+                            _valionaDummyGUIDs.clear();
+                            _collapsingTwilightPortalGUIDs.clear();
+                        }
+                        else if (state == DONE)
+                        {
+                            for (ObjectGuid guid : _valionaDummyGUIDs)
+                                if (Creature* creature = instance->GetCreature(guid))
+                                    creature->DespawnOrUnsummon();
+
+                            for (ObjectGuid guid : _unstableTwilightGUIDs)
+                                if (Creature* creature = instance->GetCreature(guid))
+                                    creature->DespawnOrUnsummon();
+
+                            events.ScheduleEvent(EVENT_CHOGALL_TALK_THERALION_AND_VALIONA_DEAD, 6s);
                         }
                         break;
-                    case RANDOM_DRAGON_SLATE_DRAKE:
-                        uiRandomDragons[1] = rand() % 1 + 2;
+                    default:
                         break;
                 }
-                uiRandomDragons[2] = rand() % 1 + 1;
-            } else uiHalfusNormalTimer -= diff;
-        }
 
-    private:
-        ObjectGuid uiWyrmbreaker;
-        ObjectGuid uiValiona;
-        ObjectGuid uiTheralion;
-        ObjectGuid uiFeludius;
-        ObjectGuid uiArion;
-        ObjectGuid uiIgnacious;
-        ObjectGuid uiTerrastra;
-        ObjectGuid uiMonstrosity;
-        ObjectGuid uiChogall;
-        ObjectGuid uiSinestra;
-        ObjectGuid uiSlateDrake;
-        ObjectGuid uiStormRider;
-        ObjectGuid uiNetherScion;
-        ObjectGuid uiProtoBehemoth;
-        ObjectGuid uiTimeWarden;
-        ObjectGuid uiValionaTheralionHealth;
-        ObjectGuid uiCyclonWinds;
-        ObjectGuid uiOrb0;
-        ObjectGuid uiOrb1;
-        uint32 uiTeralionValionaHP;
-        uint32 uiRandomDragons[3];
-        uint32 uiRandomNumber;
-        uint32 uiHalfusNormalTimer;
-        uint32 uiTeamInInstance;
-        uint32 uiFiendKills;
-        uint32 uiEncounter[MAX_ENCOUNTER];
-        uint8  uiAscendantCouncilPhase;
-    };
+                if (state == DONE && !instance->IsHeroic())
+                    _fullHeroicId = 0;
+                return true;
+            }
+
+            void OnUnitDeath(Unit* unit) override
+            {
+                if (unit->GetEntry() == NPC_ORPHANED_EMERALD_WELP)
+                {
+                    _deadOrphanedEmeraldWhelps++;
+                    if (_deadOrphanedEmeraldWhelps == 8)
+                        if (Creature* protoBehemoth = GetCreature(DATA_PROTO_BEHEMOTH))
+                            protoBehemoth->AI()->DoAction(ACTION_CAST_DRAGONS_VENGEANCE);
+                }
+            }
+
+            void SetData(uint32 type, uint32 data) override
+            {
+                switch (type)
+                {
+                    case DATA_CAST_DRAGON_BUFFS:
+                        if (data == DRAGON_BUFFS_HALFUS_WYRMBREAKER)
+                        {
+                            if (Creature* halfus = GetCreature(DATA_HALFUS_WYRMBREAKER))
+                            {
+                                for (uint32 entry : _activeDragonEntries)
+                                {
+                                    if (entry == NPC_SLATE_DRAGON)
+                                        halfus->AI()->DoAction(ACTION_ENABLE_MALEVOLENT_STRIKES);
+                                    if (entry == NPC_NETHER_SCION)
+                                        halfus->AI()->DoAction(ACTION_ENABLE_FRENZIED_ASSAULT);
+                                    if (entry == NPC_STORM_RIDER)
+                                        halfus->AI()->DoAction(ACTION_ENABLE_SHADOW_NOVA);
+                                }
+                            }
+                        }
+                        else if (data == DRAGON_BUFFS_PROTO_BEHEMOTH)
+                        {
+                            if (Creature* protoBehemoth = GetCreature(DATA_PROTO_BEHEMOTH))
+                            {
+                                for (uint32 entry : _activeDragonEntries)
+                                {
+                                    if (entry == NPC_ORPHANED_EMERALD_WELP)
+                                        protoBehemoth->AI()->DoAction(ACTION_ENABLE_SCORCHING_BREATH);
+                                    if (entry == NPC_TIME_WARDEN)
+                                    {
+                                        protoBehemoth->AI()->DoAction(ACTION_ENABLE_FIREBALL_BARRAGE);
+                                        events.RescheduleEvent(EVENT_CAST_DANCING_FLAMES, 500ms, 1s);
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    case DATA_OPEN_ORPHANED_EMERALD_WHELP_CAGE:
+                        for (ObjectGuid guid : _halfusEncounterGUIDs)
+                            if (Creature* orphanedEmeraldWhelp = instance->GetCreature(guid))
+                                if (orphanedEmeraldWhelp->GetEntry() == NPC_ORPHANED_EMERALD_WELP)
+                                    orphanedEmeraldWhelp->AI()->DoAction(ACTION_MOVE_OUT_OF_CAGE);
+                        break;
+                    case DATA_AT_HALFUS_INTRO:
+                        if (_lastAreatriggerIndex < AT_INDEX_HALFUS_WYRMBREAKER_INTRO)
+                        {
+                            _lastAreatriggerIndex = AT_INDEX_HALFUS_WYRMBREAKER_INTRO;
+                            SaveToDB();
+                        }
+                        break;
+                    case DATA_AT_THERALION_AND_VALIONA_INTRO:
+                        if (_lastAreatriggerIndex < AT_INDEX_THERALION_AND_VALIONA_INTRO)
+                        {
+                            if (Creature* chogall = GetCreature(DATA_CHOGALL))
+                                chogall->AI()->DoAction(ACTION_TALK_THERALION_AND_VALIONA_INTRO);
+
+                            if (Creature* theralion = GetCreature(DATA_THERALION))
+                                theralion->AI()->DoAction(ACTION_START_ARGUMENT_INTRO);
+
+                            if (Creature* valiona = GetCreature(DATA_VALIONA))
+                                valiona->AI()->DoAction(ACTION_START_ARGUMENT_INTRO);
+
+                            _lastAreatriggerIndex = AT_INDEX_THERALION_AND_VALIONA_INTRO;
+                            SaveToDB();
+                        }
+                        break;
+                    case DATA_AT_ASCENDANT_COUNCIL_INTRO_1:
+                        if (_lastAreatriggerIndex < AT_INDEX_ASCENDANT_COUNCIL_INTRO_1)
+                        {
+                            if (Creature* chogall = GetCreature(DATA_CHOGALL))
+                                chogall->AI()->DoAction(ACTION_TALK_ASCENDANT_COUNCIL_INTRO_1);
+
+                            _lastAreatriggerIndex = AT_INDEX_ASCENDANT_COUNCIL_INTRO_1;
+                            SaveToDB();
+                        }
+                        break;
+                    case DATA_AT_ASCENDANT_COUNCIL_INTRO_2:
+                        if (_lastAreatriggerIndex < AT_INDEX_ASCENDANT_COUNCIL_INTRO_2)
+                        {
+                            if (Creature* chogall = GetCreature(DATA_CHOGALL))
+                                chogall->AI()->DoAction(ACTION_TALK_ASCENDANT_COUNCIL_INTRO_2);
+
+                            _lastAreatriggerIndex = AT_INDEX_ASCENDANT_COUNCIL_INTRO_2;
+                            SaveToDB();
+                        }
+                        break;
+                    case DATA_AT_ASCENDANT_COUNCIL_INTRO_3:
+                        if (_lastAreatriggerIndex < AT_INDEX_ASCENDANT_COUNCIL_INTRO_3)
+                        {
+                            if (Creature* chogall = GetCreature(DATA_CHOGALL))
+                                chogall->AI()->DoAction(ACTION_TALK_ASCENDANT_COUNCIL_INTRO_3);
+
+                            _lastAreatriggerIndex = AT_INDEX_ASCENDANT_COUNCIL_INTRO_3;
+                            SaveToDB();
+                        }
+                        break;
+                    case DATA_AT_CHOGALL_INTRO:
+                        if (_lastAreatriggerIndex < AT_INDEX_CHOGALL_INTRO)
+                        {
+                            if (Creature* chogall = GetCreature(DATA_CHOGALL))
+                                chogall->AI()->DoAction(ACTION_TALK_CHOGALL_INTRO);
+
+                            _lastAreatriggerIndex = AT_INDEX_CHOGALL_INTRO;
+                            SaveToDB();
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            ObjectGuid GetGuidData(uint32 type) const override
+            {
+                switch (type)
+                {
+                    case DATA_RANDOM_VALIONA_DUMMY:
+                        return Trinity::Containers::SelectRandomContainerElement(_valionaDummyGUIDs);
+                    case DATA_VALIONA_AURA_DUMMY:
+                        return _valionaAuraDummyGUID;
+                    default:
+                        break;
+                }
+
+                return ObjectGuid::Empty;
+            }
+
+            uint32 GetData(uint32 type) const override
+            {
+                switch (type)
+                {
+                    case DATA_UNRESPONSIVE_DRAGON_FIRST:
+                        return _unresponsiveDragonEntryFirst;
+                    case DATA_UNRESPONSIVE_DRAGON_SECOND:
+                        return _unresponsiveDragonEntrySecond;
+                    case DATA_DRAGON_CAGE_ENABLED:
+                        return uint8((instance->IsHeroic() || HasActiveOrphanedEmeraldWhelps()));
+                    case DATA_COLLAPSING_TWILIGHT_PORTAL_COUNT:
+                    {
+                        uint8 portalCount = 0;
+                        for (ObjectGuid guid : _collapsingTwilightPortalGUIDs)
+                            if (instance->GetCreature(guid))
+                                portalCount++;
+                        return portalCount;
+                    }
+                    case DATA_FULL_HEROIC_ID:
+                        return _fullHeroicId;
+                    default:
+                        return 0;
+                }
+                return 0;
+            }
+
+            void Update(uint32 diff) override
+            {
+                events.Update(diff);
+
+                while (uint32 eventId = events.ExecuteEvent())
+                {
+                    switch (eventId)
+                    {
+                        case EVENT_CAST_DANCING_FLAMES:
+                            if (ObjectGuid guid = Trinity::Containers::SelectRandomContainerElement(_dancingFlamesInvisibleStalkerGUIDs))
+                                if (Creature* cataclysmStalker = instance->GetCreature(guid))
+                                    cataclysmStalker->CastSpell(cataclysmStalker, SPELL_DANCING_FLAMES_VISUAL, true);
+
+                            events.Repeat(500ms, 1s);
+                            break;
+                        case EVENT_CHOGALL_TALK_THERALION_AND_VALIONA_DEAD:
+                            if (Creature* chogall = GetCreature(DATA_CHOGALL))
+                                chogall->AI()->DoAction(ACTION_TALK_THERALION_AND_VALIONA_DEAD);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            void WriteSaveDataMore(std::ostringstream& data) override
+            {
+                data << _unresponsiveDragonEntryFirst << ' '
+                    << _unresponsiveDragonEntrySecond << ' '
+                    << _lastAreatriggerIndex << ' '
+                    << _fullHeroicId;
+            }
+
+            void ReadSaveDataMore(std::istringstream& data) override
+            {
+                data >> _unresponsiveDragonEntryFirst;
+                data >> _unresponsiveDragonEntrySecond;
+                data >> _lastAreatriggerIndex;
+                data >> _fullHeroicId;
+
+                if (_unresponsiveDragonEntryFirst && _unresponsiveDragonEntrySecond)
+                {
+                    // Clear default generated unresponsive dragon selection and replace it with our saved data
+                    _activeDragonEntries.clear();
+                    for (uint8 i = 0; i < 5; i++)
+                        _activeDragonEntries.insert(HalfusDragonEntries[i]);
+
+                    _activeDragonEntries.erase(_unresponsiveDragonEntryFirst);
+                    _activeDragonEntries.erase(_unresponsiveDragonEntrySecond);
+                }
+            }
+
+            bool HasActiveOrphanedEmeraldWhelps() const
+            {
+                return (_unresponsiveDragonEntryFirst != NPC_ORPHANED_EMERALD_WELP
+                    && _unresponsiveDragonEntrySecond != NPC_ORPHANED_EMERALD_WELP);
+            }
+
+        private:
+            EventMap events;
+            GuidSet _halfusEncounterGUIDs;
+            GuidSet _dancingFlamesInvisibleStalkerGUIDs;
+            GuidSet _valionaDummyGUIDs;
+            GuidSet _unstableTwilightGUIDs;
+            GuidSet _collapsingTwilightPortalGUIDs;
+            ObjectGuid _valionaAuraDummyGUID;
+            std::set<uint32> _activeDragonEntries;
+            uint32 _unresponsiveDragonEntryFirst;
+            uint32 _unresponsiveDragonEntrySecond;
+            uint8 _deadOrphanedEmeraldWhelps;
+            uint8 _lastAreatriggerIndex;
+            uint8 _fullHeroicId;
+        };
+
+        InstanceScript* GetInstanceScript(InstanceMap* map) const override
+        {
+            return new instance_bastion_of_twilight_InstanceMapScript(map);
+        }
 };
-void AddSC_instance_the_bastion_of_twilight()
+
+void AddSC_instance_bastion_of_twilight()
 {
-    new instance_the_bastion_of_twilight();
+    new instance_bastion_of_twilight();
 }

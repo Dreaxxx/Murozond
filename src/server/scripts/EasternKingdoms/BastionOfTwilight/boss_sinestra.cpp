@@ -71,9 +71,9 @@ enum sharedDatas
 enum phases
 {
     PHASE_NONE = 0,
-    PHASE_ONE,
-    PHASE_TWO,
-    PHASE_THREE
+    PHASE_ONE = 1,
+    PHASE_TWO = 2,
+    PHASE_THREE = 3
 };
 
 enum sinestraActions

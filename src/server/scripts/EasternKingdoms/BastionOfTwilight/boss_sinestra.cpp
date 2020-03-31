@@ -169,7 +169,7 @@ class boss_sinestra : public CreatureScript
                 if (Creature* egg = me->SummonCreature(46842, -993.72f, -669.54f, 440.20f, 4.57f, TEMPSUMMON_CORPSE_DESPAWN))
                 {
                     eggs[0] = egg;
-                    egg->SetFlag(UNIT_FLAG_REMOVE_CLIENT_CONTROL);
+                    egg->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_REMOVE_CLIENT_CONTROL);
                     egg->SetReactState(REACT_PASSIVE);
                     egg->AttackStop();
                     egg->StopMoving();
@@ -180,7 +180,7 @@ class boss_sinestra : public CreatureScript
                 if (Creature* egg = me->SummonCreature(46842, -901.25f, -768.70f, 441.35f, 3.33f, TEMPSUMMON_CORPSE_DESPAWN))
                 {
                     eggs[1] = egg;
-                    egg->SetFlag(UNIT_FLAG_REMOVE_CLIENT_CONTROL);
+                    egg->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_REMOVE_CLIENT_CONTROL);
                     egg->SetReactState(REACT_PASSIVE);
                     egg->AttackStop();
                     egg->StopMoving();
@@ -319,8 +319,8 @@ class boss_sinestra : public CreatureScript
                                                 instance->SetGuidData(DATA_ORB_1, orb->GetGUID());
                                         }
 
-                                        orb->SetFlag(UnitFlags(UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
-                                        orb->SetFlag(UNIT_FLAG_REMOVE_CLIENT_CONTROL);
+                                        orb->SetFlag(UNIT_FIELD_FLAGS, UnitFlags(UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
+                                        orb->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_REMOVE_CLIENT_CONTROL);
                                         orb->AddThreat(target, 1000000.0f);
                                         orb->Attack(target, true);
 
@@ -342,11 +342,11 @@ class boss_sinestra : public CreatureScript
                                 orbs[1]->ClearUnitState(UNIT_STATE_CASTING);
 
                                 if (orbs[1]->GetVictim())
-                                    orbs[1]->RemoveFlag(UNIT_FLAG_REMOVE_CLIENT_CONTROL);
+                                    orbs[1]->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_REMOVE_CLIENT_CONTROL);
                                     orbs[1]->GetMotionMaster()->MoveChase(orbs[1]->GetVictim());
 
                                 if (orbs[0]->GetVictim())
-                                    orbs[0]->RemoveFlag(UNIT_FLAG_REMOVE_CLIENT_CONTROL);
+                                    orbs[0]->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_REMOVE_CLIENT_CONTROL);
                                     orbs[0]->GetMotionMaster()->MoveChase(orbs[0]->GetVictim());
                             }
                             break;
@@ -395,7 +395,7 @@ class boss_sinestra : public CreatureScript
                                     target->SetDisableGravity(true);
                                     target->SetCanFly(true);
 
-                                    target->SetFlag(UnitFlags(UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
+                                    target->SetFlag(UNIT_FIELD_FLAGS, UnitFlags(UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
                                     target->GetMotionMaster()->MoveTakeoff(0, target->GetHomePosition());
 
                                     calen->CastSpell(target, SPELL_FIERY_RESOLVE, false);
@@ -485,7 +485,7 @@ class npc_sinestra_twilight_whelp : public CreatureScript
                 if (Creature* essence = me->SummonCreature(48018, pos, TEMPSUMMON_MANUAL_DESPAWN, 0, 0))
                 {
                     DoZoneInCombat(essence);
-                    essence->SetFlag(UnitFlags(UNIT_FLAG_REMOVE_CLIENT_CONTROL | UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
+                    essence->SetFlag(UNIT_FIELD_FLAGS, UnitFlags(UNIT_FLAG_REMOVE_CLIENT_CONTROL | UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
                     essence->SetReactState(REACT_PASSIVE);
                     essence->AttackStop();
                     essence->StopMoving();
@@ -647,7 +647,7 @@ class spell_sinestra_wrack_jump : public SpellScriptLoader
                 targets.resize(2);
             }
 
-            static void Hit(SpellMissInfo /*missInfo*/)
+            void Hit(SpellMissInfo /*missInfo*/)
             {
                 if (!GetHitUnit())
                     return;
@@ -672,7 +672,7 @@ class spell_sinestra_wrack_jump : public SpellScriptLoader
             {
                 OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_sinestra_wrack_jump_SpellScript::SelectTarget, EFFECT_0, TARGET_UNIT_SRC_AREA_ENTRY);
                 OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_sinestra_wrack_jump_SpellScript::SelectTarget, EFFECT_1, TARGET_UNIT_SRC_AREA_ENTRY);
-                BeforeHit += BeforeSpellHitFn(spell_sinestra_wrack_jump_SpellScript::Hit);
+                OnEffectHitTarget += SpellEffectFn(spell_sinestra_wrack_jump_SpellScript::Hit, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
             }
         };
 

@@ -418,12 +418,10 @@ class boss_sinestra : public CreatureScript
 
                                 if (Creature* target = me->FindNearestCreature(NPC_LASER_TRIGGER, 100.0f, true))
                                 {
-                                    target->GetMotionMaster()->MoveTakeoff(0, target->GetHomePosition());
-
+                                    // target->GetMotionMaster()->MoveTakeoff(0, target->GetHomePosition());
+                                    calen->setRegeneratingHealth(false);
                                     calen->CastSpell(target, SPELL_FIERY_RESOLVE, false);
                                     me->CastSpell(target, SPELL_TWILIGHT_POWER, false);
-
-                                    calen->setRegeneratingHealth(false);
                                 }
                             }
 

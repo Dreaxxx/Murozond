@@ -154,6 +154,8 @@ enum BoTCreatures
     NPC_ESSENCE                         = 48018,
     NPC_TWILIGHT_DRAKE                  = 55636,
     NPC_SPITCALLER                      = 48415,
+    NPC_PULSING_TWILIGHT_EGG            = 46842,
+    NPC_FLAME_TRIGGER                   = 51629,
 
     // Generic Creatures
     NPC_INVISIBLE_STALKER               = 42098
@@ -170,7 +172,8 @@ enum BoTGameObjects
     GO_CHOGALL_ENTRANCE                 = 205228,
     GO_WHELP_CAGE                       = 205087,
     GO_WHELP_CAGE_BASE                  = 205088,
-    GO_GRIM_BATOL_RAID_TRAP_DOOR        = 205898
+    GO_GRIM_BATOL_RAID_TRAP_DOOR        = 205898,
+    GO_SINESTRA_CHEST                   =
 };
 
 enum BoTActions

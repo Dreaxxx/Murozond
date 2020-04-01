@@ -162,8 +162,6 @@ class boss_sinestra : public CreatureScript
             {
                 _JustEngagedWith();
 
-                // instance->SendEncounterUnit(ENCOUNTER_FRAME_ENGAGE, me);
-
                 // Sinestra begin fight with 60 % hp
                 events.SetPhase(PHASE_ONE);
                 me->SetHealth(me->CountPctFromMaxHealth(60));
@@ -173,7 +171,7 @@ class boss_sinestra : public CreatureScript
                 me->Yell(YELL_AGGRO, LANG_UNIVERSAL, 0);
 
                 // Summon first egg
-                if (Creature* egg = me->SummonCreature(46842, -993.72f, -669.54f, 440.20f, 4.57f, TEMPSUMMON_CORPSE_DESPAWN))
+                if (Creature* egg = me->SummonCreature(NPC_PULSING_TWILIGHT_EGG, -993.72f, -669.54f, 440.20f, 4.57f, TEMPSUMMON_CORPSE_DESPAWN))
                 {
                     eggs[0] = egg;
                     egg->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_REMOVE_CLIENT_CONTROL);
@@ -184,7 +182,7 @@ class boss_sinestra : public CreatureScript
                 }
 
                 // Summon second egg
-                if (Creature* egg = me->SummonCreature(46842, -901.25f, -768.70f, 441.35f, 3.33f, TEMPSUMMON_CORPSE_DESPAWN))
+                if (Creature* egg = me->SummonCreature(NPC_PULSING_TWILIGHT_EGG, -901.25f, -768.70f, 441.35f, 3.33f, TEMPSUMMON_CORPSE_DESPAWN))
                 {
                     eggs[1] = egg;
                     egg->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_REMOVE_CLIENT_CONTROL);
@@ -198,7 +196,7 @@ class boss_sinestra : public CreatureScript
                 events.ScheduleEvent(EVENT_FLAME_BREATH, 20s, PHASE_ONE);
                 events.ScheduleEvent(EVENT_TWILIGHT_SLICER, 28s, PHASE_ONE);
                 events.ScheduleEvent(EVENT_CHECK_MELEE, 2s, PHASE_ONE);
-                events.ScheduleEvent(EVENT_WHELP, 22s, PHASE_ONE);
+                events.ScheduleEvent(EVENT_WHELP, 45s, PHASE_ONE);
             }
 
             void JustSummoned(Creature* summon) override
@@ -211,7 +209,6 @@ class boss_sinestra : public CreatureScript
             void JustDied(Unit* /*killer*/) override
             {
                 _JustDied();
-                // instance->SendEncounterUnit(ENCOUNTER_FRAME_DISENGAGE, me);
                 instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_ESSENCE_OF_THE_RED);
             }
 
@@ -228,8 +225,8 @@ class boss_sinestra : public CreatureScript
                     me->RemoveAura(SPELL_DRAINED);
                     DoCast(SPELL_MANA_BARRIER);
                     events.ScheduleEvent(EVENT_START_MAGIC_FIGHT, 2s, PHASE_TWO);
-                    events.ScheduleEvent(EVENT_TWILIGHT_DRAKE, 24s, PHASE_TWO);
-                    events.ScheduleEvent(EVENT_SPITECALLER, 24s, PHASE_TWO);
+                    events.ScheduleEvent(EVENT_TWILIGHT_DRAKE, urand(18000,30000), PHASE_TWO);
+                    events.ScheduleEvent(EVENT_SPITECALLER, urand(18000,35000), PHASE_TWO);
                 }
             }
 
@@ -248,7 +245,7 @@ class boss_sinestra : public CreatureScript
 
             void SummonedCreatureDespawn(Creature* summon) override
             {
-                if (summon->GetEntry() == 46842)
+                if (summon->GetEntry() == NPC_PULSING_TWILIGHT_EGG)
                 {
                     killedEggs++;
 
@@ -270,7 +267,7 @@ class boss_sinestra : public CreatureScript
                         events.ScheduleEvent(EVENT_FLAME_BREATH, 20s, PHASE_THREE);
                         events.ScheduleEvent(EVENT_TWILIGHT_SLICER, 28s, PHASE_THREE);
                         events.ScheduleEvent(EVENT_CHECK_MELEE, 2s, PHASE_THREE);
-                        events.ScheduleEvent(EVENT_WHELP, 20s, PHASE_THREE);
+                        events.ScheduleEvent(EVENT_WHELP, 45s, PHASE_THREE);
                     }
                 }
             }

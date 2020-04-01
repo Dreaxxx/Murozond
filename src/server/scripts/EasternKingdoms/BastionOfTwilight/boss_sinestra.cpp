@@ -205,7 +205,6 @@ class boss_sinestra : public CreatureScript
                 }
 
                 events.ScheduleEvent(EVENT_WRACK, 15s, PHASE_ONE);
-                events.ScheduleEvent(EVENT_FLAMES_TRIGGER, 5s, PHASE_ONE);
                 events.ScheduleEvent(EVENT_FLAME_BREATH, 20s, PHASE_ONE);
                 events.ScheduleEvent(EVENT_TWILIGHT_SLICER, 28s, PHASE_ONE);
                 events.ScheduleEvent(EVENT_CHECK_MELEE, 2s, PHASE_ONE);
@@ -222,7 +221,6 @@ class boss_sinestra : public CreatureScript
             void JustDied(Unit* /*killer*/) override
             {
                 _JustDied();
-                instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_ESSENCE_OF_THE_RED);
 
                 // Summon the loot chest
                 if (GameObject* chest = me->SummonGameObject(GO_SINESTRA_CHEST, -962.91f, -749.71f, 438.59f, 0f, GO_SUMMON_TIMED_DESPAWN))
@@ -242,6 +240,7 @@ class boss_sinestra : public CreatureScript
                     me->RemoveAura(SPELL_DRAINED);
                     DoCast(SPELL_MANA_BARRIER);
                     events.ScheduleEvent(EVENT_START_MAGIC_FIGHT, 2s, PHASE_TWO);
+                    events.ScheduleEvent(EVENT_FLAMES_TRIGGER, 5s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_TWILIGHT_DRAKE, urand(18000,30000), PHASE_TWO);
                     events.ScheduleEvent(EVENT_SPITECALLER, urand(18000,35000), PHASE_TWO);
                 }
@@ -412,17 +411,13 @@ class boss_sinestra : public CreatureScript
                                 calen->CastSpell(calen, SPELL_PYRRHIC_FOCUS, true);
                                 calen->Yell("Sintharia! Your master owes me a great debt... one that I intend to extract from his consort's hide!", LANG_UNIVERSAL, 0);
 
-                                if (Creature* target = me->SummonCreature(46288, -988.828f, -787.879f, 449.618f, 0.49f))
+                                if (Creature* target = me->FindNearestCreature(NPC_LASER_TRIGGER, 100.0f, true))
                                 {
-                                    target->SetHover(true);
-                                    target->SetDisableGravity(true);
-                                    target->SetCanFly(true);
-
                                     target->SetFlag(UNIT_FIELD_FLAGS, UnitFlags(UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
                                     target->GetMotionMaster()->MoveTakeoff(0, target->GetHomePosition());
 
                                     calen->CastSpell(target, SPELL_FIERY_RESOLVE, false);
-                                    DoCastVictim(SPELL_TWILIGHT_POWER, false);
+                                    me->CastSpell(target, SPELL_TWILIGHT_POWER, false);
 
                                     calen->setRegeneratingHealth(false);
                                 }

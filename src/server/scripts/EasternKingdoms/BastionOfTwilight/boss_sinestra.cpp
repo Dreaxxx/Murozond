@@ -240,9 +240,8 @@ class boss_sinestra : public CreatureScript
             {
                 if (me->GetHealthPct() <= 30.0f && events.IsInPhase(PHASE_ONE))
                 {
-                    events.SetPhase(PHASE_TWO);
                     me->RemoveAura(SPELL_DRAINED);
-                    DoCast(SPELL_MANA_BARRIER);
+                    me->AddAura(SPELL_MANA_BARRIER, me);
                     events.ScheduleEvent(EVENT_START_MAGIC_FIGHT, 2s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_FLAMES_TRIGGER, 5s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_EXPOSE_EGG, 10s, PHASE_TWO);
@@ -279,7 +278,7 @@ class boss_sinestra : public CreatureScript
 
                         if (Creature* calen = me->FindNearestCreature(NPC_CALEN, 100.0f, true))
                         {
-                            calen->CastStop();
+                            // calen->CastStop();
                             if (Unit *pTarget = SelectTarget(SELECT_TARGET_RANDOM, 0))
                                 calen->CastSpell(pTarget, SPELL_ESSENCE_OF_THE_RED, true);
                             calen->DisappearAndDie();
@@ -416,6 +415,7 @@ class boss_sinestra : public CreatureScript
                         case EVENT_START_MAGIC_FIGHT:
                             if (Creature* calen = me->SummonCreature(NPC_CALEN, -1009.35f, -801.97f, 438.59f, 0.81f))
                             {
+                                events.SetPhase(PHASE_TWO);
                                 calen->Yell("Sintharia! Your master owes me a great debt... one that I intend to extract from his consort's hide!", LANG_UNIVERSAL, 0);
                                 // calen->CastSpell(calen, SPELL_PYRRHIC_FOCUS, true);
                                 calen->AddAura(SPELL_PYRRHIC_FOCUS, calen);

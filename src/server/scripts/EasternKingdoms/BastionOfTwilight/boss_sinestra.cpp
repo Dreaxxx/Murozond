@@ -660,9 +660,8 @@ class spell_sinestra_wrack_jump : public SpellScriptLoader
                 {
                     if (!GetSpellValue())
                         return;
-
-                    int32 duration = GetSpellValue()->EffectBasePoints[1];
-                    debuff->SetDuration(duration, false);
+                    
+                    debuff->SetDuration(GetSpellValue()->EffectBasePoints[EFFECT_1], false);
                 }
             }
 

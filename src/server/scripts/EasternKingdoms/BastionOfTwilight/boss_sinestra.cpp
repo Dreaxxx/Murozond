@@ -645,7 +645,7 @@ class spell_sinestra_wrack_jump : public SpellScriptLoader
                 targets.resize(2);
             }
 
-            void Hit(SpellEffIndex /*effIndex*/)
+            void Hit(AuraEffect /*aurEff*/)
             {
                 if (!GetHitUnit())
                     return;
@@ -657,12 +657,8 @@ class spell_sinestra_wrack_jump : public SpellScriptLoader
                     return;
 
                 if (Aura* debuff = GetOriginalCaster()->AddAura(89421, GetHitUnit()))
-                {
-                    if (!GetSpellValue())
-                        return;
-                    
-                    debuff->SetDuration(GetSpellValue()->EffectBasePoints[EFFECT_1], false);
-                }
+                    if (Aura* aura = GetExplTargetUnit()->GetAura(89421, GetCaster()->GetGUID()))
+                        debuff->SetDuration(aura->GetDuration());
             }
 
             void Register() override

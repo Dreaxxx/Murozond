@@ -228,7 +228,7 @@ class boss_sinestra : public CreatureScript
                 _JustDied();
 
                 // Summon the loot chest
-                 me->SummonGameObject(GO_SINESTRA_CHEST, Position(-962.91f, -749.71f, 438.59f, 0.f), QuaternionData(), DAY))
+                 me->SummonGameObject(GO_SINESTRA_CHEST, Position(-962.91f, -749.71f, 438.59f, 0.f), QuaternionData(), DAY);
             }
 
             void KilledUnit(Unit* /*victim*/) override

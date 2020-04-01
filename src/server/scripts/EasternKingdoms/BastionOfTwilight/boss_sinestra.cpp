@@ -226,8 +226,8 @@ class boss_sinestra : public CreatureScript
                 _JustDied();
 
                 // Summon the loot chest
-                if (GameObject* chest = me->SummonGameObject(GO_SINESTRA_CHEST, -962.91f, -749.71f, 438.59f, 0, GO_SUMMON_TIMED_DESPAWN))
-                    chest->DespawnOrUnsummon(60m);
+                if (GameObject* chest = me->SummonGameObject(GO_SINESTRA_CHEST, Position(-962.91f, -749.71f, 438.59f, 0.f), QuaternionData(), GO_SUMMON_TIMED_DESPAWN))
+                    chest->DespawnOrUnsummon(3600000);
             }
 
             void KilledUnit(Unit* /*victim*/) override

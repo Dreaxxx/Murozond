@@ -242,10 +242,11 @@ class boss_sinestra : public CreatureScript
                 {
                     me->RemoveAura(SPELL_DRAINED);
                     me->AddAura(SPELL_MANA_BARRIER, me);
-                    events.ScheduleEvent(EVENT_START_MAGIC_FIGHT, 2s, PHASE_TWO);
-                    events.ScheduleEvent(EVENT_FLAMES_TRIGGER, 5s, PHASE_TWO);
-                    events.ScheduleEvent(EVENT_EXPOSE_EGG, 10s, PHASE_TWO);
-                    events.ScheduleEvent(EVENT_EXPOSE_EGG, 32s, PHASE_TWO);
+                    events.SetPhase(PHASE_TWO);
+                    events.ScheduleEvent(EVENT_START_MAGIC_FIGHT, 10s, PHASE_TWO);
+                    events.ScheduleEvent(EVENT_FLAMES_TRIGGER, 12s, PHASE_TWO);
+                    events.ScheduleEvent(EVENT_EXPOSE_EGG, 5s, PHASE_TWO);
+                    events.ScheduleEvent(EVENT_EXPOSE_EGG, 25s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_TWILIGHT_DRAKE, urand(18000,30000), PHASE_TWO);
                     events.ScheduleEvent(EVENT_SPITECALLER, urand(18000,35000), PHASE_TWO);
                 }
@@ -415,7 +416,6 @@ class boss_sinestra : public CreatureScript
                         case EVENT_START_MAGIC_FIGHT:
                             if (Creature* calen = me->SummonCreature(NPC_CALEN, -1009.35f, -801.97f, 438.59f, 0.81f))
                             {
-                                events.SetPhase(PHASE_TWO);
                                 calen->Yell("Sintharia! Your master owes me a great debt... one that I intend to extract from his consort's hide!", LANG_UNIVERSAL, 0);
                                 // calen->CastSpell(calen, SPELL_PYRRHIC_FOCUS, true);
                                 calen->AddAura(SPELL_PYRRHIC_FOCUS, calen);

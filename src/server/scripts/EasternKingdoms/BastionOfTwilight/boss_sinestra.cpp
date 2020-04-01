@@ -292,12 +292,14 @@ class boss_sinestra : public CreatureScript
             }
 
             void UpdateAI(uint32 diff) override
-
             {
-                if (!UpdateVictim() || (me->HasUnitState(UNIT_STATE_CASTING) && !events.IsInPhase(PHASE_TWO)))
+                if (!UpdateVictim())
                     return;
 
                 events.Update(diff);
+
+                if (me->HasUnitState(UNIT_STATE_CASTING))
+                    return;
 
                 while (uint32 eventId = events.ExecuteEvent())
                 {
@@ -346,7 +348,7 @@ class boss_sinestra : public CreatureScript
                                         // Twilight pulse!
                                         orb->CastSpell(orb, SPELL_TWILIGHT_PULSE, true);
                                         if (Aura* aur = orb->AddAura(SPELL_PURPLE_BEAM, target))
-                                            aur->SetDuration(60000);
+                                            aur->SetDuration(Seconds(60));
                                     }
                                 }
                             }
@@ -372,15 +374,14 @@ class boss_sinestra : public CreatureScript
                         case EVENT_RESET_ORBS:
                             orbs[0] = NULL;
                             orbs[1] = NULL;
-
-                            if (instance)
-                                instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_PURPLE_BEAM);
                             break;
                         case EVENT_CHECK_MELEE:
-                            if (me->GetDistance2d(me->GetVictim()) >= 5.0f)
+                            if(Unit* victim = me->GetVictim())
                             {
-                                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0.0f, 100.0f, true, 0))
-                                    DoCastVictim(SPELL_SIN_TWILIGHT_BLAST, false);
+                                if (me->GetDistance2d(victim) >= 5.0f) {
+                                    if (Unit * target = SelectTarget(SELECT_TARGET_RANDOM, 0.0f, 100.0f, true, 0))
+                                        DoCast(target, SPELL_SIN_TWILIGHT_BLAST, false);
+                                }
                             }
                             events.ScheduleEvent(EVENT_CHECK_MELEE, 2s);
                             break;
@@ -397,7 +398,8 @@ class boss_sinestra : public CreatureScript
                         case EVENT_FLAMES_TRIGGER:
                             for (uint8 i = 0; i < 6; i++)
                             {
-                                me->SummonCreature(NPC_FLAME_TRIGGER, flamesPos[i]);
+                                uint8 posId = i;
+                                me->SummonCreature(NPC_FLAME_TRIGGER, flamesPos[posId]);
                             }
                             break;
                         case EVENT_TWILIGHT_DRAKE:
@@ -416,7 +418,6 @@ class boss_sinestra : public CreatureScript
 
                                 if (Creature* target = me->FindNearestCreature(NPC_LASER_TRIGGER, 100.0f, true))
                                 {
-                                    target->SetFlag(UNIT_FIELD_FLAGS, UnitFlags(UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
                                     target->GetMotionMaster()->MoveTakeoff(0, target->GetHomePosition());
 
                                     calen->CastSpell(target, SPELL_FIERY_RESOLVE, false);
@@ -438,7 +439,6 @@ class boss_sinestra : public CreatureScript
                             break;
                     }
                 }
-
                 DoMeleeAttackIfReady();
             }
         };

@@ -16,10 +16,24 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "ObjectMgr.h"
 #include "ScriptMgr.h"
-#include "Spell.h"
-#include "SpellAuras.h"
+#include "ScriptedCreature.h"
+#include "SpellScript.h"
+#include "SpellAuraEffects.h"
+#include "SpellMgr.h"
+#include "Player.h"
+#include "PhasingHandler.h"
+#include "PassiveAI.h"
+#include "InstanceScript.h"
+#include "MotionMaster.h"
+#include "ObjectAccessor.h"
+#include "TemporarySummon.h"
+#include "Map.h"
+#include "Unit.h"
+#include "Creature.h"
 #include "bastion_of_twilight.h"
+#include "SpellAuras.h"
 
 #define YELL_AGGRO  "We were fools to entrust an imbecile like Cho'gall with such a sacred duty. I will deal with you intruders myself!"
 #define YELL_KILL_0 "My brood will feed on your bones!"

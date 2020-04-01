@@ -592,7 +592,7 @@ class spell_sinestra_wreck : public SpellScriptLoader
         {
             PrepareAuraScript(spell_sinestra_wreck_AuraScript);
 
-            void HandleShareBuff (AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+            void Apply (AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
             {
                 if (!GetTargetApplication())
                     return;
@@ -614,7 +614,7 @@ class spell_sinestra_wreck : public SpellScriptLoader
 
             void Register() override
             {
-                AfterEffectRemove += AuraEffectRemoveFn(spell_sinestra_wreck_AuraScript::HandleShareBuff, EFFECT_0, SPELL_AURA_PERIODIC_DAMAGE, AURA_EFFECT_HANDLE_REAL);
+                AfterEffectRemove += AuraEffectRemoveFn(spell_sinestra_wreck_AuraScript::Apply, EFFECT_0, SPELL_AURA_PERIODIC_DAMAGE, AURA_EFFECT_HANDLE_REAL);
             }
         };
 
@@ -634,7 +634,7 @@ class spell_sinestra_wrack_jump : public SpellScriptLoader
         {
             PrepareSpellScript(spell_sinestra_wrack_jump_SpellScript);
 
-            void SelectTarget(std::list<WorldObject*>& targets)
+            void FilterTargets(std::list<WorldObject*>& targets)
             {
                 targets.remove(GetCaster());
                 targets.sort(Trinity::ObjectDistanceOrderPred(GetCaster()));
@@ -645,7 +645,7 @@ class spell_sinestra_wrack_jump : public SpellScriptLoader
                 targets.resize(2);
             }
 
-            void Hit(AuraEffect /*aurEff*/)
+            void HandleScript(AuraEffect /*aurEff*/)
             {
                 if (!GetHitUnit())
                     return;
@@ -663,9 +663,9 @@ class spell_sinestra_wrack_jump : public SpellScriptLoader
 
             void Register() override
             {
-                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_sinestra_wrack_jump_SpellScript::SelectTarget, EFFECT_0, TARGET_UNIT_SRC_AREA_ENTRY);
-                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_sinestra_wrack_jump_SpellScript::SelectTarget, EFFECT_1, TARGET_UNIT_SRC_AREA_ENTRY);
-                OnEffectHitTarget += SpellEffectFn(spell_sinestra_wrack_jump_SpellScript::Hit, EFFECT_0, SPELL_EFFECT_APPLY_AURA);
+                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_sinestra_wrack_jump_SpellScript::FilterTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ENTRY);
+                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_sinestra_wrack_jump_SpellScript::FilterTargets, EFFECT_1, TARGET_UNIT_SRC_AREA_ENTRY);
+                OnEffectHitTarget += SpellEffectFn(spell_sinestra_wrack_jump_SpellScript::HandleScript, EFFECT_0, SPELL_EFFECT_APPLY_AURA);
             }
         };
 
@@ -698,7 +698,7 @@ class spell_sinestra_twilight_slicer : public SpellScriptLoader
         {
             PrepareSpellScript(spell_sinestra_twilight_slicer_SpellScript);
 
-            void SelectTarget(std::list<WorldObject*>& targets)
+            void FilterTargets(std::list<WorldObject*>& targets)
             {
                 // Select Other orb, and filter targets between twos
                 if (InstanceScript* instance = GetCaster()->GetInstanceScript())
@@ -715,7 +715,7 @@ class spell_sinestra_twilight_slicer : public SpellScriptLoader
 
             void Register() override
             {
-                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_sinestra_twilight_slicer_SpellScript::SelectTarget, EFFECT_0, TARGET_UNIT_SRC_AREA_ENEMY);
+                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_sinestra_twilight_slicer_SpellScript::FilterTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ENEMY);
             }
         };
 
@@ -763,7 +763,7 @@ class spell_sinestra_twilight_essence : public SpellScriptLoader
                 targets.remove_if(ExactDistanceCheck(GetCaster(), 5.0f * GetCaster()->GetObjectScale()));
             }
 
-            void Hit(SpellEffIndex /*effIndex*/)
+            void HandleScript(SpellEffIndex /*effIndex*/)
             {
                 if (!GetHitUnit())
                     return;
@@ -816,7 +816,7 @@ class spell_sinestra_twilight_essence : public SpellScriptLoader
             {
                 OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_sinestra_twilight_essence_SpellScript::CorrectRange1, EFFECT_0, TARGET_UNIT_SRC_AREA_ENTRY);
                 OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_sinestra_twilight_essence_SpellScript::CorrectRange2, EFFECT_1, TARGET_UNIT_SRC_AREA_ENEMY);
-                OnEffectHitTarget += SpellEffectFn(spell_sinestra_twilight_essence_SpellScript::Hit, EFFECT_0, SPELL_EFFECT_APPLY_AURA);
+                OnEffectHitTarget += SpellEffectFn(spell_sinestra_twilight_essence_SpellScript::HandleScript, EFFECT_0, SPELL_EFFECT_APPLY_AURA);
             }
         };
 

@@ -228,8 +228,7 @@ class boss_sinestra : public CreatureScript
                 _JustDied();
 
                 // Summon the loot chest
-                if (GameObject* chest = me->SummonGameObject(GO_SINESTRA_CHEST, Position(-962.91f, -749.71f, 438.59f, 0.f), QuaternionData(), GO_SUMMON_TIMED_DESPAWN))
-                    chest->DespawnOrUnsummon(Seconds(3600));
+                 me->SummonGameObject(GO_SINESTRA_CHEST, Position(-962.91f, -749.71f, 438.59f, 0.f), QuaternionData(), DAY))
             }
 
             void KilledUnit(Unit* /*victim*/) override
@@ -417,25 +416,25 @@ class boss_sinestra : public CreatureScript
                         case EVENT_START_MAGIC_FIGHT:
                             if (Creature* calen = me->SummonCreature(NPC_CALEN, -1009.35f, -801.97f, 438.59f, 0.81f))
                             {
-                                // calen->CastSpell(calen, SPELL_PYRRHIC_FOCUS, true);
-                                me->AddAura(SPELL_PYRRHIC_FOCUS, calen);
                                 calen->Yell("Sintharia! Your master owes me a great debt... one that I intend to extract from his consort's hide!", LANG_UNIVERSAL, 0);
+                                // calen->CastSpell(calen, SPELL_PYRRHIC_FOCUS, true);
+                                calen->AddAura(SPELL_PYRRHIC_FOCUS, calen);
 
                                 if (Creature* target = me->FindNearestCreature(NPC_LASER_TRIGGER, 100.0f, true))
                                 {
                                     // target->GetMotionMaster()->MoveTakeoff(0, target->GetHomePosition());
                                     calen->setRegeneratingHealth(false);
-                                    calen->CastSpell(target, SPELL_FIERY_RESOLVE, false);
                                     me->CastSpell(target, SPELL_TWILIGHT_POWER, false);
+                                    calen->CastSpell(target, SPELL_FIERY_RESOLVE, false);
                                 }
                             }
                             me->Yell("This will be your tomb as well as theirs!", LANG_UNIVERSAL, 0);
                             break;
                         case EVENT_EXPOSE_EGG:
                             // Expose eggs!
-                            if (eggs[0])
+                            if(eggs[0])
                                 eggs[0]->RemoveAura(SPELL_TWILIGHT_CARAPACE);
-                            if (eggs[1])
+                            if(eggs[1])
                                 eggs[1]->RemoveAura(SPELL_TWILIGHT_CARAPACE);
                             events.ScheduleEvent(EVENT_EXPOSE_EGG, 60s, PHASE_TWO);
                             break;

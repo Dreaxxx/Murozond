@@ -352,7 +352,7 @@ class boss_sinestra : public CreatureScript
                                         // Twilight pulse!
                                         orb->CastSpell(orb, SPELL_TWILIGHT_PULSE, true);
                                         if (Aura* aur = orb->AddAura(SPELL_PURPLE_BEAM, target))
-                                            aur->SetDuration(Seconds(60));
+                                            aur->SetDuration(60000);
                                     }
                                 }
                             }
@@ -397,7 +397,7 @@ class boss_sinestra : public CreatureScript
                             }
 
                             me->Yell(YELL_SUMMON, LANG_UNIVERSAL, 0);
-                            events.ScheduleEvent(EVENT_WHELP, 55s);
+                            events.ScheduleEvent(EVENT_WHELP, 45s);
                             break;
                         case EVENT_FLAMES_TRIGGER:
                             for (uint8 i = 0; i < 6; i++)

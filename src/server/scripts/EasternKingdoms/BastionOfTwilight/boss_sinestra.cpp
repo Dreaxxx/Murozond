@@ -79,6 +79,8 @@ enum events
     EVENT_TWILIGHT_DRAKE,
     EVENT_SPITECALLER,
     EVENT_FLAMES_TRIGGER,
+    EVENT_EXPOSE_EGG,
+    EVENT_BLOCK_EGG,
 };
 
 enum sharedDatas
@@ -244,6 +246,8 @@ class boss_sinestra : public CreatureScript
                     DoCast(SPELL_MANA_BARRIER);
                     events.ScheduleEvent(EVENT_START_MAGIC_FIGHT, 2s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_FLAMES_TRIGGER, 5s, PHASE_TWO);
+                    events.ScheduleEvent(EVENT_EXPOSE_EGG, 10s, PHASE_TWO);
+                    events.ScheduleEvent(EVENT_EXPOSE_EGG, 32s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_TWILIGHT_DRAKE, urand(18000,30000), PHASE_TWO);
                     events.ScheduleEvent(EVENT_SPITECALLER, urand(18000,35000), PHASE_TWO);
                 }
@@ -404,13 +408,15 @@ class boss_sinestra : public CreatureScript
                             break;
                         case EVENT_TWILIGHT_DRAKE:
                             me->SummonCreature(NPC_TWILIGHT_DRAKE, spawnPos[urand(0, 8)]);
-                            events.ScheduleEvent(EVENT_TWILIGHT_DRAKE, 24s, PHASE_TWO);
+                            events.ScheduleEvent(EVENT_TWILIGHT_DRAKE, urand(18000,30000), PHASE_TWO);
                             break;
                         case EVENT_SPITECALLER:
                             me->SummonCreature(NPC_SPITCALLER, spawnPos[urand(0, 8)]);
-                            events.ScheduleEvent(EVENT_SPITECALLER, 30s, PHASE_TWO);
+                            events.ScheduleEvent(EVENT_SPITECALLER, urand(18000,30000), PHASE_TWO);
                             break;
                         case EVENT_START_MAGIC_FIGHT:
+                            me->Yell("This will be your tomb as well as theirs!", LANG_UNIVERSAL, 0);
+
                             if (Creature* calen = me->SummonCreature(NPC_CALEN, -1009.35f, -801.97f, 438.59f, 0.81f))
                             {
                                 calen->CastSpell(calen, SPELL_PYRRHIC_FOCUS, true);
@@ -424,14 +430,22 @@ class boss_sinestra : public CreatureScript
                                     me->CastSpell(target, SPELL_TWILIGHT_POWER, false);
                                 }
                             }
-
-                            me->Yell("This will be your tomb as well as theirs!", LANG_UNIVERSAL, 0);
-
+                            break;
+                        case EVENT_EXPOSE_EGG:
                             // Expose eggs!
                             if (eggs[0])
                                 eggs[0]->RemoveAura(SPELL_TWILIGHT_CARAPACE);
                             if (eggs[1])
                                 eggs[1]->RemoveAura(SPELL_TWILIGHT_CARAPACE);
+                            events.ScheduleEvent(EVENT_EXPOSE_EGG, 60s, PHASE_TWO);
+                            break;
+                        case EVENT_BLOCK_EGG:
+                            //Reblock eggs
+                            if(eggs[0])
+                                me->AddAura(SPELL_TWILIGHT_CARAPACE, eggs[0]);
+                            if(eggs[1])
+                                me->AddAura(SPELL_TWILIGHT_CARAPACE, eggs[1]);
+                            events.ScheduleEvent(EVENT_BLOCK_EGG, 60s, PHASE_TWO);
                             break;
                         default:
                             break;

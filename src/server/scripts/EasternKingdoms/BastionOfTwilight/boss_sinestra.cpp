@@ -116,13 +116,13 @@ Position const spawnPos[9] =
 
 Position const flamesPos[7] =
 {
-    {-895.89f, -765.88f, 442.16f, 0},
-    {-912.87f, -770.63f, 440.43f, 0},
-    {-994.33f, -665.81f, 440.45f, 0},
-    {-999.33f, -693.72f, 440.87f, 0},
-    {-932.12f, -774.44f, 439.78f, 0},
-    {-998.55f, -711.15f, 439.33f, 2.84f},
-    {-996.73f, -731.15f, 438.30f, 0},
+    {-895.89f, -765.88f, 442.16f, 0.22f},
+    {-912.87f, -770.63f, 440.43f, 0.22f},
+    {-994.33f, -665.81f, 440.45f, 0.22f},
+    {-999.33f, -693.72f, 440.87f, 0.22f},
+    {-932.12f, -774.44f, 439.78f, 0.22f},
+    {-998.55f, -711.15f, 439.33f, 0.22f},
+    {-996.73f, -731.15f, 438.30f, 0.22f},
 };
 
 class boss_sinestra : public CreatureScript
@@ -302,7 +302,7 @@ class boss_sinestra : public CreatureScript
 
                 events.Update(diff);
 
-                if (me->HasUnitState(UNIT_STATE_CASTING))
+                if (me->HasUnitState(UNIT_STATE_CASTING) && !events.IsInPhase(PHASE_TWO))
                     return;
 
                 while (uint32 eventId = events.ExecuteEvent())
@@ -400,7 +400,7 @@ class boss_sinestra : public CreatureScript
                             events.ScheduleEvent(EVENT_WHELP, 45s);
                             break;
                         case EVENT_FLAMES_TRIGGER:
-                            for (uint8 i = 0; i < 6; i++)
+                            for (uint8 i = 0; i < 7; i++)
                             {
                                 uint8 posId = i;
                                 me->SummonCreature(NPC_FLAME_TRIGGER, flamesPos[posId]);
@@ -415,11 +415,10 @@ class boss_sinestra : public CreatureScript
                             events.ScheduleEvent(EVENT_SPITECALLER, urand(18000,30000), PHASE_TWO);
                             break;
                         case EVENT_START_MAGIC_FIGHT:
-                            me->Yell("This will be your tomb as well as theirs!", LANG_UNIVERSAL, 0);
-
                             if (Creature* calen = me->SummonCreature(NPC_CALEN, -1009.35f, -801.97f, 438.59f, 0.81f))
                             {
-                                calen->CastSpell(calen, SPELL_PYRRHIC_FOCUS, true);
+                                // calen->CastSpell(calen, SPELL_PYRRHIC_FOCUS, true);
+                                me->AddAura(SPELL_PYRRHIC_FOCUS, calen);
                                 calen->Yell("Sintharia! Your master owes me a great debt... one that I intend to extract from his consort's hide!", LANG_UNIVERSAL, 0);
 
                                 if (Creature* target = me->FindNearestCreature(NPC_LASER_TRIGGER, 100.0f, true))
@@ -430,6 +429,7 @@ class boss_sinestra : public CreatureScript
                                     me->CastSpell(target, SPELL_TWILIGHT_POWER, false);
                                 }
                             }
+                            me->Yell("This will be your tomb as well as theirs!", LANG_UNIVERSAL, 0);
                             break;
                         case EVENT_EXPOSE_EGG:
                             // Expose eggs!
@@ -442,9 +442,9 @@ class boss_sinestra : public CreatureScript
                         case EVENT_BLOCK_EGG:
                             //Reblock eggs
                             if(eggs[0])
-                                me->AddAura(SPELL_TWILIGHT_CARAPACE, eggs[0]);
+                                eggs[0]->AddAura(SPELL_TWILIGHT_CARAPACE, eggs[0]);
                             if(eggs[1])
-                                me->AddAura(SPELL_TWILIGHT_CARAPACE, eggs[1]);
+                                eggs[1]->AddAura(SPELL_TWILIGHT_CARAPACE, eggs[1]);
                             events.ScheduleEvent(EVENT_BLOCK_EGG, 60s, PHASE_TWO);
                             break;
                         default:

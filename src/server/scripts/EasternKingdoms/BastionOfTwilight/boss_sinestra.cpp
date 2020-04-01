@@ -75,6 +75,7 @@ enum events
     EVENT_START_MAGIC_FIGHT,
     EVENT_TWILIGHT_DRAKE,
     EVENT_SPITECALLER,
+    EVENT_FLAMES_TRIGGER,
 };
 
 enum sharedDatas
@@ -106,6 +107,17 @@ Position const spawnPos[9] =
     {-1005.45f, -746.29f, 438.59f, 5.51f},
     {-1018.57f, -760.42f, 438.59f, 5.71f},
     {-1029.42f, -774.76f, 438.59f, 0.22f},
+};
+
+Position const flamesPos[7] =
+{
+    {-895.89f, -765.88f, 442.16f, 0f},
+    {-912.87f, -770.63f, 440.43f, 0f},
+    {-994.33f, -665.81f, 440.45f, 0f},
+    {-999.33f, -693.72f, 440.87f, 0f},
+    {-932.12f, -774.44f, 439.78f, 0f},
+    {-998.55f, -711.15f, 439.33f, 2.84f},
+    {-996.73f, -731.15f, 438.30f, 0f},
 };
 
 class boss_sinestra : public CreatureScript
@@ -193,6 +205,7 @@ class boss_sinestra : public CreatureScript
                 }
 
                 events.ScheduleEvent(EVENT_WRACK, 15s, PHASE_ONE);
+                events.ScheduleEvent(EVENT_FLAMES_TRIGGER, 5s, PHASE_ONE);
                 events.ScheduleEvent(EVENT_FLAME_BREATH, 20s, PHASE_ONE);
                 events.ScheduleEvent(EVENT_TWILIGHT_SLICER, 28s, PHASE_ONE);
                 events.ScheduleEvent(EVENT_CHECK_MELEE, 2s, PHASE_ONE);
@@ -210,6 +223,10 @@ class boss_sinestra : public CreatureScript
             {
                 _JustDied();
                 instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_ESSENCE_OF_THE_RED);
+
+                // Summon the loot chest
+                if (GameObject* chest = me->SummonGameObject(GO_SINESTRA_CHEST, -962.91f, -749.71f, 438.59f, 0f, GO_SUMMON_TIMED_DESPAWN))
+                    chest->DespawnOrUnsummon(60m);
             }
 
             void KilledUnit(Unit* /*victim*/) override
@@ -303,7 +320,7 @@ class boss_sinestra : public CreatureScript
                                     float width = frand(5, 20);
                                     float degree = frand(0, 6.28f);
                                     pos.Relocate(pos.GetPositionX() + cos(degree)*width, pos.GetPositionY() + sin(degree)*width);
-                                    if (Creature* orb = me->SummonCreature(49863, pos, TEMPSUMMON_TIMED_DESPAWN, 15s, 0))
+                                    if (Creature* orb = me->SummonCreature(NPC_SHADOW_ORB, pos, TEMPSUMMON_TIMED_DESPAWN, 15s, 0))
                                     {
                                         if (!orbs[0])
                                         {
@@ -374,6 +391,12 @@ class boss_sinestra : public CreatureScript
 
                             me->Yell(YELL_SUMMON, LANG_UNIVERSAL, 0);
                             events.ScheduleEvent(EVENT_WHELP, 55s);
+                            break;
+                        case EVENT_FLAMES_TRIGGER:
+                            for (uint8 i = 0; i < 6; i++)
+                            {
+                                me->SummonCreature(NPC_FLAME_TRIGGER, flamesPos[i]);
+                            }
                             break;
                         case EVENT_TWILIGHT_DRAKE:
                             me->SummonCreature(NPC_TWILIGHT_DRAKE, spawnPos[urand(0, 8)]);
@@ -484,7 +507,7 @@ class npc_sinestra_twilight_whelp : public CreatureScript
                 if (Creature* essence = me->SummonCreature(NPC_ESSENCE, pos, TEMPSUMMON_MANUAL_DESPAWN, 0, 0))
                 {
                     DoZoneInCombat(essence);
-                    essence->SetFlag(UNIT_FIELD_FLAGS, UnitFlags(UNIT_FLAG_REMOVE_CLIENT_CONTROL | UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
+                    essence->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_REMOVE_CLIENT_CONTROL);
                     essence->SetReactState(REACT_PASSIVE);
                     essence->AttackStop();
                     essence->StopMoving();

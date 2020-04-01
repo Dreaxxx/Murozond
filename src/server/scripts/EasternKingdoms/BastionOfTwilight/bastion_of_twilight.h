@@ -148,6 +148,13 @@ enum BoTCreatures
     NPC_MALFORMATION                    = 43888,
     NPC_SPIKED_TENTACLE_TRIGGER         = 50265,
 
+    /*Sinestra*/
+    NPC_CALEN                           = 46277,
+    NPC_TWILIGHT_WHELP                  = 48050,
+    NPC_ESSENCE                         = 48018,
+    NPC_TWILIGHT_DRAKE                  = 55636,
+    NPC_SPITCALLER                      = 48415,
+
     // Generic Creatures
     NPC_INVISIBLE_STALKER               = 42098
 };

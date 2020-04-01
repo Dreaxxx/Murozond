@@ -645,7 +645,7 @@ class spell_sinestra_wrack_jump : public SpellScriptLoader
                 targets.resize(2);
             }
 
-            void HandleEffect(AuraEffect /*aurEff*/)
+            void HandleHit(SpellMissInfo /*missInfo*/)
             {
                 if (!GetHitUnit())
                     return;
@@ -665,7 +665,7 @@ class spell_sinestra_wrack_jump : public SpellScriptLoader
             {
                 OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_sinestra_wrack_jump_SpellScript::FilterTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ENTRY);
                 OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_sinestra_wrack_jump_SpellScript::FilterTargets, EFFECT_1, TARGET_UNIT_SRC_AREA_ENTRY);
-                OnEffectHitTarget += SpellEffectFn(spell_sinestra_wrack_jump_SpellScript::HandleEffect, EFFECT_0, SPELL_EFFECT_APPLY_AURA);
+                OnEffectHitTarget += SpellEffectFn(spell_sinestra_wrack_jump_SpellScript::HandleHit);
             }
         };
 
@@ -763,7 +763,7 @@ class spell_sinestra_twilight_essence : public SpellScriptLoader
                 targets.remove_if(ExactDistanceCheck(GetCaster(), 5.0f * GetCaster()->GetObjectScale()));
             }
 
-            void HandleEffect(SpellEffIndex /*effIndex*/)
+            void HandleHit(SpellEffIndex /*effIndex*/)
             {
                 if (!GetHitUnit())
                     return;
@@ -816,7 +816,7 @@ class spell_sinestra_twilight_essence : public SpellScriptLoader
             {
                 OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_sinestra_twilight_essence_SpellScript::CorrectRange1, EFFECT_0, TARGET_UNIT_SRC_AREA_ENTRY);
                 OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_sinestra_twilight_essence_SpellScript::CorrectRange2, EFFECT_1, TARGET_UNIT_SRC_AREA_ENEMY);
-                OnEffectHitTarget += SpellEffectFn(spell_sinestra_twilight_essence_SpellScript::HandleEffect, EFFECT_0, SPELL_EFFECT_APPLY_AURA);
+                OnEffectHitTarget += SpellEffectFn(spell_sinestra_twilight_essence_SpellScript::HandleHit, EFFECT_0, SPELL_EFFECT_APPLY_AURA);
             }
         };
 

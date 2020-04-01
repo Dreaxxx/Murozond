@@ -34,6 +34,9 @@
 #include "Creature.h"
 #include "bastion_of_twilight.h"
 #include "SpellAuras.h"
+#include "GameObject.h"
+#include "GameObjectAI.h"
+
 
 #define YELL_AGGRO  "We were fools to entrust an imbecile like Cho'gall with such a sacred duty. I will deal with you intruders myself!"
 #define YELL_KILL_0 "My brood will feed on your bones!"
@@ -111,13 +114,13 @@ Position const spawnPos[9] =
 
 Position const flamesPos[7] =
 {
-    {-895.89f, -765.88f, 442.16f, 0f},
-    {-912.87f, -770.63f, 440.43f, 0f},
-    {-994.33f, -665.81f, 440.45f, 0f},
-    {-999.33f, -693.72f, 440.87f, 0f},
-    {-932.12f, -774.44f, 439.78f, 0f},
+    {-895.89f, -765.88f, 442.16f, 0},
+    {-912.87f, -770.63f, 440.43f, 0},
+    {-994.33f, -665.81f, 440.45f, 0},
+    {-999.33f, -693.72f, 440.87f, 0},
+    {-932.12f, -774.44f, 439.78f, 0},
     {-998.55f, -711.15f, 439.33f, 2.84f},
-    {-996.73f, -731.15f, 438.30f, 0f},
+    {-996.73f, -731.15f, 438.30f, 0},
 };
 
 class boss_sinestra : public CreatureScript
@@ -223,7 +226,7 @@ class boss_sinestra : public CreatureScript
                 _JustDied();
 
                 // Summon the loot chest
-                if (GameObject* chest = me->SummonGameObject(GO_SINESTRA_CHEST, -962.91f, -749.71f, 438.59f, 0f, GO_SUMMON_TIMED_DESPAWN))
+                if (GameObject* chest = me->SummonGameObject(GO_SINESTRA_CHEST, -962.91f, -749.71f, 438.59f, 0, GO_SUMMON_TIMED_DESPAWN))
                     chest->DespawnOrUnsummon(60m);
             }
 

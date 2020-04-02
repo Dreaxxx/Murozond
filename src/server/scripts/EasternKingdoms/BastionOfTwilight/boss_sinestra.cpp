@@ -540,16 +540,9 @@ public:
                 {
                     case EVENT_CALEN_LASER:
                         if(events.IsInPhase(PHASE_TWO)) {
-                            if (Creature* target = me->SummonCreature(NPC_LASER_TRIGGER, -988.828f, -787.879f, 449.618f, 0.49f))
+                            if (Creature* target = me->FindNearestCreature(NPC_LASER_TRIGGER, 100.f, true))
                             {
-                                target->SetHover(true);
-                                target->SetDisableGravity(true);
-                                target->SetCanFly(true);
-                                target->SetFlag(UNIT_FIELD_FLAGS, UnitFlags(UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
-                                target->GetMotionMaster()->MoveTakeoff(0, target->GetHomePosition());
-
                                 DoCast(target, SPELL_FIERY_RESOLVE);
-
                                 me->setRegeneratingHealth(false);
                             }
                             events.Repeat(5s);

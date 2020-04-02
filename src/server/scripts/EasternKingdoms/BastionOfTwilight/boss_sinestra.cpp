@@ -225,6 +225,8 @@ class boss_sinestra : public CreatureScript
             {
                 _JustDied();
 
+                summons.DespawnAll();
+
                 // Summon the loot chest
                  me->SummonGameObject(GO_SINESTRA_CHEST, Position(-962.91f, -749.71f, 438.59f, 0.f), QuaternionData(), DAY);
             }
@@ -417,7 +419,6 @@ class boss_sinestra : public CreatureScript
                                 if (Creature* target = me->FindNearestCreature(NPC_LASER_TRIGGER, 100.0f, true))
                                 {
                                     me->CastSpell(target, SPELL_TWILIGHT_POWER, false);
-                                    me->ClearUnitState(UNIT_STATE_CASTING);
                                 }
                             }
                             me->Yell("This will be your tomb as well as theirs!", LANG_UNIVERSAL, 0);

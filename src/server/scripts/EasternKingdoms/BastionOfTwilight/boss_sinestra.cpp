@@ -243,6 +243,10 @@ class boss_sinestra : public CreatureScript
                     me->RemoveAura(SPELL_DRAINED);
                     me->AddAura(SPELL_MANA_BARRIER, me);
                     events.SetPhase(PHASE_TWO);
+
+                    if(!events.IsInPhase(PHASE_TWO))
+                        return;
+
                     events.ScheduleEvent(EVENT_START_MAGIC_FIGHT, 5s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_FLAMES_TRIGGER, 12s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_EXPOSE_EGG, 5s, PHASE_TWO);
@@ -277,6 +281,9 @@ class boss_sinestra : public CreatureScript
                         me->CastStop();
                         me->RemoveAura(SPELL_MANA_BARRIER);
 
+                        if(!events.IsInPhase(PHASE_THREE))
+                            return;
+
                         if (Creature* calen = me->FindNearestCreature(NPC_CALEN, 100.0f, true))
                         {
                             calen->CastStop();
@@ -299,151 +306,259 @@ class boss_sinestra : public CreatureScript
                 if (!UpdateVictim())
                     return;
 
-                if (me->HasUnitState(UNIT_STATE_CASTING))
-                    return;
-
                 events.Update(diff);
 
-                while (uint32 eventId = events.ExecuteEvent())
-                {
-                    switch (eventId)
-                    {
-                        case EVENT_WRACK:
-                            if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0.0f, 100.0f, true, 0))
-                                DoCast(target, SPELL_WRACK, true);
+                if (me->HasUnitState(UNIT_STATE_CASTING) && !events.IsInPhase(PHASE_TWO))
+                    return;
 
-                            events.ScheduleEvent(EVENT_WRACK, 75s);
-                            break;
-                        case EVENT_FLAME_BREATH:
-                            DoCastAOE(SPELL_FLAME_BREATH);
-                            events.ScheduleEvent(EVENT_FLAME_BREATH, 20s);
-                            break;
-                        case EVENT_TWILIGHT_SLICER:
-                            for (uint8 i = 0; i < 2; i++)
-                            {
-                                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0.0f, 100.0f, true, -SPELL_PURPLE_BEAM))
-                                {
-                                    Position pos = target->GetPosition();
-                                    float width = frand(5, 20);
-                                    float degree = frand(0, 6.28f);
-                                    pos.Relocate(pos.GetPositionX() + cos(degree)*width, pos.GetPositionY() + sin(degree)*width);
-                                    if (Creature* orb = me->SummonCreature(NPC_SHADOW_ORB, pos, TEMPSUMMON_TIMED_DESPAWN, 15s, 0))
-                                    {
-                                        if (!orbs[0])
-                                        {
-                                            orbs[0] = orb;
-                                            if (instance)
-                                                instance->SetGuidData(DATA_ORB_0, orb->GetGUID());
+                if(!events.IsInPhase(PHASE_TWO)) {
+                    while (uint32 eventId = events.ExecuteEvent()) {
+                        switch (eventId) {
+                            case EVENT_WRACK:
+                                if (!events.IsInPhase(PHASE_TWO)) {
+                                    if (Unit * target = SelectTarget(SELECT_TARGET_RANDOM, 0.0f, 100.0f, true, 0))
+                                        DoCast(target, SPELL_WRACK, true);
+
+                                    events.Repeat(75s);
+                                    break;
+                                }
+                                break;
+                            case EVENT_FLAME_BREATH:
+                                if (!events.IsInPhase(PHASE_TWO)) {
+                                    DoCastAOE(SPELL_FLAME_BREATH);
+                                    events.Repeat(20s);
+                                    break;
+                                }
+                                break;
+                            case EVENT_TWILIGHT_SLICER:
+                                for (uint8 i = 0; i < 2; i++) {
+                                    if (Unit * target = SelectTarget(SELECT_TARGET_RANDOM, 0.0f, 100.0f, true,
+                                                                     -SPELL_PURPLE_BEAM)) {
+                                        Position pos = target->GetPosition();
+                                        float width = frand(5, 20);
+                                        float degree = frand(0, 6.28f);
+                                        pos.Relocate(pos.GetPositionX() + cos(degree) * width,
+                                                     pos.GetPositionY() + sin(degree) * width);
+                                        if (Creature * orb = me->SummonCreature(NPC_SHADOW_ORB, pos,
+                                                                                TEMPSUMMON_TIMED_DESPAWN, 15s, 0)) {
+                                            if (!orbs[0]) {
+                                                orbs[0] = orb;
+                                                if (instance)
+                                                    instance->SetGuidData(DATA_ORB_0, orb->GetGUID());
+                                            } else {
+                                                orbs[1] = orb;
+
+                                                if (instance)
+                                                    instance->SetGuidData(DATA_ORB_1, orb->GetGUID());
+                                            }
+
+                                            orb->SetFlag(UNIT_FIELD_FLAGS, UnitFlags(
+                                                    UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
+                                            orb->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_REMOVE_CLIENT_CONTROL);
+                                            orb->AddThreat(target, 1000000.0f);
+                                            orb->Attack(target, true);
+
+                                            // Twilight pulse!
+                                            orb->CastSpell(orb, SPELL_TWILIGHT_PULSE, true);
+                                            if (Aura * aur = orb->AddAura(SPELL_PURPLE_BEAM, target))
+                                                aur->SetDuration(60000);
                                         }
-                                        else
-                                        {
-                                            orbs[1] = orb;
-
-                                            if (instance)
-                                                instance->SetGuidData(DATA_ORB_1, orb->GetGUID());
-                                        }
-
-                                        orb->SetFlag(UNIT_FIELD_FLAGS, UnitFlags(UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
-                                        orb->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_REMOVE_CLIENT_CONTROL);
-                                        orb->AddThreat(target, 1000000.0f);
-                                        orb->Attack(target, true);
-
-                                        // Twilight pulse!
-                                        orb->CastSpell(orb, SPELL_TWILIGHT_PULSE, true);
-                                        if (Aura* aur = orb->AddAura(SPELL_PURPLE_BEAM, target))
-                                            aur->SetDuration(60000);
                                     }
                                 }
-                            }
-                            events.ScheduleEvent(EVENT_RESET_ORBS, 18s);
-                            events.ScheduleEvent(EVENT_TWILIGHT_SLICER, 28s);
-                            events.ScheduleEvent(EVENT_ORB_START_CHANNEL, 35s);
-                            break;
-                        case EVENT_ORB_START_CHANNEL:
-                            if (orbs[0] && orbs[1])
-                            {
-                                orbs[1]->CastSpell(orbs[0], SPELL_TWILIGHT_SLICER, true);
-                                orbs[1]->ClearUnitState(UNIT_STATE_CASTING);
+                                events.ScheduleEvent(EVENT_RESET_ORBS, 18s);
+                                events.Repeat(28s);
+                                events.ScheduleEvent(EVENT_ORB_START_CHANNEL, 35s);
+                                break;
+                            case EVENT_ORB_START_CHANNEL:
+                                if (orbs[0] && orbs[1]) {
+                                    orbs[1]->CastSpell(orbs[0], SPELL_TWILIGHT_SLICER, true);
+                                    orbs[1]->ClearUnitState(UNIT_STATE_CASTING);
 
-                                if (orbs[1]->GetVictim())
-                                    orbs[1]->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_REMOVE_CLIENT_CONTROL);
+                                    if (orbs[1]->GetVictim())
+                                        orbs[1]->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_REMOVE_CLIENT_CONTROL);
                                     orbs[1]->GetMotionMaster()->MoveChase(orbs[1]->GetVictim());
 
-                                if (orbs[0]->GetVictim())
-                                    orbs[0]->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_REMOVE_CLIENT_CONTROL);
+                                    if (orbs[0]->GetVictim())
+                                        orbs[0]->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_REMOVE_CLIENT_CONTROL);
                                     orbs[0]->GetMotionMaster()->MoveChase(orbs[0]->GetVictim());
-                            }
-                            break;
-                        case EVENT_RESET_ORBS:
-                            orbs[0] = NULL;
-                            orbs[1] = NULL;
-                            break;
-                        case EVENT_CHECK_MELEE:
-                            if(Unit* victim = me->GetVictim())
-                            {
-                                if (me->GetDistance2d(victim) >= 5.0f) {
-                                    if (Unit * target = SelectTarget(SELECT_TARGET_RANDOM, 0.0f, 100.0f, true, 0))
-                                        DoCast(target, SPELL_SIN_TWILIGHT_BLAST, false);
                                 }
-                            }
-                            events.ScheduleEvent(EVENT_CHECK_MELEE, 2s);
-                            break;
-                        case EVENT_WHELP:
-                            for (uint8 i = 0; i < 5; i++)
-                            {
-                                uint8 posId = urand(0, 8);
-                                me->SummonCreature(NPC_TWILIGHT_WHELP, spawnPos[posId]);
-                            }
-
-                            me->Yell(YELL_SUMMON, LANG_UNIVERSAL, 0);
-                            events.ScheduleEvent(EVENT_WHELP, 45s);
-                            break;
-                        case EVENT_FLAMES_TRIGGER:
-                            for (uint8 i = 0; i < 4; i++)
-                            {
-                                uint8 posId = i;
-                                me->SummonCreature(NPC_FLAME_TRIGGER, flamesPos[posId]);
-                            }
-                            break;
-                        case EVENT_TWILIGHT_DRAKE:
-                            me->SummonCreature(NPC_TWILIGHT_DRAKE, spawnPos[urand(0, 8)]);
-                            events.ScheduleEvent(EVENT_TWILIGHT_DRAKE, urand(18000,30000), PHASE_TWO);
-                            break;
-                        case EVENT_SPITECALLER:
-                            me->SummonCreature(NPC_SPITCALLER, spawnPos[urand(0, 8)]);
-                            events.ScheduleEvent(EVENT_SPITECALLER, urand(18000,30000), PHASE_TWO);
-                            break;
-                        case EVENT_START_MAGIC_FIGHT:
-                            if (Creature* calen = me->SummonCreature(NPC_CALEN, -1009.35f, -801.97f, 438.59f, 0.81f))
-                            {
-                                if (Creature* target = me->FindNearestCreature(NPC_LASER_TRIGGER, 100.0f, true))
-                                {
-                                    me->CastSpell(target, SPELL_TWILIGHT_POWER, false);
-                                }
-                            }
-                            me->Yell("This will be your tomb as well as theirs!", LANG_UNIVERSAL, 0);
-                            break;
-                        case EVENT_EXPOSE_EGG:
-                            // Expose eggs!
-                            if(eggs[0])
-                                me->RemoveAura(SPELL_TWILIGHT_CARAPACE);
-                            if(eggs[1])
-                                me->RemoveAura(SPELL_TWILIGHT_CARAPACE);
-                            events.Repeat(60s);
-                            break;
-                        case EVENT_BLOCK_EGG:
-                            //Reblock eggs
-                            if(events.IsInPhase(PHASE_TWO)) {
-                                if (eggs[0])
-                                    me->AddAura(SPELL_TWILIGHT_CARAPACE, eggs[0]);
-                                if (eggs[1])
-                                    me->AddAura(SPELL_TWILIGHT_CARAPACE, eggs[1]);
-                                events.Repeat(60s);
                                 break;
-                            }
-                            break;
-                        default:
-                            break;
+                            case EVENT_RESET_ORBS:
+                                orbs[0] = NULL;
+                                orbs[1] = NULL;
+                                break;
+                            case EVENT_CHECK_MELEE:
+                                if (!events.IsInPhase(PHASE_TWO)) {
+                                    if (Unit * victim = me->GetVictim()) {
+                                        if (me->GetDistance2d(victim) >= 5.0f) {
+                                            if (Unit * target = SelectTarget(SELECT_TARGET_RANDOM, 0.0f, 100.0f, true,
+                                                                             0))
+                                                DoCast(target, SPELL_SIN_TWILIGHT_BLAST, false);
+                                        }
+                                    }
+                                    events.Repeat(2s);
+                                    break;
+                                }
+                                break;
+                            case EVENT_WHELP:
+                                for (uint8 i = 0; i < 5; i++) {
+                                    uint8 posId = urand(0, 8);
+                                    me->SummonCreature(NPC_TWILIGHT_WHELP, spawnPos[posId]);
+                                }
+
+                                me->Yell(YELL_SUMMON, LANG_UNIVERSAL, 0);
+                                events.Repeat(45s);
+                                break;
+                            case EVENT_TWILIGHT_DRAKE:
+                                if (!events.IsInPhase(PHASE_ONE)) {
+                                    me->SummonCreature(NPC_TWILIGHT_DRAKE, spawnPos[urand(0, 8)]);
+                                    events.Repeat(urand(18000, 30000));
+                                    break;
+                                }
+                                break;
+                            case EVENT_SPITECALLER:
+                                if (!events.IsInPhase(PHASE_ONE)) {
+                                    me->SummonCreature(NPC_SPITCALLER, spawnPos[urand(0, 8)]);
+                                    events.Repeat(urand(18000, 30000));
+                                    break;
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+                else
+                {
+                    while (uint32 eventId = events.ExecuteEvent()) {
+                        switch (eventId) {
+                            case EVENT_TWILIGHT_SLICER:
+                                for (uint8 i = 0; i < 2; i++) {
+                                    if (Unit * target = SelectTarget(SELECT_TARGET_RANDOM, 0.0f, 100.0f, true,
+                                                                     -SPELL_PURPLE_BEAM)) {
+                                        Position pos = target->GetPosition();
+                                        float width = frand(5, 20);
+                                        float degree = frand(0, 6.28f);
+                                        pos.Relocate(pos.GetPositionX() + cos(degree) * width,
+                                                     pos.GetPositionY() + sin(degree) * width);
+                                        if (Creature * orb = me->SummonCreature(NPC_SHADOW_ORB, pos,
+                                                                                TEMPSUMMON_TIMED_DESPAWN, 15s, 0)) {
+                                            if (!orbs[0]) {
+                                                orbs[0] = orb;
+                                                if (instance)
+                                                    instance->SetGuidData(DATA_ORB_0, orb->GetGUID());
+                                            } else {
+                                                orbs[1] = orb;
+
+                                                if (instance)
+                                                    instance->SetGuidData(DATA_ORB_1, orb->GetGUID());
+                                            }
+
+                                            orb->SetFlag(UNIT_FIELD_FLAGS, UnitFlags(
+                                                    UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
+                                            orb->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_REMOVE_CLIENT_CONTROL);
+                                            orb->AddThreat(target, 1000000.0f);
+                                            orb->Attack(target, true);
+
+                                            // Twilight pulse!
+                                            orb->CastSpell(orb, SPELL_TWILIGHT_PULSE, true);
+                                            if (Aura * aur = orb->AddAura(SPELL_PURPLE_BEAM, target))
+                                                aur->SetDuration(60000);
+                                        }
+                                    }
+                                }
+                                events.ScheduleEvent(EVENT_RESET_ORBS, 18s);
+                                events.Repeat(28s);
+                                events.ScheduleEvent(EVENT_ORB_START_CHANNEL, 35s);
+                                break;
+                            case EVENT_ORB_START_CHANNEL:
+                                if (orbs[0] && orbs[1]) {
+                                    orbs[1]->CastSpell(orbs[0], SPELL_TWILIGHT_SLICER, true);
+                                    orbs[1]->ClearUnitState(UNIT_STATE_CASTING);
+
+                                    if (orbs[1]->GetVictim())
+                                        orbs[1]->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_REMOVE_CLIENT_CONTROL);
+                                    orbs[1]->GetMotionMaster()->MoveChase(orbs[1]->GetVictim());
+
+                                    if (orbs[0]->GetVictim())
+                                        orbs[0]->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_REMOVE_CLIENT_CONTROL);
+                                    orbs[0]->GetMotionMaster()->MoveChase(orbs[0]->GetVictim());
+                                }
+                                break;
+                            case EVENT_RESET_ORBS:
+                                orbs[0] = NULL;
+                                orbs[1] = NULL;
+                                break;
+                            case EVENT_WHELP:
+                                for (uint8 i = 0; i < 5; i++) {
+                                    uint8 posId = urand(0, 8);
+                                    me->SummonCreature(NPC_TWILIGHT_WHELP, spawnPos[posId]);
+                                }
+
+                                me->Yell(YELL_SUMMON, LANG_UNIVERSAL, 0);
+                                events.Repeat(45s);
+                                break;
+                            case EVENT_FLAMES_TRIGGER:
+                                if (events.IsInPhase(PHASE_TWO)) {
+                                    for (uint8 i = 0; i < 4; i++) {
+                                        uint8 posId = i;
+                                        me->SummonCreature(NPC_FLAME_TRIGGER, flamesPos[posId]);
+                                    }
+                                    break;
+                                }
+                                break;
+                            case EVENT_TWILIGHT_DRAKE:
+                                if (!events.IsInPhase(PHASE_ONE)) {
+                                    me->SummonCreature(NPC_TWILIGHT_DRAKE, spawnPos[urand(0, 8)]);
+                                    events.Repeat(urand(18000, 30000));
+                                    break;
+                                }
+                                break;
+                            case EVENT_SPITECALLER:
+                                if (!events.IsInPhase(PHASE_ONE)) {
+                                    me->SummonCreature(NPC_SPITCALLER, spawnPos[urand(0, 8)]);
+                                    events.Repeat(urand(18000, 30000));
+                                    break;
+                                }
+                                break;
+                            case EVENT_START_MAGIC_FIGHT:
+                                if (events.IsInPhase(PHASE_TWO)) {
+                                    if (Creature * calen = me->SummonCreature(NPC_CALEN, -1009.35f, -801.97f, 438.59f,
+                                                                              0.81f)) {
+                                        if (Creature * target = me->FindNearestCreature(NPC_LASER_TRIGGER, 100.0f,
+                                                                                        true)) {
+                                            me->CastSpell(target, SPELL_TWILIGHT_POWER, false);
+                                        }
+                                    }
+                                    me->Yell("This will be your tomb as well as theirs!", LANG_UNIVERSAL, 0);
+                                    break;
+                                }
+                                break;
+                            case EVENT_EXPOSE_EGG:
+                                if (events.IsInPhase(PHASE_TWO)) {
+                                    // Expose eggs!
+                                    if (eggs[0])
+                                        me->RemoveAura(SPELL_TWILIGHT_CARAPACE);
+                                    if (eggs[1])
+                                        me->RemoveAura(SPELL_TWILIGHT_CARAPACE);
+                                    events.Repeat(60s);
+                                    break;
+                                }
+                                break;
+                            case EVENT_BLOCK_EGG:
+                                //Reblock eggs
+                                if (events.IsInPhase(PHASE_TWO)) {
+                                    if (eggs[0])
+                                        me->AddAura(SPELL_TWILIGHT_CARAPACE, eggs[0]);
+                                    if (eggs[1])
+                                        me->AddAura(SPELL_TWILIGHT_CARAPACE, eggs[1]);
+                                    events.Repeat(60s);
+                                    break;
+                                }
+                                break;
+                            default:
+                                break;
+                        }
                     }
                 }
                 DoMeleeAttackIfReady();
@@ -484,15 +599,17 @@ public:
                 switch (eventId)
                 {
                     case EVENT_CALEN_LASER:
-                        if (Creature* target = me->FindNearestCreature(NPC_LASER_TRIGGER, 100.0f, true))
-                        {
-                            target->GetMotionMaster()->MoveTakeoff(0, target->GetHomePosition());
+                        if(events.IsInPhase(PHASE_TWO)) {
+                            if (Creature * target = me->FindNearestCreature(NPC_LASER_TRIGGER, 100.0f, true)) {
+                                target->GetMotionMaster()->MoveTakeoff(0, target->GetHomePosition());
 
-                            DoCast(target, SPELL_FIERY_RESOLVE);
+                                DoCast(target, SPELL_FIERY_RESOLVE);
 
-                            me->setRegeneratingHealth(false);
+                                me->setRegeneratingHealth(false);
+                            }
+                            events.Repeat(5s);
+                            break;
                         }
-                        events.Repeat(5s);
                         break;
                 }
             }

@@ -115,13 +115,13 @@ Position const spawnPos[9] =
     {-1029.42f, -774.76f, 438.59f, 0.22f},
 };
 
-Position const flamesPos[4] =
+/*Position const flamesPos[4] =
 {
     {-895.89f, -765.88f, 442.16f, 0.22f},
     {-912.87f, -770.63f, 440.43f, 0.22f},
     {-994.33f, -665.81f, 440.45f, 0.22f},
     {-999.33f, -693.72f, 440.87f, 0.22f},
-};
+}; */
 
 class boss_sinestra : public CreatureScript
 {
@@ -244,11 +244,8 @@ class boss_sinestra : public CreatureScript
                     me->AddAura(SPELL_MANA_BARRIER, me);
                     events.SetPhase(PHASE_TWO);
 
-                    if(!events.IsInPhase(PHASE_TWO))
-                        return;
-
                     events.ScheduleEvent(EVENT_START_MAGIC_FIGHT, 5s, PHASE_TWO);
-                    events.ScheduleEvent(EVENT_FLAMES_TRIGGER, 12s, PHASE_TWO);
+                    //events.ScheduleEvent(EVENT_FLAMES_TRIGGER, 12s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_EXPOSE_EGG, 5s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_BLOCK_EGG, 25s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_TWILIGHT_DRAKE, urand(18000,30000));
@@ -281,9 +278,6 @@ class boss_sinestra : public CreatureScript
                         me->CastStop();
                         me->RemoveAura(SPELL_MANA_BARRIER);
 
-                        if(!events.IsInPhase(PHASE_THREE))
-                            return;
-
                         if (Creature* calen = me->FindNearestCreature(NPC_CALEN, 100.0f, true))
                         {
                             calen->CastStop();
@@ -303,13 +297,10 @@ class boss_sinestra : public CreatureScript
 
             void UpdateAI(uint32 diff) override
             {
-                if (!UpdateVictim())
+                if (!UpdateVictim() || (me->HasUnitState(UNIT_STATE_CASTING) && !events.IsInPhase(PHASE_TWO)))
                     return;
 
                 events.Update(diff);
-
-                if (me->HasUnitState(UNIT_STATE_CASTING) && !events.IsInPhase(PHASE_TWO))
-                    return;
 
                 if(!events.IsInPhase(PHASE_TWO)) {
                     while (uint32 eventId = events.ExecuteEvent()) {
@@ -441,7 +432,7 @@ class boss_sinestra : public CreatureScript
                                 me->Yell(YELL_SUMMON, LANG_UNIVERSAL, 0);
                                 events.Repeat(45s);
                                 break;
-                            case EVENT_FLAMES_TRIGGER:
+                            /*case EVENT_FLAMES_TRIGGER:
                                 if (events.IsInPhase(PHASE_TWO)) {
                                     for (uint8 i = 0; i < 4; i++) {
                                         uint8 posId = i;
@@ -449,7 +440,7 @@ class boss_sinestra : public CreatureScript
                                     }
                                     break;
                                 }
-                                break;
+                                break; */
                             case EVENT_TWILIGHT_DRAKE:
                                 if (!events.IsInPhase(PHASE_ONE)) {
                                     me->SummonCreature(NPC_TWILIGHT_DRAKE, spawnPos[urand(0, 8)]);
@@ -468,9 +459,15 @@ class boss_sinestra : public CreatureScript
                                 if (events.IsInPhase(PHASE_TWO)) {
                                     if (Creature * calen = me->SummonCreature(NPC_CALEN, -1009.35f, -801.97f, 438.59f,
                                                                               0.81f)) {
-                                        if (Creature * target = me->FindNearestCreature(NPC_LASER_TRIGGER, 100.0f,
-                                                                                        true)) {
-                                            me->CastSpell(target, SPELL_TWILIGHT_POWER, false);
+                                        if (Creature* target = me->SummonCreature(NPC_LASER_TRIGGER, -988.828f, -787.879f, 449.618f, 0.49f))
+                                        {
+                                            target->SetHover(true);
+                                            target->SetDisableGravity(true);
+                                            target->SetCanFly(true);
+                                            target->SetFlag(UNIT_FIELD_FLAGS, UnitFlags(UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
+                                            target->GetMotionMaster()->MoveTakeoff(0, target->GetHomePosition());
+
+                                            DoCast(target, SPELL_TWILIGHT_POWER);
                                         }
                                     }
                                     me->Yell("This will be your tomb as well as theirs!", LANG_UNIVERSAL, 0);
@@ -543,7 +540,12 @@ public:
                 {
                     case EVENT_CALEN_LASER:
                         if(events.IsInPhase(PHASE_TWO)) {
-                            if (Creature * target = me->FindNearestCreature(NPC_LASER_TRIGGER, 100.0f, true)) {
+                            if (Creature* target = me->SummonCreature(NPC_LASER_TRIGGER, -988.828f, -787.879f, 449.618f, 0.49f))
+                            {
+                                target->SetHover(true);
+                                target->SetDisableGravity(true);
+                                target->SetCanFly(true);
+                                target->SetFlag(UNIT_FIELD_FLAGS, UnitFlags(UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
                                 target->GetMotionMaster()->MoveTakeoff(0, target->GetHomePosition());
 
                                 DoCast(target, SPELL_FIERY_RESOLVE);
@@ -621,7 +623,7 @@ class npc_sinestra_twilight_whelp : public CreatureScript
                 if (Creature* essence = me->SummonCreature(NPC_ESSENCE, pos, TEMPSUMMON_MANUAL_DESPAWN, 0, 0))
                 {
                     DoZoneInCombat(essence);
-                    essence->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_REMOVE_CLIENT_CONTROL);
+                    essence->SetFlag(UNIT_FIELD_FLAGS, UnitFlags(UNIT_FLAG_REMOVE_CLIENT_CONTROL | UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
                     essence->SetReactState(REACT_PASSIVE);
                     essence->AttackStop();
                     essence->StopMoving();

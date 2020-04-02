@@ -157,7 +157,7 @@ enum BoTCreatures
     NPC_PULSING_TWILIGHT_EGG            = 46842,
     NPC_FLAME_TRIGGER                   = 51629,
     NPC_SHADOW_ORB                      = 49863,
-    NPC_LASER_TRIGGER                   = 46835,
+    NPC_LASER_TRIGGER                   = 46288,
 
     // Generic Creatures
     NPC_INVISIBLE_STALKER               = 42098

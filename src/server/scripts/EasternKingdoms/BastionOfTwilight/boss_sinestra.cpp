@@ -246,7 +246,7 @@ class boss_sinestra : public CreatureScript
                     events.ScheduleEvent(EVENT_START_MAGIC_FIGHT, 10s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_FLAMES_TRIGGER, 12s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_EXPOSE_EGG, 5s, PHASE_TWO);
-                    events.ScheduleEvent(EVENT_EXPOSE_EGG, 25s, PHASE_TWO);
+                    events.ScheduleEvent(EVENT_EXPOSE_EGG, 25s, PHASE_TWO); 
                     events.ScheduleEvent(EVENT_TWILIGHT_DRAKE, urand(18000,30000), PHASE_TWO);
                     events.ScheduleEvent(EVENT_SPITECALLER, urand(18000,35000), PHASE_TWO);
                 }
@@ -299,7 +299,7 @@ class boss_sinestra : public CreatureScript
                 if (!UpdateVictim())
                     return;
 
-                events.Update(diff);
+                //events.Update(diff);
 
                 if (me->HasUnitState(UNIT_STATE_CASTING) && !events.IsInPhase(PHASE_TWO))
                     return;

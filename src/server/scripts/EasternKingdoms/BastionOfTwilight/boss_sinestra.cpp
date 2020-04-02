@@ -80,6 +80,8 @@ enum events
     EVENT_SPITECALLER,
     EVENT_FLAMES_TRIGGER,
     EVENT_CALEN_LASER,
+    EVENT_EXPOSE_EGG,
+    EVENT_BLOCK_EGG,
 };
 
 enum sharedDatas
@@ -113,15 +115,12 @@ Position const spawnPos[9] =
     {-1029.42f, -774.76f, 438.59f, 0.22f},
 };
 
-Position const flamesPos[7] =
+Position const flamesPos[4] =
 {
     {-895.89f, -765.88f, 442.16f, 0.22f},
     {-912.87f, -770.63f, 440.43f, 0.22f},
     {-994.33f, -665.81f, 440.45f, 0.22f},
     {-999.33f, -693.72f, 440.87f, 0.22f},
-    {-932.12f, -774.44f, 439.78f, 0.22f},
-    {-998.55f, -711.15f, 439.33f, 0.22f},
-    {-996.73f, -731.15f, 438.30f, 0.22f},
 };
 
 class boss_sinestra : public CreatureScript
@@ -244,6 +243,7 @@ class boss_sinestra : public CreatureScript
                     events.SetPhase(PHASE_TWO);
                     events.ScheduleEvent(EVENT_START_MAGIC_FIGHT, 5s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_FLAMES_TRIGGER, 12s, PHASE_TWO);
+                    events.ScheduleEvent(EVENT_BLOCK_EGG, 25s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_TWILIGHT_DRAKE, urand(18000,30000), PHASE_TWO);
                     events.ScheduleEvent(EVENT_SPITECALLER, urand(18000,35000), PHASE_TWO);
                 }
@@ -296,7 +296,7 @@ class boss_sinestra : public CreatureScript
                 if (!UpdateVictim())
                     return;
 
-                if (!events.IsInPhase(PHASE_TWO) && me->HasUnitState(UNIT_STATE_CASTING))
+                if (me->HasUnitState(UNIT_STATE_CASTING))
                     return;
 
                 events.Update(diff);
@@ -396,7 +396,7 @@ class boss_sinestra : public CreatureScript
                             events.ScheduleEvent(EVENT_WHELP, 45s);
                             break;
                         case EVENT_FLAMES_TRIGGER:
-                            for (uint8 i = 0; i < 7; i++)
+                            for (uint8 i = 0; i < 4; i++)
                             {
                                 uint8 posId = i;
                                 me->SummonCreature(NPC_FLAME_TRIGGER, flamesPos[posId]);
@@ -416,15 +416,21 @@ class boss_sinestra : public CreatureScript
                                 if (Creature* target = me->FindNearestCreature(NPC_LASER_TRIGGER, 100.0f, true))
                                 {
                                     me->CastSpell(target, SPELL_TWILIGHT_POWER, false);
+                                    me->ClearUnitState(UNIT_STATE_CASTING);
                                 }
                             }
                             me->Yell("This will be your tomb as well as theirs!", LANG_UNIVERSAL, 0);
-
-                            if(eggs[0])
-                                eggs[0]->RemoveAura(SPELL_TWILIGHT_CARAPACE);
-                            if(eggs[1])
-                                eggs[1]->RemoveAura(SPELL_TWILIGHT_CARAPACE);
-
+                            break;
+                        case EVENT_BLOCK_EGG:
+                            //Reblock eggs
+                            if(events.IsInPhase(PHASE_TWO)) {
+                                if (eggs[0])
+                                    me->AddAura(SPELL_TWILIGHT_CARAPACE, eggs[0]);
+                                if (eggs[1])
+                                    me->AddAura(SPELL_TWILIGHT_CARAPACE, eggs[1]);
+                                events.Repeat(60s);
+                                break;
+                            }
                             break;
                         default:
                             break;
@@ -456,7 +462,8 @@ public:
         {
             me->Yell("Sintharia! Your master owes me a great debt... one that I intend to extract from his consort's hide!", LANG_UNIVERSAL, 0);
             me->AddAura(SPELL_PYRRHIC_FOCUS, me);
-            events.ScheduleEvent(EVENT_CALEN_LASER, 2000);
+            events.ScheduleEvent(EVENT_CALEN_LASER, 1s);
+            events.ScheduleEvent(EVENT_EXPOSE_EGG, 5s);
         }
 
 
@@ -477,6 +484,14 @@ public:
                             me->setRegeneratingHealth(false);
                         }
                         events.Repeat(5s);
+                        break;
+                    case EVENT_EXPOSE_EGG:
+                        // Expose eggs!
+                        if(eggs[0])
+                            me->RemoveAura(SPELL_TWILIGHT_CARAPACE);
+                        if(eggs[1])
+                            me->RemoveAura(SPELL_TWILIGHT_CARAPACE);
+                        events.Repeat(60s);
                         break;
                 }
             }

@@ -243,6 +243,7 @@ class boss_sinestra : public CreatureScript
                     events.SetPhase(PHASE_TWO);
                     events.ScheduleEvent(EVENT_START_MAGIC_FIGHT, 5s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_FLAMES_TRIGGER, 12s, PHASE_TWO);
+                    events.ScheduleEvent(EVENT_EXPOSE_EGG, 5s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_BLOCK_EGG, 25s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_TWILIGHT_DRAKE, urand(18000,30000), PHASE_TWO);
                     events.ScheduleEvent(EVENT_SPITECALLER, urand(18000,35000), PHASE_TWO);
@@ -421,6 +422,14 @@ class boss_sinestra : public CreatureScript
                             }
                             me->Yell("This will be your tomb as well as theirs!", LANG_UNIVERSAL, 0);
                             break;
+                        case EVENT_EXPOSE_EGG:
+                            // Expose eggs!
+                            if(eggs[0])
+                                me->RemoveAura(SPELL_TWILIGHT_CARAPACE);
+                            if(eggs[1])
+                                me->RemoveAura(SPELL_TWILIGHT_CARAPACE);
+                            events.Repeat(60s);
+                            break;
                         case EVENT_BLOCK_EGG:
                             //Reblock eggs
                             if(events.IsInPhase(PHASE_TWO)) {
@@ -463,7 +472,6 @@ public:
             me->Yell("Sintharia! Your master owes me a great debt... one that I intend to extract from his consort's hide!", LANG_UNIVERSAL, 0);
             me->AddAura(SPELL_PYRRHIC_FOCUS, me);
             events.ScheduleEvent(EVENT_CALEN_LASER, 1s);
-            events.ScheduleEvent(EVENT_EXPOSE_EGG, 5s);
         }
 
 
@@ -484,14 +492,6 @@ public:
                             me->setRegeneratingHealth(false);
                         }
                         events.Repeat(5s);
-                        break;
-                    case EVENT_EXPOSE_EGG:
-                        // Expose eggs!
-                        if(eggs[0])
-                            me->RemoveAura(SPELL_TWILIGHT_CARAPACE);
-                        if(eggs[1])
-                            me->RemoveAura(SPELL_TWILIGHT_CARAPACE);
-                        events.Repeat(60s);
                         break;
                 }
             }

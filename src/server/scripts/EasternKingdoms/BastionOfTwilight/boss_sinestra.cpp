@@ -79,8 +79,6 @@ enum events
     EVENT_TWILIGHT_DRAKE,
     EVENT_SPITECALLER,
     EVENT_FLAMES_TRIGGER,
-    EVENT_EXPOSE_EGG,
-    EVENT_BLOCK_EGG,
 };
 
 enum sharedDatas
@@ -157,6 +155,7 @@ class boss_sinestra : public CreatureScript
             void Reset() override
             {
                 _Reset();
+                Initialize();
 
                 summons.DespawnAll();
 
@@ -171,8 +170,6 @@ class boss_sinestra : public CreatureScript
                 {// despawn twilight essence
                     (*itr)->DespawnOrUnsummon();
                 }
-
-                Initialize();
             }
 
             void JustEngagedWith(Unit* /*who*/) override
@@ -212,7 +209,7 @@ class boss_sinestra : public CreatureScript
                 events.ScheduleEvent(EVENT_WRACK, 15s, PHASE_ONE);
                 events.ScheduleEvent(EVENT_FLAME_BREATH, 20s, PHASE_ONE);
                 events.ScheduleEvent(EVENT_TWILIGHT_SLICER, 28s, PHASE_ONE);
-                events.ScheduleEvent(EVENT_CHECK_MELEE, 2s, PHASE_ONE);
+                events.ScheduleEvent(EVENT_CHECK_MELEE, 5s, PHASE_ONE);
                 events.ScheduleEvent(EVENT_WHELP, 45s, PHASE_ONE);
             }
 
@@ -245,8 +242,6 @@ class boss_sinestra : public CreatureScript
                     events.SetPhase(PHASE_TWO);
                     events.ScheduleEvent(EVENT_START_MAGIC_FIGHT, 10s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_FLAMES_TRIGGER, 12s, PHASE_TWO);
-                    events.ScheduleEvent(EVENT_EXPOSE_EGG, 5s, PHASE_TWO);
-                    events.ScheduleEvent(EVENT_EXPOSE_EGG, 25s, PHASE_TWO); 
                     events.ScheduleEvent(EVENT_TWILIGHT_DRAKE, urand(18000,30000), PHASE_TWO);
                     events.ScheduleEvent(EVENT_SPITECALLER, urand(18000,35000), PHASE_TWO);
                 }
@@ -299,10 +294,7 @@ class boss_sinestra : public CreatureScript
                 if (!UpdateVictim())
                     return;
 
-                //events.Update(diff);
-
-                if (me->HasUnitState(UNIT_STATE_CASTING) && !events.IsInPhase(PHASE_TWO))
-                    return;
+                events.Update(diff);
 
                 while (uint32 eventId = events.ExecuteEvent())
                 {
@@ -429,22 +421,12 @@ class boss_sinestra : public CreatureScript
                                 }
                             }
                             me->Yell("This will be your tomb as well as theirs!", LANG_UNIVERSAL, 0);
-                            break;
-                        case EVENT_EXPOSE_EGG:
-                            // Expose eggs!
+
                             if(eggs[0])
                                 eggs[0]->RemoveAura(SPELL_TWILIGHT_CARAPACE);
                             if(eggs[1])
                                 eggs[1]->RemoveAura(SPELL_TWILIGHT_CARAPACE);
-                            events.ScheduleEvent(EVENT_EXPOSE_EGG, 60s, PHASE_TWO);
-                            break;
-                        case EVENT_BLOCK_EGG:
-                            //Reblock eggs
-                            if(eggs[0])
-                                eggs[0]->AddAura(SPELL_TWILIGHT_CARAPACE, eggs[0]);
-                            if(eggs[1])
-                                eggs[1]->AddAura(SPELL_TWILIGHT_CARAPACE, eggs[1]);
-                            events.ScheduleEvent(EVENT_BLOCK_EGG, 60s, PHASE_TWO);
+
                             break;
                         default:
                             break;

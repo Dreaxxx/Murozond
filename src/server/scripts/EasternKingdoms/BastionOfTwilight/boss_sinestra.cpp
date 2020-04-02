@@ -251,8 +251,8 @@ class boss_sinestra : public CreatureScript
                     events.ScheduleEvent(EVENT_FLAMES_TRIGGER, 12s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_EXPOSE_EGG, 5s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_BLOCK_EGG, 25s, PHASE_TWO);
-                    events.ScheduleEvent(EVENT_TWILIGHT_DRAKE, urand(18000,30000), PHASE_TWO);
-                    events.ScheduleEvent(EVENT_SPITECALLER, urand(18000,35000), PHASE_TWO);
+                    events.ScheduleEvent(EVENT_TWILIGHT_DRAKE, urand(18000,30000));
+                    events.ScheduleEvent(EVENT_SPITECALLER, urand(18000,35000));
                 }
             }
 
@@ -432,63 +432,6 @@ class boss_sinestra : public CreatureScript
                 {
                     while (uint32 eventId = events.ExecuteEvent()) {
                         switch (eventId) {
-                            case EVENT_TWILIGHT_SLICER:
-                                for (uint8 i = 0; i < 2; i++) {
-                                    if (Unit * target = SelectTarget(SELECT_TARGET_RANDOM, 0.0f, 100.0f, true,
-                                                                     -SPELL_PURPLE_BEAM)) {
-                                        Position pos = target->GetPosition();
-                                        float width = frand(5, 20);
-                                        float degree = frand(0, 6.28f);
-                                        pos.Relocate(pos.GetPositionX() + cos(degree) * width,
-                                                     pos.GetPositionY() + sin(degree) * width);
-                                        if (Creature * orb = me->SummonCreature(NPC_SHADOW_ORB, pos,
-                                                                                TEMPSUMMON_TIMED_DESPAWN, 15s, 0)) {
-                                            if (!orbs[0]) {
-                                                orbs[0] = orb;
-                                                if (instance)
-                                                    instance->SetGuidData(DATA_ORB_0, orb->GetGUID());
-                                            } else {
-                                                orbs[1] = orb;
-
-                                                if (instance)
-                                                    instance->SetGuidData(DATA_ORB_1, orb->GetGUID());
-                                            }
-
-                                            orb->SetFlag(UNIT_FIELD_FLAGS, UnitFlags(
-                                                    UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
-                                            orb->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_REMOVE_CLIENT_CONTROL);
-                                            orb->AddThreat(target, 1000000.0f);
-                                            orb->Attack(target, true);
-
-                                            // Twilight pulse!
-                                            orb->CastSpell(orb, SPELL_TWILIGHT_PULSE, true);
-                                            if (Aura * aur = orb->AddAura(SPELL_PURPLE_BEAM, target))
-                                                aur->SetDuration(60000);
-                                        }
-                                    }
-                                }
-                                events.ScheduleEvent(EVENT_RESET_ORBS, 18s);
-                                events.Repeat(28s);
-                                events.ScheduleEvent(EVENT_ORB_START_CHANNEL, 35s);
-                                break;
-                            case EVENT_ORB_START_CHANNEL:
-                                if (orbs[0] && orbs[1]) {
-                                    orbs[1]->CastSpell(orbs[0], SPELL_TWILIGHT_SLICER, true);
-                                    orbs[1]->ClearUnitState(UNIT_STATE_CASTING);
-
-                                    if (orbs[1]->GetVictim())
-                                        orbs[1]->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_REMOVE_CLIENT_CONTROL);
-                                    orbs[1]->GetMotionMaster()->MoveChase(orbs[1]->GetVictim());
-
-                                    if (orbs[0]->GetVictim())
-                                        orbs[0]->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_REMOVE_CLIENT_CONTROL);
-                                    orbs[0]->GetMotionMaster()->MoveChase(orbs[0]->GetVictim());
-                                }
-                                break;
-                            case EVENT_RESET_ORBS:
-                                orbs[0] = NULL;
-                                orbs[1] = NULL;
-                                break;
                             case EVENT_WHELP:
                                 for (uint8 i = 0; i < 5; i++) {
                                     uint8 posId = urand(0, 8);

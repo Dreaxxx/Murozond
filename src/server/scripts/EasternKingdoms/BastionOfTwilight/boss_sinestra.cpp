@@ -79,6 +79,7 @@ enum events
     EVENT_TWILIGHT_DRAKE,
     EVENT_SPITECALLER,
     EVENT_FLAMES_TRIGGER,
+    EVENT_CALEN_LASER,
 };
 
 enum sharedDatas
@@ -155,7 +156,6 @@ class boss_sinestra : public CreatureScript
             void Reset() override
             {
                 _Reset();
-                Initialize();
 
                 summons.DespawnAll();
 
@@ -170,6 +170,8 @@ class boss_sinestra : public CreatureScript
                 {// despawn twilight essence
                     (*itr)->DespawnOrUnsummon();
                 }
+
+                Initialize();
             }
 
             void JustEngagedWith(Unit* /*who*/) override
@@ -240,7 +242,7 @@ class boss_sinestra : public CreatureScript
                     me->RemoveAura(SPELL_DRAINED);
                     me->AddAura(SPELL_MANA_BARRIER, me);
                     events.SetPhase(PHASE_TWO);
-                    events.ScheduleEvent(EVENT_START_MAGIC_FIGHT, 10s, PHASE_TWO);
+                    events.ScheduleEvent(EVENT_START_MAGIC_FIGHT, 5s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_FLAMES_TRIGGER, 12s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_TWILIGHT_DRAKE, urand(18000,30000), PHASE_TWO);
                     events.ScheduleEvent(EVENT_SPITECALLER, urand(18000,35000), PHASE_TWO);
@@ -274,7 +276,7 @@ class boss_sinestra : public CreatureScript
 
                         if (Creature* calen = me->FindNearestCreature(NPC_CALEN, 100.0f, true))
                         {
-                            // calen->CastStop();
+                            calen->CastStop();
                             if (Unit *pTarget = SelectTarget(SELECT_TARGET_RANDOM, 0))
                                 calen->CastSpell(pTarget, SPELL_ESSENCE_OF_THE_RED, true);
                             calen->DisappearAndDie();
@@ -292,6 +294,9 @@ class boss_sinestra : public CreatureScript
             void UpdateAI(uint32 diff) override
             {
                 if (!UpdateVictim())
+                    return;
+
+                if (!events.IsInPhase(PHASE_TWO) && me->HasUnitState(UNIT_STATE_CASTING))
                     return;
 
                 events.Update(diff);
@@ -408,16 +413,9 @@ class boss_sinestra : public CreatureScript
                         case EVENT_START_MAGIC_FIGHT:
                             if (Creature* calen = me->SummonCreature(NPC_CALEN, -1009.35f, -801.97f, 438.59f, 0.81f))
                             {
-                                calen->Yell("Sintharia! Your master owes me a great debt... one that I intend to extract from his consort's hide!", LANG_UNIVERSAL, 0);
-                                // calen->CastSpell(calen, SPELL_PYRRHIC_FOCUS, true);
-                                calen->AddAura(SPELL_PYRRHIC_FOCUS, calen);
-
                                 if (Creature* target = me->FindNearestCreature(NPC_LASER_TRIGGER, 100.0f, true))
                                 {
-                                    // target->GetMotionMaster()->MoveTakeoff(0, target->GetHomePosition());
-                                    calen->setRegeneratingHealth(false);
                                     me->CastSpell(target, SPELL_TWILIGHT_POWER, false);
-                                    calen->CastSpell(target, SPELL_FIERY_RESOLVE, false);
                                 }
                             }
                             me->Yell("This will be your tomb as well as theirs!", LANG_UNIVERSAL, 0);
@@ -440,6 +438,55 @@ class boss_sinestra : public CreatureScript
         {
             return GetBastionOfTwilightAI<boss_sinestraAI>(creature);
         }
+};
+
+class npc_calen : public CreatureScript
+{
+public:
+    npc_calen() : CreatureScript("npc_calen")
+    { }
+
+    struct npc_calenAI : public ScriptedAI
+    {
+        npc_calenAI(Creature * creature) : ScriptedAI(creature) {}
+
+        EventMap events;
+
+        void IsSummonedBy(Unit* /*summoner*/) override
+        {
+            me->Yell("Sintharia! Your master owes me a great debt... one that I intend to extract from his consort's hide!", LANG_UNIVERSAL, 0);
+            me->AddAura(SPELL_PYRRHIC_FOCUS, me);
+            events.ScheduleEvent(EVENT_CALEN_LASER, 2000);
+        }
+
+
+        void UpdateAI(uint32 uiDiff) override
+        {
+            events.Update(uiDiff);
+            while (uint32 eventId = events.ExecuteEvent())
+            {
+                switch (eventId)
+                {
+                    case EVENT_CALEN_LASER:
+                        if (Creature* target = me->FindNearestCreature(NPC_LASER_TRIGGER, 100.0f, true))
+                        {
+                            target->GetMotionMaster()->MoveTakeoff(0, target->GetHomePosition());
+
+                            DoCast(target, SPELL_FIERY_RESOLVE);
+
+                            me->setRegeneratingHealth(false);
+                        }
+                        events.Repeat(5s);
+                        break;
+                }
+            }
+        }
+    };
+
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return GetBastionOfTwilightAI<npc_calenAI>(creature);
+    }
 };
 
 enum whelpEvents
@@ -884,6 +931,7 @@ class spell_sinestra_phyrric_focus : public SpellScriptLoader
 void AddSC_boss_sinestra()
 {
     new boss_sinestra();
+    new npc_calen();
     new npc_sinestra_twilight_whelp();
     new npc_sinestra_add();
     new spell_sinestra_wreck();

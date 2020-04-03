@@ -655,7 +655,7 @@ public:
                         events.Repeat(5s);
                         break;
                     case EVENT_ESSENCE_OF_THE_RED:
-                        if (!me->FindNearestCreature(NPC_PULSATING_EGG, 200.0f, true))
+                        if (!me->FindNearestCreature(NPC_PULSING_TWILIGHT_EGG, 200.0f, true))
                         {
                             Talk(SAY_CALEN_P3);
                             std::list<Unit*> TargetList;
@@ -665,7 +665,7 @@ public:
                             Cell::VisitAllObjects(me, searcher, 200.0f);
                             for (std::list<Unit*>::iterator itr = TargetList.begin(); itr != TargetList.end();
                                  ++itr)
-                                DoCast(*itr, SPELL_ESSENCE_CALEN, true); //Have a little Calen Essence - Night elf White Sauce version.
+                                DoCast(*itr, SPELL_ESSENCE_OF_THE_RED, true); //Have a little Calen Essence - Night elf White Sauce version.
                             me->DespawnOrUnsummon(3000);
                         }
                         events.ScheduleEvent(EVENT_ESSENCE_OF_THE_RED, 4000);
@@ -852,7 +852,7 @@ class npc_sinestra_twilight_whelp : public CreatureScript
         {
             npc_sinestra_twilight_whelpAI(Creature * creature) : ScriptedAI(creature)
             {
-                Initialize();
+                instance = creature->GetInstanceScript();
             }
 
             InstanceScript* instance;
@@ -892,22 +892,20 @@ class npc_sinestra_twilight_whelp : public CreatureScript
                     if (!died)
                     {
                         me->RemoveAllAuras();
-                        me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE);
                         me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                         me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
                         me->SetFlag(UNIT_NPC_EMOTESTATE, EMOTE_STATE_DEAD);
                         me->SetUInt32Value(UNIT_FIELD_BYTES_1, UNIT_STAND_STATE_DEAD);
                         me->SetReactState(REACT_PASSIVE);
-                        myEssence = me->SummonCreature(NPC_TWILIGHT_ESSENCE, me->GetPositionX(), me->GetPositionY(),
+                        myEssence = me->SummonCreature(NPC_ESSENCE, me->GetPositionX(), me->GetPositionY(),
                                                        me->GetPositionZ(), 0.0f, TEMPSUMMON_MANUAL_DESPAWN);
                         died = true;
                     }
 
-                    if (Unit* swamp = me->FindNearestCreature(NPC_TWILIGHT_ESSENCE, 4.0f, true))
+                    if (Unit* swamp = me->FindNearestCreature(NPC_ESSENCE, 4.0f, true))
                         if (swamp && swamp->GetGUID() != myEssence->GetGUID())
                         {
                             me->SetHealth(me->GetMaxHealth());
-                            me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE);
                             me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                             me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
                             me->RemoveFlag(UNIT_NPC_EMOTESTATE, EMOTE_STATE_DEAD);
@@ -919,7 +917,7 @@ class npc_sinestra_twilight_whelp : public CreatureScript
 
                 events.Update(diff);
 
-                if (Creature* sinestra = me->FindNearestCreature(NPC_SINESTRA, 200.0f, true))
+                if (Creature* sinestra = me->FindNearestCreature(BOSS_SINESTRA, 200.0f, true))
                     if (!sinestra || !sinestra->isInCombat()) // Is dead / evaded.
                         me->DespawnOrUnsummon();
 
@@ -928,8 +926,8 @@ class npc_sinestra_twilight_whelp : public CreatureScript
                     switch (eventId)
                     {
                         case EVENT_SPIT:
-                            DoCast(me->GetVictim(), SPELL_TWI_SPIT);
-                            events.ScheduleEvent(EVENT_SPIT, urand(9000, 12000));
+                            DoCastVictim(SPELL_TWILIGHT_SPIT);
+                            events.Repeat(urand(9000, 12000));
                             break;
                     }
                 }
@@ -949,6 +947,7 @@ enum sinestraAddEvents
 {
     EVENT_TWILIGHT_BREATH = 1,
     EVENT_UNLEASH_ESSENCE,
+    EVENT_INDOMITABLE,
 };
 
 class npc_sinestra_add : public CreatureScript
@@ -972,16 +971,31 @@ class npc_sinestra_add : public CreatureScript
 
             void JustEngagedWith(Unit* /*who*/) override
             {
-                if (me->GetEntry() == NPC_TWILIGHT_DRAKE)
+                if (me->GetEntry() == NPC_TWILIGHT_DRAKE) {
                     events.ScheduleEvent(EVENT_TWILIGHT_BREATH, urand(7000, 10000));
-                else
+
+                    if (Creature * caly = me->FindNearestCreature(NPC_CALEN, 200.0f, true)) {
+                        me->SetInCombatWith(caly);
+                        me->AddThreat(caly, 250.0f);
+                    }
+                }
+                else {
+                    events.ScheduleEvent(EVENT_INDOMITABLE, 1s);
                     events.ScheduleEvent(EVENT_UNLEASH_ESSENCE, urand(22000, 30000));
+                }
             }
 
             void UpdateAI(uint32 uiDiff) override
             {
                 if (!UpdateVictim())
                     return;
+
+                if (me->GetEntry() == NPC_TWILIGHT_DRAKE)
+                    if (Creature* essence = me->FindNearestCreature(NPC_TWILIGHT_ESSENCE, 4.0f, true)) // Eat that essence
+                    {
+                        DoCast(me, SPELL_ABSORB_ESSENCE);
+                        essence->DespawnOrUnsummon();
+                    }
 
                 events.Update(uiDiff);
 
@@ -991,11 +1005,18 @@ class npc_sinestra_add : public CreatureScript
                     {
                         case EVENT_TWILIGHT_BREATH:
                             DoCastVictim(SPELL_TWILIGHT_BREATH);
-                            events.ScheduleEvent(EVENT_TWILIGHT_BREATH, urand(15000, 20000));
+                            events.Repeat(15s, 20s);
                             break;
                         case EVENT_UNLEASH_ESSENCE:
                             DoCastAOE(SPELL_UNLEASH_ESSENCE);
-                            events.ScheduleEvent(EVENT_UNLEASH_ESSENCE, urand(22000, 30000));
+                            events.Repeat(22s, 30s);
+                            break;
+                        case EVENT_INDOMITABLE:
+                            if (me->HasUnitState(UNIT_STATE_STUNNED) || me->HasUnitState(UNIT_STATE_ROOT))
+                            {
+                                DoCast(me, SPELL_INDOMITABLE);
+                                events.Repeat(1s);
+                            }
                             break;
                     }
                 }
@@ -1038,7 +1059,7 @@ public:
             me->SetReactState(REACT_PASSIVE);
             me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
             me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-            events.ScheduleEvent(EVENT_INCREASE, 15000);
+            events.ScheduleEvent(EVENT_INCREASE, 15s);
         }
 
         void UpdateAI(const uint32 diff)
@@ -1051,7 +1072,7 @@ public:
                 {
                     case EVENT_INCREASE:
                         DoCast(me, SPELL_TWI_INCREASE);
-                        events.ScheduleEvent(EVENT_INCREASE, 15000);
+                        events.Repeat(15s);
                         return;
                 }
             }

@@ -138,6 +138,7 @@ enum events
     EVENT_TARGET,
     EVENT_DESPAWN,
     EVENT_INCREASE,
+    EVENT_ESSENCE_OF_THE_RED,
 };
 
 enum sharedDatas
@@ -170,14 +171,6 @@ Position const spawnPos[9] =
     {-1018.57f, -760.42f, 438.59f, 5.71f},
     {-1029.42f, -774.76f, 438.59f, 0.22f},
 };
-
-/*Position const flamesPos[4] =
-{
-    {-895.89f, -765.88f, 442.16f, 0.22f},
-    {-912.87f, -770.63f, 440.43f, 0.22f},
-    {-994.33f, -665.81f, 440.45f, 0.22f},
-    {-999.33f, -693.72f, 440.87f, 0.22f},
-}; */
 
 class boss_sinestra : public CreatureScript
 {
@@ -218,7 +211,7 @@ class boss_sinestra : public CreatureScript
                 }
 
                 me->AddAura(SPELL_DRAINED, me);
-                me->SetHealth(me->GetMaxHealth() / 5 * 3);
+                me->SetHealth(me->CountPctFromMaxHealth(60));
                 me->setRegeneratingHealth(false);
                 me->SetMaxPower(POWER_MANA, 0);
                 me->SetPower(POWER_MANA, 0);
@@ -236,6 +229,7 @@ class boss_sinestra : public CreatureScript
 
                 DespawnTrigger(48018);
                 summons.DespawnAll();
+                me->SetHealth(me->CountPctFromMaxHealth(60));
 
                 std::list<Creature*> unitList;
                 me->GetCreatureListWithEntryInGrid(unitList, NPC_TWILIGHT_WHELP, 250.0f);
@@ -254,7 +248,7 @@ class boss_sinestra : public CreatureScript
 
             void MoveInLineOfSight(Unit* who) override
             {
-                if (!introDone && who->IsWithinDistInMap(me, 40.0f))
+                if (!introDone && who->IsWithinDistInMap(me, 60.0f))
                 {
                     Talk(SAY_AGGRO);
                     introDone = true;
@@ -360,9 +354,9 @@ class boss_sinestra : public CreatureScript
                     events.ScheduleEvent(EVENT_START_MAGIC_FIGHT, 2s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_INTRO_2, 3s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_TWILIGHT_POWA, 15s, PHASE_TWO);
-                    //events.ScheduleEvent(EVENT_FLAMES_TRIGGER, 12s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_TWILIGHT_DRAKE, 16s);
                     events.ScheduleEvent(EVENT_SPITECALLER, 20s);
+                    events.ScheduleEvent(EVENT_SIPHON_EGG, 21s);
                 }
             }
 
@@ -407,14 +401,6 @@ class boss_sinestra : public CreatureScript
                         events.SetPhase(PHASE_THREE);
                         me->CastStop();
                         me->RemoveAura(SPELL_MANA_BARRIER);
-
-                        if (Creature* calen = me->FindNearestCreature(NPC_CALEN, 100.0f, true))
-                        {
-                            calen->CastStop();
-                            if (Unit *pTarget = SelectTarget(SELECT_TARGET_RANDOM, 0))
-                                calen->CastSpell(pTarget, SPELL_ESSENCE_OF_THE_RED, true);
-                            calen->DisappearAndDie();
-                        }
 
                         events.ScheduleEvent(EVENT_WRACK, 15s, PHASE_THREE);
                         events.ScheduleEvent(EVENT_FLAME_BREATH, 20s, PHASE_THREE);
@@ -481,8 +467,8 @@ class boss_sinestra : public CreatureScript
                                     }
                                 }
                                 events.ScheduleEvent(EVENT_RESET_ORBS, 18s);
-                                events.Repeat(28s);
-                                events.ScheduleEvent(EVENT_ORB_START_CHANNEL, 35s);
+                                events.Repeat(urand(15000, 25000));
+                                events.ScheduleEvent(EVENT_ORB_START_CHANNEL, 1s);
                                 break;
                             case EVENT_ORB_START_CHANNEL:
                                 if (orbs[0] && orbs[1]) {
@@ -510,7 +496,7 @@ class boss_sinestra : public CreatureScript
                                             DoCast(target, SPELL_SIN_TWILIGHT_BLAST, false);
                                     }
                                 }
-                                events.Repeat(2s);
+                                events.Repeat(4s);
                                 break;
                             case EVENT_WHELP:
                                 for (uint8 i = 0; i < 5; i++) {
@@ -555,15 +541,6 @@ class boss_sinestra : public CreatureScript
                                 Talk(SAY_ADDS);
                                 events.Repeat(45s);
                                 break;
-                            /*case EVENT_FLAMES_TRIGGER:
-                                if (events.IsInPhase(PHASE_TWO)) {
-                                    for (uint8 i = 0; i < 4; i++) {
-                                        uint8 posId = i;
-                                        me->SummonCreature(NPC_FLAME_TRIGGER, flamesPos[posId]);
-                                    }
-                                    break;
-                                }
-                                break; */
                             case EVENT_TWILIGHT_DRAKE:
                                 if (!events.IsInPhase(PHASE_ONE)) {
                                     me->SummonCreature(NPC_TWILIGHT_DRAKE, spawnPos[urand(0, 8)]);
@@ -594,14 +571,9 @@ class boss_sinestra : public CreatureScript
                                 }
                                 break;
                             case EVENT_TWILIGHT_POWA:
-                                if(Creature* kalen = me->FindNearestCreature(NPC_CALEN, 100.0f, true)) {
-                                    if (Creature * target = me->SummonCreature(NPC_LASER_TRIGGER, -979.41f, -778.21f,
-                                                                               445.40f, 0.72f)) {
-                                        target->SetHover(true);
-                                        target->SetDisableGravity(true);
-                                        target->SetCanFly(true);
-                                        target->SetFlag(UNIT_FIELD_FLAGS,
-                                                        UnitFlags(UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
+                                if(Creature* kalen = me->FindNearestCreature(NPC_CALEN, 300.0f, true)) {
+                                    if (Creature * target = me->FindNearestCreature(NPC_LASER_TRIGGER, 100.f, true)) {
+
                                         target->GetMotionMaster()->MoveTakeoff(0, target->GetHomePosition());
 
                                         DoCast(target, SPELL_TWILIGHT_POWER);
@@ -612,8 +584,7 @@ class boss_sinestra : public CreatureScript
                                 if (Creature* eggnog = me->FindNearestCreature(NPC_PULSING_TWILIGHT_EGG, 200.0f, true))
                                     if (eggnog->HasAura(SPELL_TWILIGHT_CARAPACE))
                                     {
-                                        eggs[0]->RemoveAura(SPELL_TWILIGHT_CARAPACE);
-                                        eggs[1]->RemoveAura(SPELL_TWILIGHT_CARAPACE);
+                                        eggnog->RemoveAura(SPELL_TWILIGHT_CARAPACE);
 
                                         DoCast(eggnog, SPELL_SIPHON_EGG);
 
@@ -659,6 +630,7 @@ public:
             events.ScheduleEvent(EVENT_FIRESHIELD, 1s);
             events.ScheduleEvent(EVENT_REMOVE_FIRESHIELD, 10s);
             events.ScheduleEvent(EVENT_CALEN_LASER, 13s);
+            events.ScheduleEvent(EVENT_ESSENCE_OF_THE_RED, 15s);
         }
 
         void UpdateAI(uint32 uiDiff) override
@@ -676,14 +648,27 @@ public:
                         me->RemoveAura(SPELL_FIREBARRIER);
                         break;
                     case EVENT_CALEN_LASER:
-                        if(events.IsInPhase(PHASE_TWO)) {
-                            if (Creature* target = me->FindNearestCreature(NPC_LASER_TRIGGER, 100.f, true))
-                            {
-                                DoCast(target, SPELL_FIERY_RESOLVE);
-                            }
-                            events.Repeat(5s);
-                            break;
+                        if (Creature* target = me->FindNearestCreature(NPC_LASER_TRIGGER, 100.0f, true))
+                        {
+                            DoCast(target, SPELL_FIERY_RESOLVE);
                         }
+                        events.Repeat(5s);
+                        break;
+                    case EVENT_ESSENCE_OF_THE_RED:
+                        if (!me->FindNearestCreature(NPC_PULSATING_EGG, 200.0f, true))
+                        {
+                            Talk(SAY_CALEN_P3);
+                            std::list<Unit*> TargetList;
+                            Trinity::AnyFriendlyUnitInObjectRangeCheck checker(me, me, 200.0f);
+                            Trinity::UnitListSearcher<Trinity::AnyFriendlyUnitInObjectRangeCheck> searcher(me,
+                                                                                                           TargetList, checker);
+                            Cell::VisitAllObjects(me, searcher, 200.0f);
+                            for (std::list<Unit*>::iterator itr = TargetList.begin(); itr != TargetList.end();
+                                 ++itr)
+                                DoCast(*itr, SPELL_ESSENCE_CALEN, true); //Have a little Calen Essence - Night elf White Sauce version.
+                            me->DespawnOrUnsummon(3000);
+                        }
+                        events.ScheduleEvent(EVENT_ESSENCE_OF_THE_RED, 4000);
                         break;
                 }
             }
@@ -857,11 +842,6 @@ enum whelpEvents
     EVENT_SPIT = 1,
 };
 
-enum whelpActions
-{
-    ACTION_SET_AS_RESPWANED = 1,
-};
-
 class npc_sinestra_twilight_whelp : public CreatureScript
 {
     public:
@@ -875,60 +855,86 @@ class npc_sinestra_twilight_whelp : public CreatureScript
                 Initialize();
             }
 
-            InstanceScript* pInstance;
+            InstanceScript* instance;
             EventMap events;
-            bool respawned;
+            bool Revived, died;
+            Unit* myEssence;
 
-            void Initialize()
+            void IsSummonedBy(Unit* /*summoner*/)
             {
-                events.ScheduleEvent(EVENT_SPIT, urand(10000, 35000));
+                me->AddUnitMovementFlag(MOVEMENTFLAG_FLYING);
+                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 150.0f, true))
+                    AttackStart(target);
+                Revived = false;
+                died = false;
             }
 
-            void IsSummonedBy(Unit* /*summoner*/) override
+            void EnterCombat(Unit* /*who*/)
             {
-                respawned = false;
+                events.ScheduleEvent(EVENT_SPIT, 4000);
             }
 
-            void DoAction(int32 actionId) override
+            void JustDied(Unit* /*killer*/)
             {
-                switch (actionId)
+            }
+
+            void DamageTaken(Unit* /*who*/, uint32& damage)
+            {
+                if (damage > me->GetHealth() && !Revived)
+                    damage = me->GetHealth() - 1;
+            }
+
+            void UpdateAI(const uint32 diff)
+            {
+                if (me->HealthBelowPct(3) && !Revived) // Buli knows a better way... me I can't remember what I know
                 {
-                    case ACTION_SET_AS_RESPWANED:
-                        respawned = true;
-                        break;
+                    // "Die".
+                    if (!died)
+                    {
+                        me->RemoveAllAuras();
+                        me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE);
+                        me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                        me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+                        me->SetFlag(UNIT_NPC_EMOTESTATE, EMOTE_STATE_DEAD);
+                        me->SetUInt32Value(UNIT_FIELD_BYTES_1, UNIT_STAND_STATE_DEAD);
+                        me->SetReactState(REACT_PASSIVE);
+                        myEssence = me->SummonCreature(NPC_TWILIGHT_ESSENCE, me->GetPositionX(), me->GetPositionY(),
+                                                       me->GetPositionZ(), 0.0f, TEMPSUMMON_MANUAL_DESPAWN);
+                        died = true;
+                    }
+
+                    if (Unit* swamp = me->FindNearestCreature(NPC_TWILIGHT_ESSENCE, 4.0f, true))
+                        if (swamp && swamp->GetGUID() != myEssence->GetGUID())
+                        {
+                            me->SetHealth(me->GetMaxHealth());
+                            me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE);
+                            me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+                            me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+                            me->RemoveFlag(UNIT_NPC_EMOTESTATE, EMOTE_STATE_DEAD);
+                            me->SetUInt32Value(UNIT_FIELD_BYTES_1, 0);
+                            me->SetReactState(REACT_AGGRESSIVE);
+                            Revived = true;
+                        }
                 }
-            }
 
-            void JustDied(Unit* /*killer*/) override
-            {
-                if (respawned)
-                    return;
+                events.Update(diff);
 
-                Position pos = me->GetPosition();
-                if (Creature* essence = me->SummonCreature(NPC_ESSENCE, pos, TEMPSUMMON_MANUAL_DESPAWN, 0, 0))
-                {
-                    DoZoneInCombat(essence);
-                    essence->SetFlag(UNIT_FIELD_FLAGS, UnitFlags(UNIT_FLAG_REMOVE_CLIENT_CONTROL | UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
-                    essence->SetReactState(REACT_PASSIVE);
-                    essence->AttackStop();
-                    essence->StopMoving();
-                }
-            }
-
-            void UpdateAI(uint32 uiDiff) override
-            {
-                events.Update(uiDiff);
+                if (Creature* sinestra = me->FindNearestCreature(NPC_SINESTRA, 200.0f, true))
+                    if (!sinestra || !sinestra->isInCombat()) // Is dead / evaded.
+                        me->DespawnOrUnsummon();
 
                 while (uint32 eventId = events.ExecuteEvent())
                 {
                     switch (eventId)
                     {
                         case EVENT_SPIT:
-                            DoCastVictim(SPELL_TWILIGHT_SPIT);
-                            events.ScheduleEvent(EVENT_SPIT, urand(35000, 50000));
+                            DoCast(me->GetVictim(), SPELL_TWI_SPIT);
+                            events.ScheduleEvent(EVENT_SPIT, urand(9000, 12000));
                             break;
                     }
                 }
+
+                DoMeleeAttackIfReady();
             }
         };
 

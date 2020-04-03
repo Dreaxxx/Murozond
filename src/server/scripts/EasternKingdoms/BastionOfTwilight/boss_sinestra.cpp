@@ -36,6 +36,10 @@
 #include "SpellAuras.h"
 #include "GameObject.h"
 #include "GameObjectAI.h"
+#include "Cell.h"
+#include "CellImpl.h"
+#include "GridNotifiers.h"
+#include "GridNotifiersImpl.h"
 
 
 enum Yells
@@ -98,6 +102,7 @@ enum spells
     SPELL_ABSORB_ESSENCE                          = 90107,
     SPELL_TWILIGHT_BREATH                         = 110212,
     SPELL_UNLEASH_ESSENCE                         = 90028,
+    SPELL_INDOMITABLE                             = 90045, // on a check timer of a few minutes
     SPELL_FIREBARRIER                             = 95791, // Visual + cast time
 
     /** Twilight Essence **/
@@ -618,7 +623,9 @@ public:
 
     struct npc_calenAI : public ScriptedAI
     {
-        npc_calenAI(Creature * creature) : ScriptedAI(creature) {}
+        npc_calenAI(Creature * creature) : ScriptedAI(creature) {
+            instance = creature->GetInstanceScript()
+        }
 
         EventMap events;
 
@@ -918,7 +925,7 @@ class npc_sinestra_twilight_whelp : public CreatureScript
                 events.Update(diff);
 
                 if (Creature* sinestra = me->FindNearestCreature(BOSS_SINESTRA, 200.0f, true))
-                    if (!sinestra || !sinestra->isInCombat()) // Is dead / evaded.
+                    if (!sinestra || !sinestra->IsInCombat()) // Is dead / evaded.
                         me->DespawnOrUnsummon();
 
                 while (uint32 eventId = events.ExecuteEvent())
@@ -991,7 +998,7 @@ class npc_sinestra_add : public CreatureScript
                     return;
 
                 if (me->GetEntry() == NPC_TWILIGHT_DRAKE)
-                    if (Creature* essence = me->FindNearestCreature(NPC_TWILIGHT_ESSENCE, 4.0f, true)) // Eat that essence
+                    if (Creature* essence = me->FindNearestCreature(NPC_ESSENCE, 4.0f, true)) // Eat that essence
                     {
                         DoCast(me, SPELL_ABSORB_ESSENCE);
                         essence->DespawnOrUnsummon();
@@ -1285,7 +1292,6 @@ class spell_sinestra_twilight_essence : public SpellScriptLoader
                         {
                             GetHitUnit()->ToCreature()->Respawn();
                             sinestra->AI()->DoZoneInCombat(GetHitUnit()->ToCreature());
-                            GetHitUnit()->ToCreature()->AI()->DoAction(ACTION_SET_AS_RESPWANED);
                         }
                     }
                     return;

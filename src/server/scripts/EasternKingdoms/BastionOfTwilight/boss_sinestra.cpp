@@ -130,6 +130,7 @@ enum events
     EVENT_INTRO_2,
     EVENT_WIPE,
     EVENT_BATTLE_CHECK,
+    EVENT_FIRESHIELD,
 };
 
 enum sharedDatas
@@ -214,7 +215,6 @@ class boss_sinestra : public CreatureScript
                 me->setRegeneratingHealth(false);
                 me->SetMaxPower(POWER_MANA, 0);
                 me->SetPower(POWER_MANA, 0);
-                me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE);
 
                 if (instance)
                     instance->SetBossState(DATA_SINESTRA, NOT_STARTED);
@@ -373,7 +373,7 @@ class boss_sinestra : public CreatureScript
                 return ObjectGuid::Empty;
             }
 
-            void EnterEvadeMode() override
+            void EnterEvadeMode()
             {
                 Talk(SAY_FIGHT_L);
 
@@ -512,12 +512,13 @@ class boss_sinestra : public CreatureScript
                                     me->SummonCreature(NPC_TWILIGHT_WHELP, spawnPos[posId]);
                                 }
 
-                                me->Yell(YELL_SUMMON, LANG_UNIVERSAL, 0);
+                                Talk(SAY_ADDS);
                                 events.Repeat(45s);
                                 break;
                             case EVENT_TWILIGHT_DRAKE:
                                 if (events.IsInPhase(PHASE_THREE)) {
                                     me->SummonCreature(NPC_TWILIGHT_DRAKE, spawnPos[urand(0, 8)]);
+                                    Talk(SAY_DRAKE);
                                     events.Repeat(urand(18000, 30000));
                                     break;
                                 }
@@ -525,6 +526,7 @@ class boss_sinestra : public CreatureScript
                             case EVENT_SPITECALLER:
                                 if (events.IsInPhase(PHASE_THREE)) {
                                     me->SummonCreature(NPC_SPITCALLER, spawnPos[urand(0, 8)]);
+                                    Talk(SAY_SPITECALL);
                                     events.Repeat(urand(18000, 30000));
                                     break;
                                 }
@@ -544,7 +546,7 @@ class boss_sinestra : public CreatureScript
                                     me->SummonCreature(NPC_TWILIGHT_WHELP, spawnPos[posId]);
                                 }
 
-                                me->Yell(YELL_SUMMON, LANG_UNIVERSAL, 0);
+                                Talk(SAY_ADDS);
                                 events.Repeat(45s);
                                 break;
                             /*case EVENT_FLAMES_TRIGGER:
@@ -559,6 +561,7 @@ class boss_sinestra : public CreatureScript
                             case EVENT_TWILIGHT_DRAKE:
                                 if (!events.IsInPhase(PHASE_ONE)) {
                                     me->SummonCreature(NPC_TWILIGHT_DRAKE, spawnPos[urand(0, 8)]);
+                                    Talk(SAY_DRAKE);
                                     events.Repeat(urand(18000, 30000));
                                     break;
                                 }
@@ -566,6 +569,7 @@ class boss_sinestra : public CreatureScript
                             case EVENT_SPITECALLER:
                                 if (!events.IsInPhase(PHASE_ONE)) {
                                     me->SummonCreature(NPC_SPITCALLER, spawnPos[urand(0, 8)]);
+                                    Talk(SAY_SPITECALL)
                                     events.Repeat(urand(18000, 30000));
                                     break;
                                 }

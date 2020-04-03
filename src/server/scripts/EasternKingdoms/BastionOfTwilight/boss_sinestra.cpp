@@ -642,7 +642,7 @@ public:
     struct npc_calenAI : public ScriptedAI
     {
         npc_calenAI(Creature * creature) : ScriptedAI(creature) {
-            instance = creature->GetInstanceScript()
+            instance = creature->GetInstanceScript();
         }
 
         InstanceScript* instance;

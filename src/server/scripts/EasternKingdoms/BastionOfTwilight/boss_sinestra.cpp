@@ -50,7 +50,6 @@
 enum Yells
 {
     /***** SINESTRA *****/
-
     SAY_AGGRO      = 0,  // We were fools to entrust an imbecile like Cho'gall with such a sacred duty. I will deal with you intruders myself!
     SAY_ADDS       = 1,  // Feed, children! Take your fill from their meaty husks!
     SAY_KILL_1     = 2,  // My brood will feed on your bones!
@@ -68,12 +67,12 @@ enum Yells
     SAY_SPITECALL  = 14, // YOUR MOTHER CALLS!
 
     /**  Warnings   **/
-
     SAY_SLICER     = 15, // Twilight Slicers are active!
 };
 
 enum CalenYells
 {
+    /** Calen **/
     SAY_ENTRANCE   = 0, // Heroes! You are not alone in this dark place!
     SAY_CALEN_W    = 1, // You are weakening, Sintharia! Accept the inevitable!
     SAY_CALEN_N    = 2, // Sintharia! Your master owes me a great debt... one that I intend to extract from his consort's hide!
@@ -85,30 +84,46 @@ enum CalenYells
 
 enum spells
 {
-    /***** SINESTRA *****/
+    /** SINESTRA **/
     SPELL_SUBMERGED                              = 66936,
     SPELL_SUBMERGED_INTR                         = 96725,
 
     SPELL_WRACK                                   = 89421,
     SPELL_WRACK_JUMP                              = 89435,
     SPELL_FLAME_BREATH                            = 90125,
+    SPELL_DRAINED                                 = 89350,
+    SPELL_SIN_TWILIGHT_BLAST                      = 89280,
+
+    SPELL_TWILIGHT_POWER                          = 87220,
+    SPELL_MANA_BARRIER                            = 87299,
+
+    /** Phase 2 **/
+    SPELL_TWI_EXTINCTION                          = 87945, //Bum-bum motherfucker!
+    SPELL_EXTINCT_DUMMY                           = 86227, /**Requires spell link to 86226**/
+
+    /** ORBS **/
     SPELL_TWILIGHT_SLICER                         = 92851,
     SPELL_TWILIGHT_PULSE                          = 92957,
-    SPELL_DRAINED                                 = 89350,
     SPELL_PURPLE_BEAM                             = 88518,
-    SPELL_SIN_TWILIGHT_BLAST                      = 89280,
+    SPELL_SLICER_PULSE                            = 78861, // Cast by the shadow orb on itself
+
+    /** WHELPS **/
     SPELL_TWILIGHT_SPIT                           = 89299,
-    SPELL_TWILIGHT_POWER                          = 87220,
+
+    /** CALEN **/
     SPELL_FIERY_RESOLVE                           = 87221,
-    SPELL_MANA_BARRIER                            = 87299,
     SPELL_PYRRHIC_FOCUS                           = 87323,
-    SPELL_TWILIGHT_CARAPACE                       = 87654,
     SPELL_ESSENCE_OF_THE_RED                      = 87946,
+    SPELL_FIREBARRIER                             = 95791, // Visual + cast time
+
+    /** EGGS **/
+    SPELL_TWILIGHT_CARAPACE                       = 87654,
+
+    /** DRAKES AND SPITES **/
     SPELL_ABSORB_ESSENCE                          = 90107,
     SPELL_TWILIGHT_BREATH                         = 110212,
     SPELL_UNLEASH_ESSENCE                         = 90028,
     SPELL_INDOMITABLE                             = 90045, // on a check timer of a few minutes
-    SPELL_FIREBARRIER                             = 95791, // Visual + cast time
 
     /** Twilight Essence **/
     SPELL_TWI_ESSENCE                             = 89284, // On death spawns mob, revives whelps on essence. 88146 is spellscripted. 89284 triggers it every 2 seconds.
@@ -116,16 +131,11 @@ enum spells
 
     /** Egg Siphon **/
     SPELL_SIPHON_EGG                              = 82354, //definitely not the right visual.
-
-    /** Phase 2 **/
-    SPELL_TWI_EXTINCTION                          = 87945, //Bum-bum motherfucker!
-    SPELL_EXTINCT_DUMMY                           = 86227, /**Requires spell link to 86226**/
-
-    SPELL_SLICER_PULSE                            = 78861, // Cast by the shadow orb on itself
 };
 
 enum events
 {
+    /** PHASE 1 **/
     EVENT_INTRO = 1,
     EVENT_WRACK,
     EVENT_FLAME_BREATH,
@@ -134,21 +144,24 @@ enum events
     EVENT_ORB_START_CHANNEL,
     EVENT_CHECK_MELEE,
     EVENT_WHELP,
+    EVENT_INCREASE,
+
+    /** PHASE 2 **/
+    EVENT_INTRO_2,
     EVENT_START_MAGIC_FIGHT,
     EVENT_TWILIGHT_DRAKE,
     EVENT_SPITECALLER,
     EVENT_CALEN_LASER,
     EVENT_SIPHON_EGG,
-    EVENT_INTRO_2,
-    EVENT_WIPE,
-    EVENT_BATTLE_CHECK,
     EVENT_FIRESHIELD,
     EVENT_REMOVE_FIRESHIELD,
     EVENT_TWILIGHT_POWA,
-    EVENT_TARGET,
-    EVENT_DESPAWN,
-    EVENT_INCREASE,
+
+    /** PHASE 3 **/
     EVENT_ESSENCE_OF_THE_RED,
+
+    /** CONTROLLER **/
+    EVENT_BATTLE_CHECK,
 };
 
 enum sharedDatas

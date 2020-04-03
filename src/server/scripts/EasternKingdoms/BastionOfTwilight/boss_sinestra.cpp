@@ -569,7 +569,7 @@ class boss_sinestra : public CreatureScript
                             case EVENT_SPITECALLER:
                                 if (!events.IsInPhase(PHASE_ONE)) {
                                     me->SummonCreature(NPC_SPITCALLER, spawnPos[urand(0, 8)]);
-                                    Talk(SAY_SPITECALL)
+                                    Talk(SAY_SPITECALL);
                                     events.Repeat(urand(18000, 30000));
                                     break;
                                 }

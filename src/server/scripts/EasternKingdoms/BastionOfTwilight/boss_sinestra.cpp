@@ -645,6 +645,7 @@ public:
             instance = creature->GetInstanceScript()
         }
 
+        InstanceScript* instance;
         EventMap events;
 
         void IsSummonedBy(Unit* /*summoner*/) override

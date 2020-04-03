@@ -137,6 +137,7 @@ enum events
     EVENT_TWILIGHT_POWA,
     EVENT_TARGET,
     EVENT_DESPAWN,
+    EVENT_INCREASE,
 };
 
 enum sharedDatas

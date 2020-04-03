@@ -131,6 +131,7 @@ enum events
     EVENT_WIPE,
     EVENT_BATTLE_CHECK,
     EVENT_FIRESHIELD,
+    EVENT_TWILIGHT_POWA,
 };
 
 enum sharedDatas
@@ -350,13 +351,14 @@ class boss_sinestra : public CreatureScript
                     me->AddAura(SPELL_MANA_BARRIER, me);
                     events.SetPhase(PHASE_TWO);
 
+                    events.ScheduleEvent(EVENT_START_MAGIC_FIGHT, 2s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_INTRO_2, 3s, PHASE_TWO);
-                    events.ScheduleEvent(EVENT_START_MAGIC_FIGHT, 5s, PHASE_TWO);
+                    events.ScheduleEvent(EVENT_WIPE, 4s, PHASE_TWO);
+                    events.ScheduleEvent(EVENT_TWILIGHT_POWA, 10s, PHASE_TWO);
                     //events.ScheduleEvent(EVENT_FLAMES_TRIGGER, 12s, PHASE_TWO);
-                    events.ScheduleEvent(EVENT_SIPHON_EGG, 7s, PHASE_TWO); // Apply to trigger.
-                    events.ScheduleEvent(EVENT_WIPE, 10s, PHASE_TWO);
-                    events.ScheduleEvent(EVENT_TWILIGHT_DRAKE, 10s);
-                    events.ScheduleEvent(EVENT_SPITECALLER, 15s);
+                    //events.ScheduleEvent(EVENT_SIPHON_EGG, 10s, PHASE_TWO); // Apply to trigger.
+                    events.ScheduleEvent(EVENT_TWILIGHT_DRAKE, 15s);
+                    events.ScheduleEvent(EVENT_SPITECALLER, 20s);
                 }
             }
 
@@ -576,19 +578,7 @@ class boss_sinestra : public CreatureScript
                                 break;
                             case EVENT_START_MAGIC_FIGHT:
                                 if (events.IsInPhase(PHASE_TWO)) {
-                                    if (Creature * calen = me->SummonCreature(NPC_CALEN, -1009.35f, -801.97f, 438.59f,
-                                                                              0.81f)) {
-                                        if (Creature* target = me->SummonCreature(NPC_LASER_TRIGGER, -979.41f, -778.21f, 445.40f, 0.72f))
-                                        {
-                                            target->SetHover(true);
-                                            target->SetDisableGravity(true);
-                                            target->SetCanFly(true);
-                                            target->SetFlag(UNIT_FIELD_FLAGS, UnitFlags(UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
-                                            target->GetMotionMaster()->MoveTakeoff(0, target->GetHomePosition());
-
-                                            DoCast(target, SPELL_TWILIGHT_POWER);
-                                        }
-                                    }
+                                    me->SummonCreature(NPC_CALEN, -1009.35f, -801.97f, 438.59f, 0.81f);
                                     Talk(SAY_PHASE_2);
 
                                     if(eggs[0])
@@ -597,6 +587,21 @@ class boss_sinestra : public CreatureScript
                                         me->AddAura(95823, eggs[1]);
 
                                     break;
+                                }
+                                break;
+                            case EVENT_TWILIGHT_POWA:
+                                if(Creature* kalen = me->FindNearestCreature(NPC_CALEN, 100.0f, true)) {
+                                    if (Creature * target = me->SummonCreature(NPC_LASER_TRIGGER, -979.41f, -778.21f,
+                                                                               445.40f, 0.72f)) {
+                                        target->SetHover(true);
+                                        target->SetDisableGravity(true);
+                                        target->SetCanFly(true);
+                                        target->SetFlag(UNIT_FIELD_FLAGS,
+                                                        UnitFlags(UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE));
+                                        target->GetMotionMaster()->MoveTakeoff(0, target->GetHomePosition());
+
+                                        DoCast(target, SPELL_TWILIGHT_POWER);
+                                    }
                                 }
                                 break;
                             case EVENT_SIPHON_EGG:
@@ -647,30 +652,33 @@ public:
 
         void IsSummonedBy(Unit* /*summoner*/) override
         {
-            me->Yell("Sintharia! Your master owes me a great debt... one that I intend to extract from his consort's hide!", LANG_UNIVERSAL, 0);
-            me->AddAura(SPELL_PYRRHIC_FOCUS, me);
-            events.ScheduleEvent(EVENT_CALEN_LASER, 5s);
-            events.ScheduleEvent(EVENT_FIRESHIELD, 3s);
             Talk(SAY_ENTRANCE);
+            me->setRegeneratingHealth(false);
+            me->AddAura(SPELL_PYRRHIC_FOCUS, me);
+            events.ScheduleEvent(EVENT_FIRESHIELD, 1s);
+            events.ScheduleEvent(EVENT_REMOVE_FIRESHIELD, 9s);
+            events.ScheduleEvent(EVENT_CALEN_LASER, 12s);
         }
-
 
         void UpdateAI(uint32 uiDiff) override
         {
             events.Update(uiDiff);
+
             while (uint32 eventId = events.ExecuteEvent())
             {
                 switch (eventId)
                 {
                     case EVENT_FIRESHIELD:
-                        DoCast(me, SPELL_FIREBARRIER);
+                        DoCastSelf(SPELL_FIREBARRIER);
+                        break;
+                    case EVENT_REMOVE_FIRESHIELD:
+                        me->RemoveAura(SPELL_FIREBARRIER, me)
                         break;
                     case EVENT_CALEN_LASER:
                         if(events.IsInPhase(PHASE_TWO)) {
                             if (Creature* target = me->FindNearestCreature(NPC_LASER_TRIGGER, 100.f, true))
                             {
                                 DoCast(target, SPELL_FIERY_RESOLVE);
-                                me->setRegeneratingHealth(false);
                             }
                             events.Repeat(5s);
                             break;
@@ -995,6 +1003,135 @@ class npc_sinestra_add : public CreatureScript
         }
 };
 
+/*********************
+ ** NPC Shadow Orbs (43622).
+ **********************/
+class npc_twilight_slicer: public CreatureScript
+{
+public:
+
+    npc_twilight_slicer() :
+            CreatureScript("npc_twilight_slicer"){}
+
+    struct npc_twilight_slicerAI: public ScriptedAI
+    {
+
+        npc_twilight_slicerAI(Creature * creature) :
+                ScriptedAI(creature)
+        {
+            instance = creature->GetInstanceScript();
+        }
+
+        InstanceScript* instance;
+        EventMap events;
+        bool dead;
+
+        void IsSummonedBy(Unit* /*summoner*/)
+        {
+            dead = false;
+            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+            events.ScheduleEvent(EVENT_TARGET, 3000);
+            events.ScheduleEvent(EVENT_DESPAWN, 8000);
+        }
+
+        void UpdateAI(const uint32 diff)
+        {
+            events.Update(diff);
+
+            while (uint32 eventId = events.ExecuteEvent())
+            {
+                switch (eventId)
+                {
+                    case EVENT_TARGET:
+                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f, true))
+                        {
+                            me->ApplySpellImmune(0, IMMUNITY_STATE, SPELL_AURA_MOD_TAUNT, true);
+                            me->ApplySpellImmune(0, IMMUNITY_EFFECT, SPELL_EFFECT_ATTACK_ME, true);
+                            me->SetSpeed(MOVE_WALK, 0.85f, true);
+                            me->SetSpeed(MOVE_RUN, 0.85f, true);
+                            me->AddThreat(target, 5000000.0f);
+                            DoCast(me, SPELL_SLICER_PULSE);
+                            me->GetMotionMaster()->MoveChase(target, 4.0f);
+                            if (Creature* Sinestra = me->FindNearestCreature(BOSS_SINESTRA, 200.0f, true))
+                                Sinestra->AI()->Talk(SAY_SLICER);
+                        }
+
+                    case EVENT_DESPAWN:
+                        if (Creature* orb = me->FindNearestCreature(NPC_SHADOW_ORB, 4.0f, true))
+                        {
+                            me->DisappearAndDie();
+                            events.ScheduleEvent(EVENT_DESPAWN, 1000);
+                        }
+                        break;
+                }
+            }
+        }
+    };
+
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return GetBastionOfTwilightAI<npc_twilight_slicerAI>(creature);
+    }
+
+};
+
+/*********************
+ ** NPC Twilight Essence (43585) - Soft Enrage. Ever Growing Pools.
+ **********************/
+class npc_twilight_essence: public CreatureScript
+{
+public:
+
+    npc_twilight_essence() :
+            CreatureScript("npc_twilight_essence"){}
+
+    struct npc_twilight_essenceAI: public ScriptedAI
+    {
+
+        npc_twilight_essenceAI(Creature * creature) :
+                ScriptedAI(creature)
+        {
+            instance = creature->GetInstanceScript();
+        }
+
+        InstanceScript* instance;
+        EventMap events;
+
+        void IsSummonedBy(Unit* /*summoner*/)
+        {
+            me->AddAura(SPELL_TWI_ESSENCE, me);
+            me->SetReactState(REACT_PASSIVE);
+            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE);
+            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+            events.ScheduleEvent(EVENT_INCREASE, 15000);
+        }
+
+        void UpdateAI(const uint32 diff)
+        {
+            events.Update(diff);
+
+            while (uint32 eventId = events.ExecuteEvent())
+            {
+                switch (eventId)
+                {
+                    case EVENT_INCREASE:
+                        DoCast(me, SPELL_TWI_INCREASE);
+                        events.ScheduleEvent(EVENT_INCREASE, 15000);
+                        return;
+                }
+            }
+        }
+    };
+
+    CreatureAI* GetAI(Creature* creature) const override
+    {
+        return GetBastionOfTwilightAI<npc_twilight_essenceAI>(creature);
+    }
+};
+
+
 class spell_sinestra_wreck : public SpellScriptLoader
 {
     public:
@@ -1289,6 +1426,8 @@ void AddSC_boss_sinestra()
     new npc_controller();
     new npc_sinestra_twilight_whelp();
     new npc_sinestra_add();
+    new npc_twilight_essence();
+    new npc_twilight_slicer();
     new spell_sinestra_wreck();
     new spell_sinestra_wrack_jump();
     new spell_sinestra_twilight_slicer();

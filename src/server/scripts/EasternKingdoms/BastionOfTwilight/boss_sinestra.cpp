@@ -110,6 +110,8 @@ enum spells
     /** Phase 2 **/
     SPELL_TWI_EXTINCTION                          = 87945, //Bum-bum motherfucker!
     SPELL_EXTINCT_DUMMY                           = 86227, /**Requires spell link to 86226**/
+
+    SPELL_SLICER_PULSE                            = 78861, // Cast by the shadow orb on itself
 };
 
 enum events
@@ -131,7 +133,10 @@ enum events
     EVENT_WIPE,
     EVENT_BATTLE_CHECK,
     EVENT_FIRESHIELD,
+    EVENT_REMOVE_FIRESHIELD,
     EVENT_TWILIGHT_POWA,
+    EVENT_TARGET,
+    EVENT_DESPAWN,
 };
 
 enum sharedDatas
@@ -672,7 +677,7 @@ public:
                         DoCastSelf(SPELL_FIREBARRIER);
                         break;
                     case EVENT_REMOVE_FIRESHIELD:
-                        me->RemoveAura(SPELL_FIREBARRIER, me)
+                        me->RemoveAura(SPELL_FIREBARRIER);
                         break;
                     case EVENT_CALEN_LASER:
                         if(events.IsInPhase(PHASE_TWO)) {
@@ -1048,10 +1053,10 @@ public:
                         {
                             me->ApplySpellImmune(0, IMMUNITY_STATE, SPELL_AURA_MOD_TAUNT, true);
                             me->ApplySpellImmune(0, IMMUNITY_EFFECT, SPELL_EFFECT_ATTACK_ME, true);
-                            me->SetSpeed(MOVE_WALK, 0.85f, true);
-                            me->SetSpeed(MOVE_RUN, 0.85f, true);
+                            me->SetSpeed(MOVE_WALK, 0.85f);
+                            me->SetSpeed(MOVE_RUN, 0.85f);
                             me->AddThreat(target, 5000000.0f);
-                            DoCast(me, SPELL_SLICER_PULSE);
+                            DoCastSelf(SPELL_SLICER_PULSE);
                             me->GetMotionMaster()->MoveChase(target, 4.0f);
                             if (Creature* Sinestra = me->FindNearestCreature(BOSS_SINESTRA, 200.0f, true))
                                 Sinestra->AI()->Talk(SAY_SLICER);
@@ -1102,7 +1107,6 @@ public:
         {
             me->AddAura(SPELL_TWI_ESSENCE, me);
             me->SetReactState(REACT_PASSIVE);
-            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE);
             me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
             me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
             events.ScheduleEvent(EVENT_INCREASE, 15000);

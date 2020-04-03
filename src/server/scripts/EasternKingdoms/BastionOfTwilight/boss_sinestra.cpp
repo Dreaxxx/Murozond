@@ -330,7 +330,7 @@ class boss_sinestra : public CreatureScript
                 Talk(SAY_DEATH);
                 summons.DespawnAll();
                 DespawnTrigger(48018);
-                me->DespawnOrUnsummon(15000);
+                me->DespawnOrUnsummon(600000);
 
                 if (instance)
                 {
@@ -339,7 +339,7 @@ class boss_sinestra : public CreatureScript
                 }
 
                 // Summon the loot chest
-                 me->SummonGameObject(GO_SINESTRA_CHEST, Position(-962.91f, -749.71f, 438.59f, 0.f), QuaternionData(), DAY);
+                 me->SummonGameObject(GO_SINESTRA_CHEST, Position(-962.91f, -749.71f, 438.59f, 5.52f), QuaternionData(), DAY);
 
                 _JustDied();
             }
@@ -351,7 +351,7 @@ class boss_sinestra : public CreatureScript
 
             void DamageTaken(Unit* /*attacker*/, uint32& /*damage*/) override
             {
-                if (me->GetHealthPct() <= 30.0f && events.IsInPhase(PHASE_ONE))
+                if (me->GetHealthPct() <= 40.0f && events.IsInPhase(PHASE_ONE))
                 {
                     me->RemoveAura(SPELL_DRAINED);
                     me->AddAura(SPELL_MANA_BARRIER, me);
@@ -359,11 +359,9 @@ class boss_sinestra : public CreatureScript
 
                     events.ScheduleEvent(EVENT_START_MAGIC_FIGHT, 2s, PHASE_TWO);
                     events.ScheduleEvent(EVENT_INTRO_2, 3s, PHASE_TWO);
-                    events.ScheduleEvent(EVENT_WIPE, 4s, PHASE_TWO);
-                    events.ScheduleEvent(EVENT_TWILIGHT_POWA, 10s, PHASE_TWO);
+                    events.ScheduleEvent(EVENT_TWILIGHT_POWA, 15s, PHASE_TWO);
                     //events.ScheduleEvent(EVENT_FLAMES_TRIGGER, 12s, PHASE_TWO);
-                    //events.ScheduleEvent(EVENT_SIPHON_EGG, 10s, PHASE_TWO); // Apply to trigger.
-                    events.ScheduleEvent(EVENT_TWILIGHT_DRAKE, 15s);
+                    events.ScheduleEvent(EVENT_TWILIGHT_DRAKE, 16s);
                     events.ScheduleEvent(EVENT_SPITECALLER, 20s);
                 }
             }
@@ -623,9 +621,6 @@ class boss_sinestra : public CreatureScript
                                     }
                                 events.Repeat(60s);
                                 break;
-                            case EVENT_WIPE: // BLAST THE BITCHES!
-                                DoCastSelf(SPELL_TWI_EXTINCTION);
-                                break;
                             case EVENT_INTRO_2: // BLAST THE BITCHES!
                                 DoCastSelf(SPELL_EXTINCT_DUMMY);
                                 break;
@@ -662,8 +657,8 @@ public:
             me->setRegeneratingHealth(false);
             me->AddAura(SPELL_PYRRHIC_FOCUS, me);
             events.ScheduleEvent(EVENT_FIRESHIELD, 1s);
-            events.ScheduleEvent(EVENT_REMOVE_FIRESHIELD, 9s);
-            events.ScheduleEvent(EVENT_CALEN_LASER, 12s);
+            events.ScheduleEvent(EVENT_REMOVE_FIRESHIELD, 10s);
+            events.ScheduleEvent(EVENT_CALEN_LASER, 13s);
         }
 
         void UpdateAI(uint32 uiDiff) override
@@ -1007,79 +1002,6 @@ class npc_sinestra_add : public CreatureScript
         {
             return GetBastionOfTwilightAI<npc_sinestra_addAI>(creature);
         }
-};
-
-/*********************
- ** NPC Shadow Orbs (43622).
- **********************/
-class npc_twilight_slicer: public CreatureScript
-{
-public:
-
-    npc_twilight_slicer() :
-            CreatureScript("npc_twilight_slicer"){}
-
-    struct npc_twilight_slicerAI: public ScriptedAI
-    {
-
-        npc_twilight_slicerAI(Creature * creature) :
-                ScriptedAI(creature)
-        {
-            instance = creature->GetInstanceScript();
-        }
-
-        InstanceScript* instance;
-        EventMap events;
-        bool dead;
-
-        void IsSummonedBy(Unit* /*summoner*/)
-        {
-            dead = false;
-            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-            events.ScheduleEvent(EVENT_TARGET, 3000);
-            events.ScheduleEvent(EVENT_DESPAWN, 8000);
-        }
-
-        void UpdateAI(const uint32 diff)
-        {
-            events.Update(diff);
-
-            while (uint32 eventId = events.ExecuteEvent())
-            {
-                switch (eventId)
-                {
-                    case EVENT_TARGET:
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 100.0f, true))
-                        {
-                            me->ApplySpellImmune(0, IMMUNITY_STATE, SPELL_AURA_MOD_TAUNT, true);
-                            me->ApplySpellImmune(0, IMMUNITY_EFFECT, SPELL_EFFECT_ATTACK_ME, true);
-                            me->SetSpeed(MOVE_WALK, 0.85f);
-                            me->SetSpeed(MOVE_RUN, 0.85f);
-                            me->AddThreat(target, 5000000.0f);
-                            DoCastSelf(SPELL_SLICER_PULSE);
-                            me->GetMotionMaster()->MoveChase(target, 4.0f);
-                            if (Creature* Sinestra = me->FindNearestCreature(BOSS_SINESTRA, 200.0f, true))
-                                Sinestra->AI()->Talk(SAY_SLICER);
-                        }
-
-                    case EVENT_DESPAWN:
-                        if (Creature* orb = me->FindNearestCreature(NPC_SHADOW_ORB, 4.0f, true))
-                        {
-                            me->DisappearAndDie();
-                            events.ScheduleEvent(EVENT_DESPAWN, 1000);
-                        }
-                        break;
-                }
-            }
-        }
-    };
-
-    CreatureAI* GetAI(Creature* creature) const override
-    {
-        return GetBastionOfTwilightAI<npc_twilight_slicerAI>(creature);
-    }
-
 };
 
 /*********************
@@ -1432,7 +1354,6 @@ void AddSC_boss_sinestra()
     new npc_sinestra_twilight_whelp();
     new npc_sinestra_add();
     new npc_twilight_essence();
-    new npc_twilight_slicer();
     new spell_sinestra_wreck();
     new spell_sinestra_wrack_jump();
     new spell_sinestra_twilight_slicer();

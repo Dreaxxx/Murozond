@@ -32,6 +32,7 @@
 #include "Item.h"
 #include "Log.h"
 #include "MapManager.h"
+#include "MiscPackets.h"
 #include "MovementPacketBuilder.h"
 #include "ObjectAccessor.h"
 #include "ObjectMgr.h"
@@ -1184,8 +1185,8 @@ void MovementInfo::OutDebug()
 
 WorldObject::WorldObject(bool isWorldObject) : WorldLocation(), LastUsedScriptID(0),
 m_name(""), m_isActive(false), m_isFarVisible(false), m_isWorldObject(isWorldObject), m_zoneScript(nullptr),
-m_transport(nullptr), m_zoneId(0), m_areaId(0), m_staticFloorZ(VMAP_INVALID_HEIGHT), m_outdoors(true), m_currMap(nullptr),
-m_InstanceId(0), _dbPhase(0), m_notifyflags(0), m_executed_notifies(0),
+m_transport(nullptr), m_zoneId(0), m_areaId(0), m_staticFloorZ(VMAP_INVALID_HEIGHT), m_outdoors(true), m_liquidStatus(LIQUID_MAP_NO_WATER),
+m_currMap(nullptr), m_InstanceId(0), _dbPhase(0), m_notifyflags(0), m_executed_notifies(0),
 m_aiAnimKitId(0), m_movementAnimKitId(0), m_meleeAnimKitId(0)
 {
     m_serverSideVisibility.SetValue(SERVERSIDE_VISIBILITY_GHOST, GHOST_VISIBILITY_ALIVE | GHOST_VISIBILITY_GHOST);
@@ -1290,6 +1291,7 @@ void WorldObject::ProcessPositionDataChanged(PositionFullTerrainStatus const& da
             m_zoneId = area->ParentAreaID;
     m_outdoors = data.outdoors;
     m_staticFloorZ = data.floorZ;
+    m_liquidStatus = data.liquidStatus;
 }
 
 void WorldObject::AddToWorld()
@@ -2602,24 +2604,26 @@ void WorldObject::MovePositionToFirstCollision(Position &pos, float dist, float 
 
 void WorldObject::PlayDistanceSound(uint32 sound_id, Player* target /*= nullptr*/)
 {
-    WorldPacket data(SMSG_PLAY_OBJECT_SOUND, 4 + 8);
-    data << uint32(sound_id);
-    data << uint64(GetGUID());
+    WorldPackets::Misc::PlayObjectSound packet;
+    packet.SoundKitID = sound_id;
+    packet.SourceObjectGUID = GetGUID();
+    packet.TargetObjectGUID = target ? target->GetGUID() : GetGUID();
+
     if (target)
-        target->SendDirectMessage(&data);
+        target->SendDirectMessage(packet.Write());
     else
-        SendMessageToSet(&data, true);
+        SendMessageToSet(packet.Write(), true);
 }
 
 void WorldObject::PlayDirectSound(uint32 sound_id, Player* target /*= nullptr*/)
 {
-    WorldPacket data(SMSG_PLAY_SOUND, 4 + 8);
-    data << uint32(sound_id);
-    data << uint64(GetGUID());
+    WorldPackets::Misc::PlaySound packet;
+    packet.SourceObjectGUID = GetGUID();
+    packet.SoundKitID = sound_id;
     if (target)
-        target->SendDirectMessage(&data);
+        target->SendDirectMessage(packet.Write());
     else
-        SendMessageToSet(&data, true);
+        SendMessageToSet(packet.Write(), true);
 }
 
 void WorldObject::PlayDirectMusic(uint32 music_id, Player* target /*= nullptr*/)

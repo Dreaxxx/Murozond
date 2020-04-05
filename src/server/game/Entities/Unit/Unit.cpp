@@ -870,6 +870,7 @@ uint32 Unit::DealDamage(Unit* victim, uint32 damage, CleanDamage const* cleanDam
         {
             case OFF_ATTACK:
                 rage /= 2;
+                [[fallthrough]];
             case BASE_ATTACK:
                 RewardRage(rage, true);
                 break;
@@ -3311,12 +3312,12 @@ bool Unit::isInAccessiblePlaceFor(Creature const* c) const
 
 bool Unit::IsInWater() const
 {
-    return GetMap()->IsInWater(GetPhaseShift(), GetPositionX(), GetPositionY(), GetPositionZ());
+    return GetLiquidStatus() & (LIQUID_MAP_IN_WATER | LIQUID_MAP_UNDER_WATER);
 }
 
 bool Unit::IsUnderWater() const
 {
-    return GetMap()->IsUnderWater(GetPhaseShift(), GetPositionX(), GetPositionY(), GetPositionZ());
+    return GetLiquidStatus() & LIQUID_MAP_UNDER_WATER;
 }
 
 void Unit::ProcessPositionDataChanged(PositionFullTerrainStatus const& data)
@@ -6900,7 +6901,7 @@ float Unit::SpellDamagePctDone(Unit* victim, SpellInfo const* spellProto, Damage
     }
 
     // Add SPELL_AURA_MOD_DAMAGE_FROM_MANA percent bonus
-    if (int32 mana = GetPower(POWER_MANA))
+    if (GetPower(POWER_MANA))
     {
         int32 masteryBonus = owner->GetTotalAuraModifier(SPELL_AURA_MOD_DAMAGE_FROM_MANA);
         float manaPct = 100.f * GetPower(POWER_MANA) / GetMaxPower(POWER_MANA);
@@ -13121,9 +13122,11 @@ uint32 Unit::GetModelForForm(ShapeshiftForm form, uint32 spellId) const
                     return 37174;
                 if (getRace() == RACE_WORGEN)
                     return 37173;
+                return 15374;
             case FORM_GHOSTWOLF:
                 if (HasAura(58135)) //! Glyph of Arctic Wolf
                     return 27312;
+                return 4613;
             default:
                 break;
         }

@@ -130,3 +130,27 @@ WorldPacket const* WorldPackets::Misc::PhaseShiftChange::Write()
 
     return &_worldPacket;
 }
+
+WorldPacket const* WorldPackets::Misc::UITime::Write()
+{
+    _worldPacket << uint32(Time);
+
+    return &_worldPacket;
+}
+
+WorldPacket const* WorldPackets::Misc::PlaySound::Write()
+{
+    _worldPacket << uint32(SoundKitID);
+    _worldPacket << SourceObjectGUID;
+
+    return &_worldPacket;
+}
+
+WorldPacket const* WorldPackets::Misc::PlayObjectSound::Write()
+{
+    _worldPacket << uint32(SoundKitID);
+    _worldPacket << SourceObjectGUID;
+    _worldPacket << TargetObjectGUID;
+
+    return &_worldPacket;
+}

@@ -143,6 +143,40 @@ namespace WorldPackets
             std::vector<uint16> UiMapPhaseIDs;
             std::vector<uint16> VisibleMapIDs;
         };
+
+        class UITime final : public ServerPacket
+        {
+        public:
+            UITime() : ServerPacket(SMSG_WORLD_STATE_UI_TIMER_UPDATE, 4) { }
+
+            WorldPacket const* Write() override;
+
+            uint32 Time = 0;
+        };
+
+        class TC_GAME_API PlaySound final : public ServerPacket
+        {
+        public:
+            PlaySound() : ServerPacket(SMSG_PLAY_SOUND, 4 + 4) { }
+            PlaySound(ObjectGuid sourceObjectGuid, uint32 soundKitID) : ServerPacket(SMSG_PLAY_SOUND, 4 + 4), SourceObjectGUID(sourceObjectGuid), SoundKitID(soundKitID) { }
+
+            WorldPacket const* Write() override;
+
+            ObjectGuid SourceObjectGUID;
+            uint32 SoundKitID;
+        };
+
+        class PlayObjectSound final : public ServerPacket
+        {
+        public:
+            PlayObjectSound() : ServerPacket(SMSG_PLAY_OBJECT_SOUND, 8 + 8 + 4) { }
+
+            WorldPacket const* Write() override;
+
+            ObjectGuid SourceObjectGUID;
+            ObjectGuid TargetObjectGUID;
+            uint32 SoundKitID = 0;
+        };
     }
 }
 

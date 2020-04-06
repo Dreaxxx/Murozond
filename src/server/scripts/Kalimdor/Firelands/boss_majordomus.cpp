@@ -130,11 +130,6 @@ class boss_majordomus: public CreatureScript
         {
         }
 
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new boss_majordomusAI(creature);
-        }
-
         struct boss_majordomusAI: public BossAI
         {
                 boss_majordomusAI(Creature* c) :
@@ -145,13 +140,7 @@ class boss_majordomus: public CreatureScript
                     me->SetSpeed(MOVE_RUN, 1.5f, true);
                 }
 
-                InstanceScript* instance;
-
-                MajordomoPhase phase;
-                bool introDone;
-                uint32 transformcount;
-
-                void Reset()
+                void Reset() override
                 {
                     if (instance)
                     {
@@ -167,7 +156,7 @@ class boss_majordomus: public CreatureScript
                     transformcount = 0;
                 }
 
-                void MoveInLineOfSight(Unit* who)
+                void MoveInLineOfSight(Unit* who) override
                 {
                     if (introDone || !me->IsWithinDistInMap(who, 35.0f, false))
                         return;
@@ -196,12 +185,12 @@ class boss_majordomus: public CreatureScript
                     _EnterEvadeMode();
                 }
 
-                void KilledUnit(Unit * /*victim*/)
+                void KilledUnit(Unit * /*victim*/) override
                 {
                     Talk(SAY_ON_KILL);
                 }
 
-                void JustSummoned(Creature* summon)
+                void JustSummoned(Creature* summon) override
                 {
                     summons.Summon(summon);
                     summon->setActive(true);
@@ -210,7 +199,7 @@ class boss_majordomus: public CreatureScript
                         summon->AI()->DoZoneInCombat();
                 }
 
-                void JustDied(Unit * /*victim*/)
+                void JustDied(Unit * /*victim*/) override
                 {
                     if (instance)
                     {
@@ -226,7 +215,7 @@ class boss_majordomus: public CreatureScript
                     _JustDied();
                 }
 
-                void EnterCombat(Unit* who)
+                void JustEngagedWith(Unit* who) override
                 {
                     if (instance)
                     {
@@ -242,7 +231,7 @@ class boss_majordomus: public CreatureScript
                     _EnterCombat();
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!UpdateVictim() && phase != PHASE_NONE || me->HasUnitState(UNIT_STATE_CASTING))
                         return;
@@ -365,6 +354,11 @@ class boss_majordomus: public CreatureScript
                 }
 
             private:
+                InstanceScript* instance;
+                MajordomoPhase phase;
+                bool introDone;
+                uint32 transformcount;
+
                 void TransformToCat()
                 {
                     me->RemoveAura(SPELL_ADRENALINE);
@@ -444,6 +438,11 @@ class boss_majordomus: public CreatureScript
                     phase = PHASE_NONE;
                 }
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<boss_majordomusAI>(creature);
+    }
 };
 
 class npc_spirit_of_the_flame: public CreatureScript //52593 npc
@@ -451,40 +450,33 @@ class npc_spirit_of_the_flame: public CreatureScript //52593 npc
     public:
         npc_spirit_of_the_flame() : CreatureScript("npc_spirit_of_the_flame") { }
 
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_spirit_of_the_flameAI(creature);
-        }
-
         struct npc_spirit_of_the_flameAI: public ScriptedAI
         {
                 npc_spirit_of_the_flameAI(Creature *c) : ScriptedAI(c) { }
 
-                EventMap events;
-
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     DoZoneInCombat();
                 }
 
-                void Reset()
+                void Reset() override
                 {
                     me->SetByteValue(UNIT_FIELD_BYTES_0, 1, 4);
                     me->SetByteValue(UNIT_FIELD_BYTES_0, 3, POWER_ENERGY);
                 }
 
-                void JustDied(Unit * /*victim*/)
+                void JustDied(Unit * /*victim*/) override
                 {
                     me->DespawnOrUnsummon(5000);
                 }
 
-                void EnterCombat(Unit* who)
+                void JustEngagedWith(Unit* who) override
                 {
                     if (Unit* target = SelectTarget(SELECT_TARGET_TOPAGGRO, 0, 300.0f))
                         AttackStart(target);
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!UpdateVictim())
                         return;
@@ -492,18 +484,20 @@ class npc_spirit_of_the_flame: public CreatureScript //52593 npc
                     DoMeleeAttackIfReady();
                 }
 
+        private:
+            EventMap events;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_spirit_of_the_flameAI>(creature);
+    }
 };
 
 class npc_burning_orb: public CreatureScript //53216
 {
     public:
         npc_burning_orb() : CreatureScript("npc_burning_orb") { }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_burning_orbAI(creature);
-        }
 
         struct npc_burning_orbAI: public ScriptedAI
         {
@@ -513,25 +507,19 @@ class npc_burning_orb: public CreatureScript //53216
                     me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_NON_ATTACKABLE);
                 }
 
-                EventMap events;
-
-                void Reset() { }
-
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     DoZoneInCombat();
                     me->SetReactState(REACT_AGGRESSIVE);
                     me->AddAura(SPELL_BURNING_ORBS_VISUAL, me);
                 }
 
-                void JustDied(Unit* /*victim*/) { }
-
-                void EnterCombat(Unit* /*who*/)
+                void JusEngagedWith(Unit* /*who*/) override
                 {
                     events.ScheduleEvent(EVENT_ORB_DAMAGE, 3500);
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!UpdateVictim() || me->HasUnitState(UNIT_STATE_CASTING))
                         return;
@@ -550,7 +538,16 @@ class npc_burning_orb: public CreatureScript //53216
                         }
                     }
                 }
+
+        private:
+            EventMap events;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_burning_orbAI>(creature);
+    }
+
 };
 
 class spell_searing_seeds: public SpellScriptLoader
@@ -566,7 +563,7 @@ class spell_searing_seeds: public SpellScriptLoader
                 PrepareAuraScript(spell_searing_seeds_AuraScript)
                 ;
 
-                bool Validate(SpellInfo const* /*spell*/)
+                bool Validate(SpellInfo const* /*spell*/) override
                 {
                     if (!sSpellMgr->GetSpellInfo(SPELL_SEARING_SEEDS))
                     return false;
@@ -610,14 +607,14 @@ class spell_searing_seeds: public SpellScriptLoader
                     GetUnitOwner()->CastSpell(GetUnitOwner(),spell,true);
                 }
 
-                void Register()
+                void Register() override
                 {
                     OnEffectApply += AuraEffectApplyFn(spell_searing_seeds_AuraScript::OnApply, EFFECT_0, SPELL_AURA_PERIODIC_DUMMY, AURA_EFFECT_HANDLE_REAL);
                     AfterEffectRemove += AuraEffectRemoveFn(spell_searing_seeds_AuraScript::OnRemove, EFFECT_0, SPELL_AURA_PERIODIC_DUMMY, AURA_EFFECT_HANDLE_REAL);
                 }
             };
 
-            AuraScript* GetAuraScript() const
+            AuraScript* GetAuraScript() const override
             {
                 return new spell_searing_seeds_AuraScript();
             }

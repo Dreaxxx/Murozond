@@ -198,11 +198,6 @@ class boss_bethtilac: public CreatureScript
                     me->ApplySpellImmune(0, IMMUNITY_ID, SPELL_TELEPORT_UNITS, true);
                 }
 
-                InstanceScript* instance;
-                EventMap events;
-                int8 Devastion;
-                bool _moveup;
-
                 void InitializeAI()
                 {
                     if (!me->isDead())
@@ -221,7 +216,7 @@ class boss_bethtilac: public CreatureScript
                         (*iter)->DespawnOrUnsummon();
                 }
 
-                void Reset()
+                void Reset() override
                 {
                     if (_moveup)
                     {
@@ -283,7 +278,7 @@ class boss_bethtilac: public CreatureScript
                     return 0;
                 }
 
-                void EnterCombat(Unit* who)
+                void JustEngagedWith(Unit* who) override
                 {
                     if (instance)
                     {
@@ -297,7 +292,7 @@ class boss_bethtilac: public CreatureScript
                     me->setActive(true);
                 }
 
-                void JustDied(Unit* killer)
+                void JustDied(Unit* killer) override
                 {
                     if (instance)
                     {
@@ -312,7 +307,7 @@ class boss_bethtilac: public CreatureScript
                         me->NearTeleportTo(me->GetPositionX(), me->GetPositionY(), POSITION_Z, 0);
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!UpdateVictim())
                         return;
@@ -489,11 +484,17 @@ class boss_bethtilac: public CreatureScript
                     }
                     DoMeleeAttackIfReady();
                 }
+
+                private:
+                    InstanceScript* instance;
+                    EventMap events;
+                    int8 Devastion;
+                    bool _moveup;
         };
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return new boss_bethtilacAI(creature);
+            return GetFirelandsAI<boss_bethtilacAI>(creature);
         }
 };
 
@@ -516,15 +517,13 @@ class npc_cinderweb_spinner: public CreatureScript  //
                 {
                 }
 
-                bool Downed;
-
                 void InitializeAI()
                 {
                     if (!me->isDead())
                         Reset();
                 }
 
-                void Reset()
+                void Reset() override
                 {
                     Downed = false;
                     events.Reset();
@@ -543,7 +542,7 @@ class npc_cinderweb_spinner: public CreatureScript  //
                         events.ScheduleEvent(EVENT_FIERY_WEB_SPIN, urand(15000, 20000));
                 }
 
-                void DamageTaken(Unit* who, uint32& damage)
+                void DamageTaken(Unit* who, uint32& damage) override
                 {
                     if (damage > 0 && !Downed)
                     {
@@ -559,11 +558,7 @@ class npc_cinderweb_spinner: public CreatureScript  //
                     }
                 }
 
-                void EnterCombat(Unit* who)
-                {
-                }
-
-                void JustDied(Unit* /*killer*/)
+                void JustDied(Unit* /*killer*/) override
                 {
                     if (me->isSummon())
                     {
@@ -574,14 +569,14 @@ class npc_cinderweb_spinner: public CreatureScript  //
                     }
                 }
 
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     summoner->CastSpell(me, 98623, true);
                     me->GetMotionMaster()->MovePoint(POINT_SPINNER_MEDIATE, me->GetPositionX(), me->GetPositionY(),
                             me->GetPositionZ() - 15, true);
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!UpdateVictim())
                         return;
@@ -619,11 +614,12 @@ class npc_cinderweb_spinner: public CreatureScript  //
                 }
             private:
                 EventMap events;
+                bool Downed;
         };
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return new npc_cinderweb_spinnerAI(creature);
+            return GetFirelandsAI<npc_cinderweb_spinnerAI>(creature);
         }
 };
 
@@ -643,8 +639,6 @@ class npc_cinderweb_drone: public CreatureScript   //
                 {
                 }
 
-                bool SummonLift;
-
                 void InitializeAI()
                 {
                     if (!me->isDead())
@@ -653,11 +647,7 @@ class npc_cinderweb_drone: public CreatureScript   //
                     SummonLift = true;
                 }
 
-                void JustDied(Unit* /*killer*/)
-                {
-                }
-
-                void Reset()
+                void Reset() override
                 {
                     if (Unit* target = me->SelectNearestPlayer(200.0f))
                     {
@@ -675,13 +665,13 @@ class npc_cinderweb_drone: public CreatureScript   //
                         events.ScheduleEvent(EVENT_FIXATE, 100);
                 }
 
-                void EnterCombat(Unit* who)
+                void JustEngagedWith(Unit* who) override
                 {
                     DoCast(me, SPELL_NO_REGEN);
                     me->SetUInt32Value(UNIT_FIELD_BYTES_1, 0);
                 }
 
-                void DamageTaken(Unit* attacker, uint32& damage)
+                void DamageTaken(Unit* attacker, uint32& damage) override
                 {
                     if (damage > me->GetMaxHealth())
                     {
@@ -690,14 +680,14 @@ class npc_cinderweb_drone: public CreatureScript   //
                     }
                 }
 
-                void JustSummoned(Creature *summon)
+                void JustSummoned(Creature *summon) override
                 {
                     events.CancelEvent(EVENT_CONSUME);
                     events.CancelEvent(EVENT_BOILING_SPLATTER);
                     events.CancelEvent(EVENT_DRONE_BURNING_ACID);
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!UpdateVictim())
                         return;
@@ -764,11 +754,12 @@ class npc_cinderweb_drone: public CreatureScript   //
 
             private:
                 EventMap events;
+                bool SummonLift;
         };
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return new npc_cinderweb_droneAI(creature);
+            return GetFirelandsAI<npc_cinderweb_droneAI>(creature);
         }
 };
 
@@ -794,25 +785,15 @@ class npc_cinderweb_spiderling: public CreatureScript //
                     if (!me->isDead())
                         Reset();
                 }
-                bool Founded;
-                bool NeedKick;
 
-                void JustDied(Unit* /*killer*/)
-                {
-                }
-
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     NeedKick = true;
                     events.ScheduleEvent(EVENT_LITTLE_CHECK_TARGET, 1000);
                     me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE);
                 }
 
-                void EnterCombat(Unit* who)
-                {
-                }
-
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (me->HasUnitState(UNIT_STATE_CASTING))
                         return;
@@ -889,11 +870,13 @@ class npc_cinderweb_spiderling: public CreatureScript //
                 }
             private:
                 EventMap events;
+                bool Founded;
+                bool NeedKick;
         };
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return new npc_cinderweb_spiderlingAI(creature);
+            return GetFirelandsAI<npc_cinderweb_spiderlingAI>(creature);
         }
 };
 
@@ -914,24 +897,20 @@ class npc_engorged_broodling: public CreatureScript // .
                 {
                 }
 
-                void JustDied(Unit* /*killer*/)
-                {
-                }
-
                 void Reset()
                 {
                     events.Reset();
                     events.ScheduleEvent(EVENT_CHECK_PLAYER_RANGE, urand(2000, 9000));
                 }
 
-                void EnterCombat(Unit* /*who*/)
+                void JustEngagedWith(Unit* /*who*/) override
                 {
                     me->SetReactState(REACT_PASSIVE);
                     if (Unit* player = SelectTarget(SELECT_TARGET_RANDOM, 0, 500, true))
                         me->GetMotionMaster()->MoveChase(player);
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!UpdateVictim())
                         return;
@@ -962,7 +941,7 @@ class npc_engorged_broodling: public CreatureScript // .
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return new npc_engorged_broodlingAI(creature);
+            return GetFirelandsAI<npc_engorged_broodlingAI>(creature);
         }
 };
 
@@ -981,18 +960,14 @@ class npc_web_rip: public CreatureScript
                 {
                 }
 
-                void JustDied(Unit* /*killer*/)
-                {
-                }
-
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     events.ScheduleEvent(EVENT_METEOR_DUMMY, 100);
                     me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
                     me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (me->HasUnitState(UNIT_STATE_CASTING))
                         return;
@@ -1035,7 +1010,7 @@ class npc_web_rip: public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return new npc_web_ripAI(creature);
+            return GetFirelandsAI<npc_web_ripAI>(creature);
         }
 };
 
@@ -1051,10 +1026,7 @@ class npc_web_filament: public CreatureScript
                     me->SetFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_SPELLCLICK);
                 }
 
-                Vehicle* vehicle;
-                bool seated;
-
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     seated = false;
                     me->AddAura(98149, me);
@@ -1062,11 +1034,8 @@ class npc_web_filament: public CreatureScript
                     me->DespawnOrUnsummon(10000);
                 }
 
-                void PassengerBoarded(Unit* who, int8 seatId, bool apply)
+                void PassengerBoarded(Unit* who, int8 seatId, bool apply) override
                 {
-//            if (!me->GetVehicle())
-//                return;
-
                     if (who->GetTypeId() == TYPEID_PLAYER)
                     {
                         if (!apply)
@@ -1082,15 +1051,7 @@ class npc_web_filament: public CreatureScript
                     }
                 }
 
-                void JustDied(Unit* /*killer*/)
-                {
-                }
-
-                void EnterCombat(Unit* who)
-                {
-                }
-
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (me->HasUnitState(UNIT_STATE_CASTING) || !seated)
                         return;
@@ -1115,11 +1076,13 @@ class npc_web_filament: public CreatureScript
                 }
             private:
                 EventMap events;
+                Vehicle* vehicle;
+                bool seated;
         };
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return new npc_web_filamentAI(creature);
+            return GetFirelandsAI<npc_web_filamentAI>(creature);
         }
 };
 
@@ -1138,11 +1101,7 @@ class npc_lift_controller: public CreatureScript
                 {
                 }
 
-                void Reset()
-                {
-                }
-
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     me->AddAura(97196, me);
                     if (summoner->GetEntry() == NPC_BETHTILAC)
@@ -1153,7 +1112,7 @@ class npc_lift_controller: public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return new npc_lift_controllerAI(creature);
+            return GetFirelandsAI<npc_lift_controllerAI>(creature);
         }
 };
 
@@ -1165,7 +1124,7 @@ class achievement_death_from_above: public AchievementCriteriaScript //need to c
         {
         }
 
-        bool OnCheck(Player* /*source*/, Unit* target)
+        bool OnCheck(Player* /*source*/, Unit* target) override
         {
             if (!target)
                 return false;

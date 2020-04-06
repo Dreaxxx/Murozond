@@ -2784,8 +2784,6 @@ class boss_alysrazor: public CreatureScript
                         return 2;
                     else if (talon == 2)
                         return 4;
-                    else if (talon == 3)
-                        return 6;
                     else
                         return 6;
                 }
@@ -2796,8 +2794,8 @@ class boss_alysrazor: public CreatureScript
                     if (!PlayerList.isEmpty())
                         for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
                             if (Creature* tornado = me->FindNearestCreature(53693, 5000.0f))
-                                if (i->getSource()->GetDistance(tornado) > 60.0f)
-                                    me->AddAura(SPELL_HARSH_WINDS, i->getSource());
+                                if (i->GetSource() && && tornado->IsWithinDistInMap(i->GetSource(), 60.f))
+                                    me->AddAura(SPELL_HARSH_WINDS, i->GetSource());
                 }
 
                 void SetPlayersInCombat()
@@ -2806,12 +2804,10 @@ class boss_alysrazor: public CreatureScript
                     Map::PlayerList const &PlayerList = me->GetMap()->GetPlayers();
                     if (!PlayerList.isEmpty())
                         for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
-                            if (Player *player = i->getSource())
-                                if (player->isAlive())
-                                {
-                                    ++players;
-                                    player->SetInCombatWith(me->ToUnit());
-                                }
+                            if (Player *player = i->GetSource()->IsAlive) {
+                                ++players;
+                                player->SetInCombatWith(me->ToUnit());
+                            }
                     if (players == 0)
                         EnterEvadeMode();
                 }
@@ -2821,8 +2817,8 @@ class boss_alysrazor: public CreatureScript
                     Map::PlayerList const &PlayerList = me->GetMap()->GetPlayers();
                     if (!PlayerList.isEmpty())
                         for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
-                            if (i->getSource()->HasAura(SPELL_FLY))
-                                i->getSource()->RemoveAura(SPELL_FLY);
+                            if (i->GetSource()->HasAura(SPELL_FLY))
+                                i->GetSource()->RemoveAuraDueToSpell(SPELL_FLY);
                 }
 
                 void RemoveAllFeathers()
@@ -2830,8 +2826,8 @@ class boss_alysrazor: public CreatureScript
                     Map::PlayerList const &PlayerList = me->GetMap()->GetPlayers();
                     if (!PlayerList.isEmpty())
                         for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
-                            if (i->getSource()->HasAura(SPELL_CAST_ON_MOVE_VISUAL))
-                                i->getSource()->RemoveAura(SPELL_CAST_ON_MOVE_VISUAL);
+                            if (i->GetSource()->HasAura(SPELL_CAST_ON_MOVE_VISUAL))
+                                i->GetSource()->RemoveAuraDuToSpell(SPELL_CAST_ON_MOVE_VISUAL);
                 }
 
                 void RemoveEncounterAuras()
@@ -2840,14 +2836,14 @@ class boss_alysrazor: public CreatureScript
                     if (!PlayerList.isEmpty())
                         for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
                         {
-                            if (i->getSource()->HasAura(SPELL_FLY))
-                                i->getSource()->RemoveAura(SPELL_FLY);
-                            if (i->getSource()->HasAura(SPELL_INDICATOR))
-                                i->getSource()->RemoveAura(SPELL_INDICATOR);
-                            if (i->getSource()->HasAura(SPELL_CAST_ON_MOVE_VISUAL))
-                                i->getSource()->RemoveAura(SPELL_CAST_ON_MOVE_VISUAL);
-                            if (i->getSource()->HasAura(SPELL_IMPRINTED))
-                                i->getSource()->RemoveAura(SPELL_IMPRINTED);
+                            if (i->GetSource()->HasAura(SPELL_FLY))
+                                i->GetSource()->RemoveAuraDueToSpell(SPELL_FLY);
+                            if (i->GetSource()->HasAura(SPELL_INDICATOR))
+                                i->GetSource()->RemoveAuraDueToSpell(SPELL_INDICATOR);
+                            if (i->GetSource()->HasAura(SPELL_CAST_ON_MOVE_VISUAL))
+                                i->GetSource()->RemoveAuraDueToSpell(SPELL_CAST_ON_MOVE_VISUAL);
+                            if (i->GetSource()->HasAura(SPELL_IMPRINTED))
+                                i->GetSource()->RemoveAuraDueToSpell(SPELL_IMPRINTED);
                         }
                 }
 
@@ -2982,7 +2978,7 @@ class spell_molthen_feater: public SpellScriptLoader
 
                 void OnRemove(AuraEffect const* aurEff, AuraEffectHandleModes /*mode*/)
                 {
-                    GetTarget()->SetAltPower(0);
+                    //GetTarget()->SetAltPower(0);
                     GetTarget()->SetPower(POWER_ALTERNATE_POWER, 0);
 
                     for (uint8 i = 0; i < 10; i++)
@@ -3239,12 +3235,12 @@ class mob_strangle_aly_gauntlet: public CreatureScript
                                 break;
                             case EVENT_FLY_UP:
                                 DoAction(ACTION_DROP_FEATHER);
-                                me->SetSpeed(MOVE_FLIGHT, 1.5f, true);
+                                me->SetSpeed(MOVE_FLIGHT, 1.5f);
                                 me->GetMotionMaster()->MovePoint(0, StaghelmFlyUpPos);
                                 events.ScheduleEvent(EVENT_FLYAWAY, 4000);
                                 break;
                             case EVENT_FLYAWAY:
-                                me->SetSpeed(MOVE_FLIGHT, 3.5f, true);
+                                me->SetSpeed(MOVE_FLIGHT, 3.5f);
                                 me->GetMotionMaster()->MovePoint(0, StaghelmFlyQuitPos);
                                 me->DespawnOrUnsummon(15000);
                                 break;

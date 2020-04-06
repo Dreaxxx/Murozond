@@ -31,6 +31,8 @@
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "firelands.h"
+#include "PassiveAI.h"
+#include "CreatureAI.h"
 
 #define GO_ALYSRAZOR_VOLCANO_GUID 100576
 
@@ -580,7 +582,7 @@ class TrashRespawnWorker
                 case NPC_EGG_PILE:
                 case NPC_HARBINGER_OF_FLAME:
                 case NPC_MOLTEN_EGG_TRASH:
-                    if (!creature->isAlive())
+                    if (!creature->IsAlive())
                         creature->Respawn(true);
                     break;
                 case NPC_SMOULDERING_HATCHLING:
@@ -594,7 +596,7 @@ static void AlysrazorTrashEvaded(Creature* creature)
 {
     TrashRespawnWorker check;
     Trinity::CreatureWorker<TrashRespawnWorker> worker(creature, check);
-    creature->VisitNearbyGridObject(SIZE_OF_GRIDS, worker);
+    Cell::VisitAllObjects(creature, worker, SIZE_OF_GRIDS);
 }
 
 class npc_harbinger_of_flame: public CreatureScript
@@ -615,7 +617,7 @@ class npc_harbinger_of_flame: public CreatureScript
                 void JustEngagedWith(Unit* /*target*/) override
                 {
                     if (Creature* bird = ObjectAccessor::GetCreature(*me,
-                            me->GetUInt64Value(UNIT_FIELD_CHANNEL_OBJECT)))
+                            me->GetChannelObjectGuid())))
                         DoZoneInCombat(bird, 200.0f);
 
                     me->InterruptSpell(CURRENT_CHANNELED_SPELL);
@@ -631,10 +633,10 @@ class npc_harbinger_of_flame: public CreatureScript
 
                 void MoveInLineOfSight(Unit* unit) override
                 {
-                    if (me->isInCombat())
+                    if (me->IsInCombat())
                         return;
 
-                    if (!unit->isCharmedOwnedByPlayerOrPlayer())
+                    if (!unit->IsCharmedOwnedByPlayerOrPlayer())
                         return;
 
                     ScriptedAI::MoveInLineOfSight(unit);
@@ -642,7 +644,7 @@ class npc_harbinger_of_flame: public CreatureScript
 
                 void UpdateAI(uint32 const diff) override
                 {
-                    if (!me->isInCombat())
+                    if (!me->IsInCombat())
                         if (!me->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
                             if (Creature* fireBird = me->FindNearestCreature(
                                     (me->GetHomePosition().GetPositionY() > -275.0f ?
@@ -708,19 +710,13 @@ class npc_blazing_monstrosity: public CreatureScript
                     PassiveAI::EnterEvadeMode();
                 }
 
-                void JustDied(Unit* /*killer*/) override
+                void JustDied(Unit* /*killer*/)
                 {
                     _summons.DespawnAll();
-                    me->DespawnOrUnsummon(5000);
                     _events.Reset();
                 }
 
-                void JustReachedHome() override
-                {
-//                    AlysrazorTrashEvaded(me);
-                }
-
-                void JustEngagedWith(Unit* /*target*/) override
+                void JustEngagedWith(Unit* /*target*/)
                 {
                     DoZoneInCombat();
                     me->RemoveAurasDueToSpell(SPELL_SLEEP_ULTRA_HIGH_PRIORITY);
@@ -740,7 +736,7 @@ class npc_blazing_monstrosity: public CreatureScript
                         (*iter)->DespawnOrUnsummon();
                 }
 
-                void PassengerBoarded(Unit* passenger, int8 /*seat*/, bool apply) override
+                void PassengerBoarded(Unit* passenger, int8 /*seat*/, bool apply)
                 {
                     if (!apply)
                         return;
@@ -757,12 +753,12 @@ class npc_blazing_monstrosity: public CreatureScript
                     init.Launch();
                 }
 
-                void JustSummoned(Creature* summon) override
+                void JustSummoned(Creature* summon)
                 {
                     _summons.Summon(summon);
                 }
 
-                void SummonedCreatureDespawn(Creature* summon) override
+                void SummonedCreatureDespawn(Creature* summon)
                 {
                     _summons.Despawn(summon);
                 }

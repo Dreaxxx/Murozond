@@ -61,210 +61,6 @@ enum KarSpells
     SPELL_SUM_LAVA_SPAWN = 99575
 };
 
-class kar_the_everburning: public CreatureScript
-{
-    public:
-        kar_the_everburning() :
-                CreatureScript("kar_the_everburning")
-        {
-        }
-
-        struct kar_the_everburningAI: public ScriptedAI
-        {
-                kar_the_everburningAI(Creature* creature) :
-                        ScriptedAI(creature), Summons(me)
-                {
-                    SetCombatMovement(false);
-                    me->SetSpeed(MOVE_RUN, 2.0f);
-                }
-
-                void Reset()
-                {
-                    events.Reset();
-                    Summons.DespawnAll();
-                }
-
-                void EnterCombat(Unit* /*who*/)
-                {
-                    events.ScheduleEvent(EVENT_SUMMON_ADDS, 3000);
-                }
-
-                void JustSummoned(Creature* summon)
-                {
-                    Summons.Summon(summon);
-                }
-
-                void UpdateAI(const uint32 diff)
-                {
-                    if (!UpdateVictim())
-                        return;
-
-                    if (Unit* NearPlayer = me->FindNearestPlayer(5.0, true))
-                    {
-                        events.ScheduleEvent(EVENT_NEAR_PLAYER, 1000);
-                        SetCombatMovement(true);
-                    }
-
-                    events.Update(diff);
-
-                    if (me->HasUnitState(UNIT_STATE_CASTING))
-                        return;
-
-                    if (uint32 eventId = events.ExecuteEvent())
-                    {
-                        switch (eventId)
-                        {
-                            case EVENT_SUMMON_ADDS:
-                                me->CastSpell(me->GetPositionX() + urand(0, 10) + urand(-10, 0), me->GetPositionY(),
-                                me->GetPositionZ(), SUMMON_ELEMENTALS, true);
-                                events.ScheduleEvent(EVENT_SUMMON_ADDS, 1200);
-                                break;
-                            case EVENT_NEAR_PLAYER:
-                                me->SetDisableGravity(true);
-                                me->GetMotionMaster()->MovePoint(0, -316.1f, -435.1f, 102.969f);
-                                events.CancelEvent(EVENT_SUMMON_ADDS);
-                                events.ScheduleEvent(EVENT_BEAM, 3000);
-                                events.ScheduleEvent(EVENT_SUM_LAVA, 5000);
-                                break;
-                            case EVENT_BEAM:
-                                DoCastRandom(SPELL_SOUL_BEAM, 40.0f);
-                                events.ScheduleEvent(EVENT_BEAM, 10000);
-                                break;
-                            case EVENT_SUM_LAVA:
-                                DoCast(me, SPELL_SUM_LAVA_SPAWN, false);
-                                events.ScheduleEvent(EVENT_SUM_LAVA, 15000);
-                                break;
-                        }
-                    }
-                    DoMeleeAttackIfReady();
-                }
-            private:
-                EventMap events;
-                SummonList Summons;
-        };
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new kar_the_everburningAI(creature);
-        }
-};
-
-class mob_kar_combat_stalker: public CreatureScript
-{
-    public:
-        mob_kar_combat_stalker() :
-                CreatureScript("mob_kar_combat_stalker")
-        {
-        }
-
-        struct mob_kar_combat_stalkerAI: public ScriptedAI
-        {
-                mob_kar_combat_stalkerAI(Creature* creature) :
-                        ScriptedAI(creature)
-                {
-                }
-
-                void Reset()
-                {
-                }
-
-                void MoveInLineOfSight(Unit* who)
-                {
-                    if (who && who->GetTypeId() == TYPEID_PLAYER && me->IsValidAttackTarget(who))
-
-                        if (!detect && me->IsWithinDistInMap(who, 10.0f))
-                        {
-                            detect = true;
-                            ScriptedAI::MoveInLineOfSight(who);
-                            if (Creature* kar = me->FindNearestCreature(NPC_KAR_EVERBURNING, 5000.0f, true))
-                                kar->AI()->AttackStart(who);
-                        }
-                }
-
-                void EnterCombat(Unit* /*who*/)
-                {
-                }
-            private:
-                bool detect;
-        };
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new mob_kar_combat_stalkerAI(creature);
-        }
-};
-
-class Unstable_Pyrelord: public CreatureScript
-{
-    public:
-        Unstable_Pyrelord() :
-                CreatureScript("Unstable_Pyrelord")
-        {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new Unstable_PyrelordAI(creature);
-        }
-
-        struct Unstable_PyrelordAI: public ScriptedAI
-        {
-                Unstable_PyrelordAI(Creature* creature) :
-                        ScriptedAI(creature)
-                {
-                    instance = creature->GetInstanceScript();
-                    start = false;
-                    falltimer = 5000;
-                }
-
-                bool start;
-                uint32 falltimer;
-                InstanceScript* instance;
-
-                void Reset()
-                {
-                }
-
-                void EnterCombat(Unit* /*who*/)
-                {
-                }
-
-                void IsSummonedBy(Unit* summoner)
-                {
-                    me->SetReactState(REACT_AGGRESSIVE);
-                    start = true;
-                }
-
-                void UpdateAI(const uint32 diff)
-                {
-                    if (!start)
-                        return;
-
-                    if (falltimer <= diff)
-                    {
-                        me->GetMotionMaster()->MoveFall();
-                        falltimer = 5000;
-                    }
-                    else
-                        falltimer -= diff;
-
-                    if (!UpdateVictim())
-                        me->GetMotionMaster()->MovePoint(1, -167.431f, -307.385f, me->GetPositionZMinusOffset());
-
-                    if (!GetKar())
-                        me->DespawnOrUnsummon();
-
-                    if (UpdateVictim())
-                        DoMeleeAttackIfReady();
-                }
-
-                Creature* GetKar()
-                {
-                    return me->FindNearestCreature(53616, 125.0f, true);
-                }
-        };
-};
-
 enum Spells
 {
     /*** Boss spells ***/
@@ -352,8 +148,8 @@ enum Misc
 };
 
 const Position CenterPlatform[1] =
-{
-{ -368.220f, -322.986f, 100.281f, 0 } };
+        {
+                { -368.220f, -322.986f, 100.281f, 0 } };
 
 // Speed
 
@@ -378,15 +174,205 @@ const int timerInfernalRage = 5000;
 // I have all the correct text and sound will fix this later i first want to see if this fix the crash issue
 enum eYells
 {
-   SAY_AGGRO              = 6,
-   SAY_KILLED             = 12,
-   SAY_DIED               = 1,
-   SAY_PHASE2             = 8,
-   
-   SAY_EMOTE_SUPERHEATED  = 16,
-   SAY_EMOTE_VOLCANO      = 17,
-   SAY_EMOTE_MAGMA        = 18
-   
+    SAY_AGGRO              = 6,
+    SAY_KILLED             = 12,
+    SAY_DIED               = 1,
+    SAY_PHASE2             = 8,
+
+    SAY_EMOTE_SUPERHEATED  = 16,
+    SAY_EMOTE_VOLCANO      = 17,
+    SAY_EMOTE_MAGMA        = 18
+
+};
+
+class kar_the_everburning: public CreatureScript
+{
+    public:
+        kar_the_everburning() :
+                CreatureScript("kar_the_everburning")
+        {
+        }
+
+        struct kar_the_everburningAI: public ScriptedAI
+        {
+                kar_the_everburningAI(Creature* creature) :
+                        ScriptedAI(creature), Summons(me)
+                {
+                    SetCombatMovement(false);
+                    me->SetSpeed(MOVE_RUN, 2.0f);
+                }
+
+                void Reset() override
+                {
+                    events.Reset();
+                    Summons.DespawnAll();
+                }
+
+                void JustEngagedWith(Unit* /*who*/) override
+                {
+                    events.ScheduleEvent(EVENT_SUMMON_ADDS, 3000);
+                }
+
+                void JustSummoned(Creature* summon) override
+                {
+                    Summons.Summon(summon);
+                }
+
+                void UpdateAI(const uint32 diff) override
+                {
+                    if (!UpdateVictim())
+                        return;
+
+                    if (Unit* NearPlayer = me->FindNearestPlayer(5.0, true))
+                    {
+                        events.ScheduleEvent(EVENT_NEAR_PLAYER, 1000);
+                        SetCombatMovement(true);
+                    }
+
+                    events.Update(diff);
+
+                    if (me->HasUnitState(UNIT_STATE_CASTING))
+                        return;
+
+                    if (uint32 eventId = events.ExecuteEvent())
+                    {
+                        switch (eventId)
+                        {
+                            case EVENT_SUMMON_ADDS:
+                                me->CastSpell(me->GetPositionX() + urand(0, 10) + urand(-10, 0), me->GetPositionY(),
+                                me->GetPositionZ(), SUMMON_ELEMENTALS, true);
+                                events.ScheduleEvent(EVENT_SUMMON_ADDS, 1200);
+                                break;
+                            case EVENT_NEAR_PLAYER:
+                                me->SetDisableGravity(true);
+                                me->GetMotionMaster()->MovePoint(0, -316.1f, -435.1f, 102.969f);
+                                events.CancelEvent(EVENT_SUMMON_ADDS);
+                                events.ScheduleEvent(EVENT_BEAM, 3000);
+                                events.ScheduleEvent(EVENT_SUM_LAVA, 5000);
+                                break;
+                            case EVENT_BEAM:
+                                DoCastRandom(SPELL_SOUL_BEAM, 40.0f);
+                                events.ScheduleEvent(EVENT_BEAM, 10000);
+                                break;
+                            case EVENT_SUM_LAVA:
+                                DoCast(me, SPELL_SUM_LAVA_SPAWN, false);
+                                events.ScheduleEvent(EVENT_SUM_LAVA, 15000);
+                                break;
+                        }
+                    }
+                    DoMeleeAttackIfReady();
+                }
+            private:
+                EventMap events;
+                SummonList Summons;
+        };
+
+        CreatureAI* GetAI(Creature* creature) const
+        {
+            return GetFirelandsAI<kar_the_everburningAI>(creature);
+        }
+};
+
+class mob_kar_combat_stalker: public CreatureScript
+{
+    public:
+        mob_kar_combat_stalker() :
+                CreatureScript("mob_kar_combat_stalker")
+        {
+        }
+
+        struct mob_kar_combat_stalkerAI: public ScriptedAI
+        {
+                mob_kar_combat_stalkerAI(Creature* creature) :
+                        ScriptedAI(creature)
+                {
+                }
+
+                void MoveInLineOfSight(Unit* who) override
+                {
+                    if (who && who->GetTypeId() == TYPEID_PLAYER && me->IsValidAttackTarget(who))
+
+                        if (!detect && me->IsWithinDistInMap(who, 10.0f))
+                        {
+                            detect = true;
+                            ScriptedAI::MoveInLineOfSight(who);
+                            if (Creature* kar = me->FindNearestCreature(NPC_KAR_EVERBURNING, 5000.0f, true))
+                                kar->AI()->AttackStart(who);
+                        }
+                }
+
+            private:
+                bool detect;
+        };
+
+        CreatureAI* GetAI(Creature* creature) const
+        {
+            return GetFirelandsAI<mob_kar_combat_stalkerAI>(creature);
+        }
+};
+
+class Unstable_Pyrelord: public CreatureScript
+{
+    public:
+        Unstable_Pyrelord() :
+                CreatureScript("Unstable_Pyrelord")
+        {
+        }
+
+        struct Unstable_PyrelordAI: public ScriptedAI
+        {
+                Unstable_PyrelordAI(Creature* creature) :
+                        ScriptedAI(creature)
+                {
+                    instance = creature->GetInstanceScript();
+                    start = false;
+                    falltimer = 5000;
+                }
+
+                void IsSummonedBy(Unit* summoner) override
+                {
+                    me->SetReactState(REACT_AGGRESSIVE);
+                    start = true;
+                }
+
+                void UpdateAI(const uint32 diff) override
+                {
+                    if (!start)
+                        return;
+
+                    if (falltimer <= diff)
+                    {
+                        me->GetMotionMaster()->MoveFall();
+                        falltimer = 5000;
+                    }
+                    else
+                        falltimer -= diff;
+
+                    if (!UpdateVictim())
+                        me->GetMotionMaster()->MovePoint(1, -167.431f, -307.385f, me->GetPositionZMinusOffset());
+
+                    if (!GetKar())
+                        me->DespawnOrUnsummon();
+
+                    if (UpdateVictim())
+                        DoMeleeAttackIfReady();
+                }
+
+                Creature* GetKar()
+                {
+                    return me->FindNearestCreature(53616, 125.0f, true);
+                }
+
+        private:
+            bool start;
+            uint32 falltimer;
+            InstanceScript* instance;
+        };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<Unstable_PyrelordAI>(creature);
+    }
 };
 
 class boss_lord_rhyolith: public CreatureScript
@@ -395,11 +381,6 @@ class boss_lord_rhyolith: public CreatureScript
         boss_lord_rhyolith() :
                 CreatureScript("boss_lord_rhyolith")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new boss_lord_rhyolithAI(creature);
         }
 
         struct boss_lord_rhyolithAI: public BossAI
@@ -412,14 +393,6 @@ class boss_lord_rhyolith: public CreatureScript
                     RightSet = false;
                     Reset();
                 }
-
-                InstanceScript* instance;
-                Vehicle* vehicle;
-                Phases Phase;
-                EventMap events;
-                SummonList summons;
-
-                bool phaseTwo, LeftSet, RightSet, lavaFlow, drinkMagma;
 
                 void SummonAndSetLegsInBoss()
                 {
@@ -455,7 +428,7 @@ class boss_lord_rhyolith: public CreatureScript
                     }
                 }
 
-                void Reset()
+                void Reset() override
                 {
                     events.Reset();
                     Phase = PHASE_0;
@@ -484,7 +457,7 @@ class boss_lord_rhyolith: public CreatureScript
                         }
                 }
 
-                void EnterCombat(Unit* /*who*/)
+                void JustEngagedWith(Unit* /*who*/) override
                 {
                     instance->NormaliseAltPower();
                     Phase = PHASE_0;
@@ -518,12 +491,12 @@ class boss_lord_rhyolith: public CreatureScript
                     _EnterCombat();
                 }
 
-                void KilledUnit(Unit* /*who*/)
+                void KilledUnit(Unit* /*who*/) override
                 {
                     Talk(SAY_KILLED);
                 }
 
-                void JustDied(Unit* /*killer*/)
+                void JustDied(Unit* /*killer*/) override
                 {
                     instance->SetBossState(DATA_LORD_RHYOLITH, DONE);
 
@@ -562,7 +535,7 @@ class boss_lord_rhyolith: public CreatureScript
                     _EnterEvadeMode();
                 }
 
-                void JustSummoned(Creature *summon)
+                void JustSummoned(Creature *summon) override
                 {
                     summons.Summon(summon);
 
@@ -620,11 +593,11 @@ class boss_lord_rhyolith: public CreatureScript
                                     player->SetInCombatWith(me->ToUnit());
                                 }
 
-                    if (players == 0 && evade == true)
+                    if (players == 0 && evade)
                         EnterEvadeMode();
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!RightSet || !LeftSet)
                         SummonAndSetLegsInBoss();
@@ -714,15 +687,15 @@ class boss_lord_rhyolith: public CreatureScript
                             phaseTwo = true;
                         }
 
-                        if (me->GetPositionZ() <= 100.0f && lavaFlow == false)
+                        if (me->GetPositionZ() <= 100.0f && !lavaFlow)
                         {
                             Talk(SAY_EMOTE_MAGMA);
                             lavaFlow = true;
                         }
 
-                        if (lavaFlow == true)
+                        if (lavaFlow)
                         {
-                            if (drinkMagma == false)
+                            if (!drinkMagma)
                             {
                                 drinkMagma = true;
                                 DoCast(me, SPELL_DRINK_MAGMA);
@@ -731,7 +704,7 @@ class boss_lord_rhyolith: public CreatureScript
                                 DoCast(me, SPELL_MOLTEN_SPEW);
                         }
 
-                        if (lavaFlow == false)
+                        if (!lavaFlow)
                         {
                             float x, y, z;
                             me->GetClosePoint(x, y, z, me->GetObjectSize() / 3);
@@ -822,7 +795,20 @@ class boss_lord_rhyolith: public CreatureScript
                             me->FindNearestCreature(53087, 5000.0f, false) :
                             me->FindNearestCreature(53087, 5000.0f, true);
                 }
+
+        private:
+            InstanceScript* instance;
+            Vehicle* vehicle;
+            Phases Phase;
+            EventMap events;
+            SummonList summons;
+            bool phaseTwo, LeftSet, RightSet, lavaFlow, drinkMagma;
         };
+
+        CreatureAI* GetAI(Creature* creature) const
+        {
+            return GetFirelandsAI<boss_lord_rhyolithAI>(creature);
+        }
 };
 
 /*######
@@ -837,11 +823,6 @@ class npc_left_leg: public CreatureScript
         {
         }
 
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_left_legAI(creature);
-        }
-
         struct npc_left_legAI: public ScriptedAI
         {
                 npc_left_legAI(Creature *c) :
@@ -850,13 +831,6 @@ class npc_left_leg: public CreatureScript
                     instance = me->GetInstanceScript();
                     me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                     Reset();
-                }
-
-                InstanceScript* instance;
-                uint32 side;
-
-                void JustDied(Unit* /*killer*/)
-                {
                 }
 
                 void SetAltPowerForPlayers(int32 power)
@@ -870,25 +844,22 @@ class npc_left_leg: public CreatureScript
                                             player->GetPower(POWER_ALTERNATE_POWER) + power);
                 }
 
-                void Reset()
+                void Reset() override
                 {
                     me->SetReactState(REACT_PASSIVE);
                     me->AddUnitTypeMask(UNIT_MASK_ACCESSORY);
                     side = 0;
                 }
 
-                void EnterCombat(Unit* /*who*/)
+                void JustEngagedWith(Unit* /*who*/) override
                 {
                     me->SetInCombatWithZone();
                     if (GetRhyo() && GetRhyo()->isAlive())
                         GetRhyo()->AI()->DoZoneInCombat();
                 }
 
-                void UpdateAI(const uint32 diff)
-                {
-                }
 
-                void DamageTaken(Unit* who, uint32& damage)
+                void DamageTaken(Unit* who, uint32& damage) override
                 {
                     side += damage;
 
@@ -925,7 +896,15 @@ class npc_left_leg: public CreatureScript
                             me->FindNearestCreature(53087, 5000.0f, true);
                 }
 
+        private:
+            InstanceScript* instance;
+            uint32 side;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_left_legAI>(creature);
+    }
 };
 
 class npc_right_leg: public CreatureScript
@@ -936,11 +915,6 @@ class npc_right_leg: public CreatureScript
         {
         }
 
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_right_legAI(creature);
-        }
-
         struct npc_right_legAI: public ScriptedAI
         {
                 npc_right_legAI(Creature *c) :
@@ -949,13 +923,6 @@ class npc_right_leg: public CreatureScript
                     instance = me->GetInstanceScript();
                     me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                     Reset();
-                }
-
-                InstanceScript* instance;
-                uint32 side;
-
-                void JustDied(Unit* /*killer*/)
-                {
                 }
 
                 void SetAltPowerForPlayers(int32 power)
@@ -969,25 +936,21 @@ class npc_right_leg: public CreatureScript
                                             player->GetPower(POWER_ALTERNATE_POWER) + power);
                 }
 
-                void Reset()
+                void Reset() override
                 {
                     me->SetReactState(REACT_PASSIVE);
                     me->AddUnitTypeMask(UNIT_MASK_ACCESSORY);
                     side = 0;
                 }
 
-                void EnterCombat(Unit* /*who*/)
+                void JustEngagedWith(Unit* /*who*/) override
                 {
                     me->SetInCombatWithZone();
                     if (GetRhyo() && GetRhyo()->isAlive())
                         GetRhyo()->AI()->DoZoneInCombat();
                 }
 
-                void UpdateAI(const uint32 diff)
-                {
-                }
-
-                void DamageTaken(Unit* who, uint32& damage)
+                void DamageTaken(Unit* who, uint32& damage) override
                 {
                     side += damage;
 
@@ -1024,7 +987,15 @@ class npc_right_leg: public CreatureScript
                             me->FindNearestCreature(52577, 5000.0f, true);
                 }
 
+        private:
+            InstanceScript* instance;
+            uint32 side;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_right_legAI>(creature);
+    }
 };
 
 /*######
@@ -1039,11 +1010,6 @@ class npc_rhyolith_volcano: public CreatureScript
         {
         }
 
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_rhyolith_volcanoAI(creature);
-        }
-
         struct npc_rhyolith_volcanoAI: public ScriptedAI
         {
                 npc_rhyolith_volcanoAI(Creature *c) :
@@ -1055,15 +1021,7 @@ class npc_rhyolith_volcano: public CreatureScript
                     blow = false;
                 }
 
-                InstanceScript* instance;
-                EventMap events;
-                bool blow;
-
-                void JustDied(Unit* /*killer*/)
-                {
-                }
-
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     me->AddAura(SPELL_VISUAL_VOLCAN, me);
                     me->AddAura(SPELL_SMOKE_VOLCAN, me);
@@ -1075,24 +1033,24 @@ class npc_rhyolith_volcano: public CreatureScript
                         if ((*itr)->HasAura(SPELL_VOLCAN_CHECK_ACTIVE))
                             activated = true;
 
-                    if (activated == false)
+                    if (!activated)
                     {
                         me->AddAura(SPELL_VOLCAN_CHECK_ACTIVE, me);
                         events.ScheduleEvent(EVENT_ERRUPTION_START, 1000);
                     }
                 }
 
-                void Reset()
+                void Reset() override
                 {
                     events.Reset();
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (me->HasUnitState(UNIT_STATE_CASTING))
                         return;
 
-                    if (blow == false && GetRhyo()) 
+                    if (!blow && GetRhyo())
                     {
                         GetRhyo()->AddAura(SPELL_MOLTEN_ARMOR, GetRhyo()); 
 
@@ -1156,7 +1114,16 @@ class npc_rhyolith_volcano: public CreatureScript
                             me->FindNearestCreature(52558, 8.0f, false) : me->FindNearestCreature(52558, 8.0f, true);
                 }
 
+        private:
+            InstanceScript* instance;
+            EventMap events;
+            bool blow;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_rhyolith_volcanoAI>(creature);
+    }
 };
 
 /*######
@@ -1171,11 +1138,6 @@ class npc_rhyolith_crater: public CreatureScript
         {
         }
 
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_rhyolith_craterAI(creature);
-        }
-
         struct npc_rhyolith_craterAI: public ScriptedAI
         {
                 npc_rhyolith_craterAI(Creature *c) :
@@ -1186,21 +1148,12 @@ class npc_rhyolith_crater: public CreatureScript
                     me->SetReactState(REACT_PASSIVE);
                 }
 
-                InstanceScript* instance;
-                EventMap events;
-                uint32 number;
-                SummonList summons;
-
-                void JustDied(Unit* /*killer*/)
-                {
-                }
-
-                void Reset()
+                void Reset() override
                 {
                     events.Reset();
                 }
 
-                void JustSummoned(Creature *summon)
+                void JustSummoned(Creature *summon) override
                 {
                     summons.Summon(summon);
 
@@ -1220,14 +1173,14 @@ class npc_rhyolith_crater: public CreatureScript
                     }
                 }
 
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     number = 10;
                     events.ScheduleEvent(EVENT_ACTIVATE_CRATER, urand(5000, 20000));
                     DoCast(me, SPELL_MAGMA);
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (me->HasUnitState(UNIT_STATE_CASTING))
                         return;
@@ -1299,7 +1252,17 @@ class npc_rhyolith_crater: public CreatureScript
                             me->FindNearestCreature(52558, 5000.0f, true);
                 }
 
+        private:
+            InstanceScript* instance;
+            EventMap events;
+            uint32 number;
+            SummonList summons;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_rhyolith_craterAI>(creature);
+    }
 };
 
 /*######
@@ -1314,11 +1277,6 @@ class npc_lava_line: public CreatureScript
         {
         }
 
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_lava_lineAI(creature);
-        }
-
         struct npc_lava_lineAI: public ScriptedAI
         {
                 npc_lava_lineAI(Creature *c) :
@@ -1329,25 +1287,18 @@ class npc_lava_line: public CreatureScript
                     me->SetReactState(REACT_PASSIVE);
                 }
 
-                InstanceScript* instance;
-                EventMap events;
-
-                void JustDied(Unit* /*killer*/)
-                {
-                }
-
-                void Reset()
+                void Reset() override
                 {
                     events.Reset();
                 }
 
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     events.ScheduleEvent(EVENT_CHECK_NEAR_PLAYER, 4000);
                     events.ScheduleEvent(EVENT_DESPAWN_LINE, 30000);
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (me->HasUnitState(UNIT_STATE_CASTING))
                         return;
@@ -1387,7 +1338,16 @@ class npc_lava_line: public CreatureScript
                             me->FindNearestCreature(52558, 5000.0f, false) :
                             me->FindNearestCreature(52558, 5000.0f, true);
                 }
+
+        private:
+            InstanceScript* instance;
+            EventMap events;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_lava_lineAI>(creature);
+    }
 };
 
 /*######
@@ -1402,11 +1362,6 @@ class npc_liquid_obsidian: public CreatureScript
         {
         }
 
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_liquid_obsidianAI(creature);
-        }
-
         struct npc_liquid_obsidianAI: public ScriptedAI
         {
                 npc_liquid_obsidianAI(Creature *c) :
@@ -1415,16 +1370,7 @@ class npc_liquid_obsidian: public CreatureScript
                     instance = me->GetInstanceScript();
                 }
 
-                InstanceScript* instance;
-
-                void Reset()
-                {
-                }
-                void JustDied(Unit* /*killer*/)
-                {
-                }
-
-                void EnterCombat(Unit* /*who*/)
+                void JustEngagedWith(Unit* /*who*/) override
                 {
                     me->SetInCombatWithZone();
                     me->AttackStop();
@@ -1434,7 +1380,7 @@ class npc_liquid_obsidian: public CreatureScript
                         me->GetMotionMaster()->MoveChase(rhyolith);
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!UpdateVictim() || me->HasUnitState(UNIT_STATE_CASTING))
                         return;
@@ -1456,7 +1402,15 @@ class npc_liquid_obsidian: public CreatureScript
                         me->DisappearAndDie();
                     }
                 }
+
+        private:
+            InstanceScript* instance;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_liquid_obsidianAI>(creature);
+    }
 };
 
 /*######
@@ -1471,11 +1425,6 @@ class npc_spark_of_rhyolith: public CreatureScript
         {
         }
 
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_spark_of_rhyolithAI(creature);
-        }
-
         struct npc_spark_of_rhyolithAI: public ScriptedAI
         {
                 npc_spark_of_rhyolithAI(Creature *c) :
@@ -1484,26 +1433,19 @@ class npc_spark_of_rhyolith: public CreatureScript
                     instance = me->GetInstanceScript();
                 }
 
-                InstanceScript* instance;
-                EventMap events;
-
-                void JustDied(Unit* /*killer*/)
-                {
-                }
-
-                void Reset()
+                void Reset() override
                 {
                     events.Reset();
                 }
 
-                void EnterCombat(Unit* /*who*/)
+                void JustEngagedWith(Unit* /*who*/) override
                 {
                     DoCast(me, SPELL_IMOLATION);
 
                     events.ScheduleEvent(EVENT_INFERNAL_RAGE, 1000);
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!UpdateVictim() || me->HasUnitState(UNIT_STATE_CASTING))
                         return;
@@ -1526,7 +1468,16 @@ class npc_spark_of_rhyolith: public CreatureScript
 
                     DoMeleeAttackIfReady();
                 }
+
+        private:
+            InstanceScript* instance;
+            EventMap events;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_spark_of_rhyolithAI>(creature);
+    }
 };
 
 void AddSC_boss_lord_rhyolith()

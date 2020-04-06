@@ -44,6 +44,7 @@
 #define ENGULFING_FLAME_COUNT 9     // Engulfing Flames count.
 #define GO_CACHE_OF_THE_FIRELORD 208967 // Loot chest
 #define GO_RAGNAROS_DOOR         209073 // Door
+
 enum Yells
 {
     SAY_AGGRO = 0,
@@ -354,10 +355,6 @@ class boss_ragnaros_firelands: public CreatureScript
         {
         }
 
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new boss_ragnaros_firelandsAI(creature);
-        }
 
         struct boss_ragnaros_firelandsAI: public BossAI
         {
@@ -369,14 +366,7 @@ class boss_ragnaros_firelands: public CreatureScript
                     introDone = false;
                 }
 
-                InstanceScript* instance;
-                EventMap events;
-                SummonList summons;
-                Creature* smash;
-                Creature* splitting;
-                bool HeartCheck, introDone, intermission1, intermission2, phase3, inMeleeRange, heroicPhase, died;
-
-                void Reset()
+                void Reset() override
                 {
                     if (instance)
                         instance->SetData(DATA_RAGNAROS, NOT_STARTED);
@@ -423,7 +413,7 @@ class boss_ragnaros_firelands: public CreatureScript
                     _EnterEvadeMode();
                 }
 
-                void MoveInLineOfSight(Unit* who)
+                void MoveInLineOfSight(Unit* who) override
                 {
                     if (!introDone && who->IsWithinDistInMap(me, 30.0f))
                     {
@@ -435,12 +425,12 @@ class boss_ragnaros_firelands: public CreatureScript
                     }
                 }
 
-                void KilledUnit(Unit * /*victim*/)
+                void KilledUnit(Unit * /*victim*/) override
                 {
                     Talk(RAND(SAY_KILL_1, SAY_KILL_2, SAY_KILL_3));
                 }
 
-                void JustDied(Unit * /*victim*/)
+                void JustDied(Unit * /*victim*/) override
                 {
                     if (IsHeroic())
                         Talk(SAY_DEATH_H);
@@ -461,7 +451,7 @@ class boss_ragnaros_firelands: public CreatureScript
                     _JustDied();
                 }
 
-                void EnterCombat(Unit* who)
+                void JustEngagedWith(Unit* who) override
                 {
                     me->setActive(true);
 
@@ -479,7 +469,7 @@ class boss_ragnaros_firelands: public CreatureScript
                     _EnterCombat();
                 }
 
-                void DoAction(int32 const action)
+                void DoAction(int32 const action) override
                 {
                     switch (action)
                     {
@@ -496,7 +486,7 @@ class boss_ragnaros_firelands: public CreatureScript
                     }
                 }
 
-                void JustSummoned(Creature *summon)
+                void JustSummoned(Creature *summon) override
                 {
                     summons.Summon(summon);
                     summon->setActive(true);
@@ -551,7 +541,7 @@ class boss_ragnaros_firelands: public CreatureScript
                     }
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!UpdateVictim() || me->HasUnitState(UNIT_STATE_CASTING))
                         return;
@@ -1065,7 +1055,20 @@ class boss_ragnaros_firelands: public CreatureScript
                     if (!me->HasAura(SPELL_SUBMERGE))
                         DoMeleeAttackIfReady();
                 }
+
+        private:
+            InstanceScript* instance;
+            EventMap events;
+            SummonList summons;
+            Creature* smash;
+            Creature* splitting;
+            bool HeartCheck, introDone, intermission1, intermission2, phase3, inMeleeRange, heroicPhase, died;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<boss_ragnaros_firelandsAI>(creature);
+    }
 };
 
 class npc_sulfuras_smash_trigger: public CreatureScript // 53266
@@ -1074,11 +1077,6 @@ class npc_sulfuras_smash_trigger: public CreatureScript // 53266
         npc_sulfuras_smash_trigger() :
                 CreatureScript("npc_sulfuras_smash_trigger")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_sulfuras_smash_triggerAI(creature);
         }
 
         struct npc_sulfuras_smash_triggerAI: public ScriptedAI
@@ -1099,16 +1097,7 @@ class npc_sulfuras_smash_trigger: public CreatureScript // 53266
                     m_uiDespawnTimer = 5000;
                 }
 
-                InstanceScript* instance;
-                uint32 m_uiSummonTimer; // Summon the three npc's.
-                uint32 m_uiDamageTimer; // Damage.
-                uint32 m_uiDespawnTimer;
-
-                void EnterCombat(Unit* who)
-                {
-                }
-
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (m_uiSummonTimer <= diff)
                     {
@@ -1163,7 +1152,18 @@ class npc_sulfuras_smash_trigger: public CreatureScript // 53266
                     else
                         m_uiDespawnTimer -= diff;
                 }
+
+        private:
+            InstanceScript* instance;
+            uint32 m_uiSummonTimer; // Summon the three npc's.
+            uint32 m_uiDamageTimer; // Damage.
+            uint32 m_uiDespawnTimer;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_sulfuras_smash_triggerAI>(creature);
+    }
 };
 
 class npc_sulfuras_smash: public CreatureScript // 53268
@@ -1172,11 +1172,6 @@ class npc_sulfuras_smash: public CreatureScript // 53268
         npc_sulfuras_smash() :
                 CreatureScript("npc_sulfuras_smash")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_sulfuras_smashAI(creature);
         }
 
         struct npc_sulfuras_smashAI: public ScriptedAI
@@ -1192,12 +1187,7 @@ class npc_sulfuras_smash: public CreatureScript // 53268
                     m_uiDespawnTimer = 4900;
                 }
 
-                InstanceScript* instance;
-                EventMap events;
-                Creature* wave;
-                uint32 m_uiDespawnTimer;
-
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     events.Update(diff);
 
@@ -1221,7 +1211,18 @@ class npc_sulfuras_smash: public CreatureScript // 53268
                     else
                         m_uiDespawnTimer -= diff;
                 }
+
+        private:
+            InstanceScript* instance;
+            EventMap events;
+            Creature* wave;
+            uint32 m_uiDespawnTimer;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_sulfuras_smashAI>(creature);
+    }
 };
 
 class npc_magma_trap: public CreatureScript
@@ -1230,11 +1231,6 @@ class npc_magma_trap: public CreatureScript
         npc_magma_trap() :
                 CreatureScript("npc_magma_trap")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_magma_trapAI(creature);
         }
 
         struct npc_magma_trapAI: public ScriptedAI
@@ -1254,11 +1250,7 @@ class npc_magma_trap: public CreatureScript
                     m_uiCheckTimer = 1000;
                 }
 
-                InstanceScript* instance;
-                uint32 m_uiDespawnTimer;
-                uint32 m_uiCheckTimer;
-
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (m_uiCheckTimer <= diff)
                     {
@@ -1283,7 +1275,17 @@ class npc_magma_trap: public CreatureScript
                     else
                         m_uiDespawnTimer -= diff;
                 }
+
+        private:
+            InstanceScript* instance;
+            uint32 m_uiDespawnTimer;
+            uint32 m_uiCheckTimer;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_magma_trapAI>(creature);
+    }
 };
 
 class npc_splitting_blow: public CreatureScript
@@ -1292,11 +1294,6 @@ class npc_splitting_blow: public CreatureScript
         npc_splitting_blow() :
                 CreatureScript("npc_splitting_blow")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_splitting_blowAI(creature);
         }
 
         struct npc_splitting_blowAI: public ScriptedAI
@@ -1314,10 +1311,7 @@ class npc_splitting_blow: public CreatureScript
                     m_uiDespawnTimer = 8000;
                 }
 
-                InstanceScript* instance;
-                uint32 m_uiDespawnTimer;
-
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (m_uiDespawnTimer <= diff)
                     {
@@ -1329,7 +1323,16 @@ class npc_splitting_blow: public CreatureScript
                     else
                         m_uiDespawnTimer -= diff;
                 }
+
+        private:
+            InstanceScript* instance;
+            uint32 m_uiDespawnTimer;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_splitting_blowAI>(creature);
+    }
 };
 
 class npc_sulfuras: public CreatureScript
@@ -1338,11 +1341,6 @@ class npc_sulfuras: public CreatureScript
         npc_sulfuras() :
                 CreatureScript("npc_sulfuras")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_sulfurasAI(creature);
         }
 
         struct npc_sulfurasAI: public ScriptedAI
@@ -1362,10 +1360,7 @@ class npc_sulfuras: public CreatureScript
                     m_uiDespawnTimer = 44900;
                 }
 
-                InstanceScript* instance;
-                uint32 m_uiDespawnTimer;
-
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!UpdateVictim())
                         return;
@@ -1378,7 +1373,16 @@ class npc_sulfuras: public CreatureScript
                     else
                         m_uiDespawnTimer -= diff;
                 }
+
+        private:
+            InstanceScript* instance;
+            uint32 m_uiDespawnTimer;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_sulfurasAI>(creature);
+    }
 };
 
 class npc_son_of_flame: public CreatureScript
@@ -1387,11 +1391,6 @@ class npc_son_of_flame: public CreatureScript
         npc_son_of_flame() :
                 CreatureScript("npc_son_of_flame")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_son_of_flameAI(creature);
         }
 
         struct npc_son_of_flameAI: public ScriptedAI
@@ -1410,11 +1409,7 @@ class npc_son_of_flame: public CreatureScript
                     m_uiSulfurasCheckTimer = 9500;
                 }
 
-                InstanceScript* instance;
-                uint32 m_uiEmergeTimer;
-                uint32 m_uiSulfurasCheckTimer;
-
-                void DamageTaken(Unit* /*who*/, uint32& damage)
+                void DamageTaken(Unit* /*who*/, uint32& damage) override
                 {
                     if (me->HasAura(SPELL_BURNING_SPEED))
                         if (Aura * aura = me->GetAura(SPELL_BURNING_SPEED))
@@ -1426,7 +1421,7 @@ class npc_son_of_flame: public CreatureScript
                         }
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (HealthBelowPct(50))
                         me->RemoveAurasDueToSpell(SPELL_BURNING_SPEED);
@@ -1461,7 +1456,17 @@ class npc_son_of_flame: public CreatureScript
                     else
                         m_uiSulfurasCheckTimer -= diff;
                 }
+
+        private:
+            InstanceScript* instance;
+            uint32 m_uiEmergeTimer;
+            uint32 m_uiSulfurasCheckTimer;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_son_of_flameAI>(creature);
+    }
 };
 
 class npc_molten_seed: public CreatureScript
@@ -1470,11 +1475,6 @@ class npc_molten_seed: public CreatureScript
         npc_molten_seed() :
                 CreatureScript("npc_molten_seed")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_molten_seedAI(creature);
         }
 
         struct npc_molten_seedAI: public ScriptedAI
@@ -1493,12 +1493,7 @@ class npc_molten_seed: public CreatureScript
                     m_uiDespawnTimer = 15000;
                 }
 
-                InstanceScript* instance;
-
-                uint32 m_uiDespawnTimer;
-                uint32 m_uiMoltenInfernoTimer;
-
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (m_uiMoltenInfernoTimer <= diff)
                     {
@@ -1519,7 +1514,17 @@ class npc_molten_seed: public CreatureScript
                     else
                         m_uiDespawnTimer -= diff;
                 }
+
+        private:
+            InstanceScript* instance;
+            uint32 m_uiDespawnTimer;
+            uint32 m_uiMoltenInfernoTimer;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_molten_seedAI>(creature);
+    }
 };
 
 class npc_lava_scion: public CreatureScript
@@ -1528,11 +1533,6 @@ class npc_lava_scion: public CreatureScript
         npc_lava_scion() :
                 CreatureScript("npc_lava_scion")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_lava_scionAI(creature);
         }
 
         struct npc_lava_scionAI: public ScriptedAI
@@ -1544,10 +1544,7 @@ class npc_lava_scion: public CreatureScript
                     m_uiBlazingHeatTimer = 15000;
                 }
 
-                InstanceScript* instance;
-                uint32 m_uiBlazingHeatTimer;
-
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!UpdateVictim() || me->HasUnitState(UNIT_STATE_CASTING))
                         return;
@@ -1563,7 +1560,16 @@ class npc_lava_scion: public CreatureScript
 
                     DoMeleeAttackIfReady();
                 }
+
+        private:
+            InstanceScript* instance;
+            uint32 m_uiBlazingHeatTimer;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_lava_scionAI>(creature);
+    }
 };
 
 class npc_molten_elemental: public CreatureScript
@@ -1572,11 +1578,6 @@ class npc_molten_elemental: public CreatureScript
         npc_molten_elemental() :
                 CreatureScript("npc_molten_elemental")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_molten_elementalAI(creature);
         }
 
         struct npc_molten_elementalAI: public ScriptedAI
@@ -1598,10 +1599,7 @@ class npc_molten_elemental: public CreatureScript
                     m_uiMoltenPowerCheckTimer = 3000;
                 }
 
-                InstanceScript* instance;
-                uint32 m_uiMoltenPowerCheckTimer;
-
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!UpdateVictim() || me->HasUnitState(UNIT_STATE_CASTING))
                         return;
@@ -1617,7 +1615,17 @@ class npc_molten_elemental: public CreatureScript
 
                     DoMeleeAttackIfReady();
                 }
+
+        private:
+            InstanceScript* instance;
+            uint32 m_uiMoltenPowerCheckTimer;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_molten_elementalAI>(creature);
+    }
+
 };
 
 class npc_engulfing_flames: public CreatureScript
@@ -1626,11 +1634,6 @@ class npc_engulfing_flames: public CreatureScript
         npc_engulfing_flames() :
                 CreatureScript("npc_engulfing_flames")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_engulfing_flamesAI(creature);
         }
 
         struct npc_engulfing_flamesAI: public ScriptedAI
@@ -1649,10 +1652,7 @@ class npc_engulfing_flames: public CreatureScript
                     m_uiDespawnTimer = 4000;
                 }
 
-                InstanceScript* instance;
-                uint32 m_uiDespawnTimer;
-
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (m_uiDespawnTimer <= diff)
                     {
@@ -1661,7 +1661,16 @@ class npc_engulfing_flames: public CreatureScript
                     else
                         m_uiDespawnTimer -= diff;
                 }
+
+        private:
+            InstanceScript* instance;
+            uint32 m_uiDespawnTimer;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_engulfing_flamesAI>(creature);
+    }
 };
 
 class npc_dreadflame: public CreatureScript
@@ -1670,11 +1679,6 @@ class npc_dreadflame: public CreatureScript
         npc_dreadflame() :
                 CreatureScript("npc_dreadflame")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_dreadflameAI(creature);
         }
 
         struct npc_dreadflameAI: public ScriptedAI
@@ -1690,11 +1694,7 @@ class npc_dreadflame: public CreatureScript
                     m_uiDreadTimer = 3000;
                 }
 
-                InstanceScript* instance;
-                uint32 m_uiDreadTimer;
-                uint32 m_uiCheckDeluge;
-
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (m_uiCheckDeluge <= diff)
                     {
@@ -1725,7 +1725,17 @@ class npc_dreadflame: public CreatureScript
                     else
                         m_uiDreadTimer -= diff;
                 }
+
+        private:
+            InstanceScript* instance;
+            uint32 m_uiDreadTimer;
+            uint32 m_uiCheckDeluge;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_dreadflameAI>(creature);
+    }
 };
 
 class npc_living_meteor: public CreatureScript
@@ -1734,11 +1744,6 @@ class npc_living_meteor: public CreatureScript
         npc_living_meteor() :
                 CreatureScript("npc_living_meteor")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_living_meteorAI(creature);
         }
 
         struct npc_living_meteorAI: public ScriptedAI
@@ -1770,17 +1775,12 @@ class npc_living_meteor: public CreatureScript
                     m_uiLavalogedCheckTimer = 3000;
                 }
 
-                InstanceScript* instance;
-                uint32 m_uiRangeCheckTimer;
-                uint32 m_uiTargetChangeTimer;
-                uint32 m_uiLavalogedCheckTimer;
-
-                void DamageTaken(Unit* /*who*/, uint32& damage)
+                void DamageTaken(Unit* /*who*/, uint32& damage) override
                 {
                     DoCast(me, SPELL_COMBUSTION);
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (m_uiRangeCheckTimer <= diff)
                     {
@@ -1833,7 +1833,18 @@ class npc_living_meteor: public CreatureScript
                     else
                         m_uiLavalogedCheckTimer -= diff;
                 }
+
+        private:
+            InstanceScript* instance;
+            uint32 m_uiRangeCheckTimer;
+            uint32 m_uiTargetChangeTimer;
+            uint32 m_uiLavalogedCheckTimer;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_living_meteorAI>(creature);
+    }
 };
 
 class npc_entrapping_roots: public CreatureScript
@@ -1844,11 +1855,6 @@ class npc_entrapping_roots: public CreatureScript
         {
         }
 
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_entrapping_rootsAI(creature);
-        }
-
         struct npc_entrapping_rootsAI: public ScriptedAI
         {
                 npc_entrapping_rootsAI(Creature* creature) :
@@ -1857,10 +1863,7 @@ class npc_entrapping_roots: public CreatureScript
                     instance = creature->GetInstanceScript();
                 }
 
-                InstanceScript* instance;
-                uint32 searchragnaros;
-
-                void Reset()
+                void Reset() override
                 {
                     me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
                     me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
@@ -1872,7 +1875,7 @@ class npc_entrapping_roots: public CreatureScript
                     me->SetReactState(REACT_PASSIVE);
                 }
 
-                void UpdateAI(const uint32 uiDiff)
+                void UpdateAI(const uint32 uiDiff) override
                 {
                     if (searchragnaros <= uiDiff)
                     {
@@ -1885,7 +1888,16 @@ class npc_entrapping_roots: public CreatureScript
                     else
                         searchragnaros -= uiDiff;
                 }
+
+        private:
+            InstanceScript* instance;
+            uint32 searchragnaros;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_entrapping_rootsAI>(creature);
+    }
 };
 
 class npc_cloudburst: public CreatureScript
@@ -1894,11 +1906,6 @@ class npc_cloudburst: public CreatureScript
         npc_cloudburst() :
                 CreatureScript("npc_cloudburst")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_cloudburstAI(creature);
         }
 
         struct npc_cloudburstAI: public ScriptedAI
@@ -1914,10 +1921,7 @@ class npc_cloudburst: public CreatureScript
                     _cloudburstCounter = 0;
                 }
 
-                InstanceScript* instance;
-                uint8 _cloudburstCounter;
-
-                void UpdateAI(const uint32 uiDiff)
+                void UpdateAI(const uint32 uiDiff) override
                 {
                     _cloudburstCounter = RAID_MODE<uint8>(1, 1, 1, 3);
 
@@ -1932,7 +1936,16 @@ class npc_cloudburst: public CreatureScript
                             }
                         }
                 }
+
+        private:
+            InstanceScript* instance;
+            uint8 _cloudburstCounter;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_cloudburstAI>(creature);
+    }
 };
 
 class npc_breathoffrost: public CreatureScript
@@ -1941,11 +1954,6 @@ class npc_breathoffrost: public CreatureScript
         npc_breathoffrost() :
                 CreatureScript("npc_breathoffrost")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_breathoffrostAI(creature);
         }
 
         struct npc_breathoffrostAI: public ScriptedAI
@@ -1960,9 +1968,7 @@ class npc_breathoffrost: public CreatureScript
                     creature->DespawnOrUnsummon(20000);
                 }
 
-                InstanceScript* instance;
-
-                void UpdateAI(const uint32 uiDiff)
+                void UpdateAI(const uint32 uiDiff) override
                 {
                     if (Player* player = me->FindNearestPlayer(6.0f, true))
                         if (player->IsWithinDistInMap(me, 6.0f))
@@ -1975,7 +1981,15 @@ class npc_breathoffrost: public CreatureScript
                             //else player->ApplySpellImmune(0, IMMUNITY_ID, SPELL_SUPERHEATED, true);
                         }
                 }
+
+        private:
+            InstanceScript* instance;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_breathoffrostAI>(creature);
+    }
 };
 
 class npc_malfurion: public CreatureScript
@@ -1986,11 +2000,6 @@ class npc_malfurion: public CreatureScript
         {
         }
 
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_malfurionAI(creature);
-        }
-
         struct npc_malfurionAI: public ScriptedAI
         {
                 npc_malfurionAI(Creature* creature) :
@@ -1999,11 +2008,7 @@ class npc_malfurion: public CreatureScript
                     instance = creature->GetInstanceScript();
                 }
 
-                InstanceScript* instance;
-
-                uint32 m_uiCloudTimer;
-
-                void Reset()
+                void Reset() override
                 {
                     me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                     DoStartNoMovement(me);
@@ -2011,12 +2016,12 @@ class npc_malfurion: public CreatureScript
                     me->SetReactState(REACT_PASSIVE);
                 }
 
-                void EnterCombat(Unit* pWho)
+                void JustEngagedWith(Unit* pWho) override
                 {
                     m_uiCloudTimer = 9000;
                 }
 
-                void UpdateAI(const uint32 uiDiff)
+                void UpdateAI(const uint32 uiDiff) override
                 {
                     if (m_uiCloudTimer <= uiDiff)
                     {
@@ -2030,7 +2035,16 @@ class npc_malfurion: public CreatureScript
                     else
                         m_uiCloudTimer -= uiDiff;
                 }
+
+        private:
+            InstanceScript* instance;
+            uint32 m_uiCloudTimer;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_malfurionAI>(creature);
+    }
 };
 
 class npc_cenarius: public CreatureScript
@@ -2041,11 +2055,6 @@ class npc_cenarius: public CreatureScript
         {
         }
 
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_cenariusAI(creature);
-        }
-
         struct npc_cenariusAI: public ScriptedAI
         {
                 npc_cenariusAI(Creature* creature) :
@@ -2054,11 +2063,7 @@ class npc_cenarius: public CreatureScript
                     instance = creature->GetInstanceScript();
                 }
 
-                InstanceScript* instance;
-
-                uint32 m_uiFrostyTimer;
-
-                void Reset()
+                void Reset() override
                 {
                     me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                     DoStartNoMovement(me);
@@ -2066,12 +2071,12 @@ class npc_cenarius: public CreatureScript
                     me->SetReactState(REACT_PASSIVE);
                 }
 
-                void EnterCombat(Unit* pWho)
+                void JustEngagedWith(Unit* pWho) override
                 {
                     m_uiFrostyTimer = 12000;
                 }
 
-                void UpdateAI(const uint32 uiDiff)
+                void UpdateAI(const uint32 uiDiff) override
                 {
                     if (m_uiFrostyTimer <= uiDiff)
                     {
@@ -2085,7 +2090,16 @@ class npc_cenarius: public CreatureScript
                     else
                         m_uiFrostyTimer -= uiDiff;
                 }
+
+        private:
+            InstanceScript* instance;
+            uint32 m_uiFrostyTimer;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_cenariusAI>(creature);
+    }
 };
 
 class npc_heartofragnaros: public CreatureScript
@@ -2096,11 +2110,6 @@ class npc_heartofragnaros: public CreatureScript
         {
         }
 
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_heartofragnarosAI(creature);
-        }
-
         struct npc_heartofragnarosAI: public ScriptedAI
         {
                 npc_heartofragnarosAI(Creature* creature) :
@@ -2109,11 +2118,7 @@ class npc_heartofragnaros: public CreatureScript
                     instance = creature->GetInstanceScript();
                 }
 
-                InstanceScript* instance;
-
-                uint32 m_uiHeartBeat;
-
-                void Reset()
+                void Reset() override
                 {
                     me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                     me->DespawnOrUnsummon(150000);
@@ -2122,11 +2127,7 @@ class npc_heartofragnaros: public CreatureScript
                     m_uiHeartBeat = 1000; //timer is here if you need it so just copy paste. To remove if script works without it.
                 }
 
-                void EnterCombat(Unit* pWho)
-                {
-                }
-
-                void UpdateAI(const uint32 uiDiff)
+                void UpdateAI(const uint32 uiDiff) override
                 {
                     Player* player = me->FindNearestPlayer(6.0f, true);
                     if (player)
@@ -2146,7 +2147,16 @@ class npc_heartofragnaros: public CreatureScript
                     }
                 }
 
+        private:
+            InstanceScript* instance;
+            uint32 m_uiHeartBeat;
+
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_heartofragnarosAI>(creature);
+    }
 };
 
 class npc_hamuul: public CreatureScript
@@ -2157,11 +2167,6 @@ class npc_hamuul: public CreatureScript
         {
         }
 
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_hamuulAI(creature);
-        }
-
         struct npc_hamuulAI: public ScriptedAI
         {
                 npc_hamuulAI(Creature* creature) :
@@ -2170,11 +2175,7 @@ class npc_hamuul: public CreatureScript
                     instance = creature->GetInstanceScript();
                 }
 
-                InstanceScript* instance;
-
-                uint32 m_uiRootTimer;
-
-                void Reset()
+                void Reset() override
                 {
                     me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                     DoStartNoMovement(me);
@@ -2182,12 +2183,12 @@ class npc_hamuul: public CreatureScript
                     me->SetReactState(REACT_PASSIVE);
                 }
 
-                void EnterCombat(Unit* pWho)
+                void JustEngagedWith(Unit* pWho) override
                 {
                     m_uiRootTimer = 9000;
                 }
 
-                void UpdateAI(const uint32 uiDiff)
+                void UpdateAI(const uint32 uiDiff) override
                 {
                     if (m_uiRootTimer <= uiDiff)
                     {
@@ -2201,7 +2202,16 @@ class npc_hamuul: public CreatureScript
                     else
                         m_uiRootTimer -= uiDiff;
                 }
+
+        private:
+            InstanceScript* instance;
+            uint32 m_uiRootTimer;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_hamuulAI>(creature);
+    }
 };
 
 void AddSC_boss_ragnaros_firelands()

@@ -1125,6 +1125,7 @@ class achievement_death_from_above: public AchievementCriteriaScript //need to c
         }
 
         bool OnCheck(Player* /*source*/, Unit* target) override
+        bool OnCheck(Player* /*source*/, Unit* target) override
         {
             if (!target)
                 return false;

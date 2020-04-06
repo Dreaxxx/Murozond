@@ -995,7 +995,7 @@ class spell_alysrazor_cosmetic_egg_xplosion: public SpellScriptLoader
                 }
         };
 
-        SpellScript* GetSpellScript() const
+        SpellScript* GetSpellScript() const override
         {
             return new spell_alysrazor_cosmetic_egg_xplosion_SpellScript();
         }
@@ -1089,7 +1089,7 @@ class spell_alysrazor_turn_monstrosity: public SpellScriptLoader
                 }
             };
 
-            SpellScript* GetSpellScript() const
+            SpellScript* GetSpellScript() const override
             {
                 return new spell_alysrazor_turn_monstrosity_SpellScript();
             }
@@ -1135,7 +1135,7 @@ class spell_alysrazor_aggro_closest: public SpellScriptLoader
                 }
         };
 
-        SpellScript* GetSpellScript() const
+        SpellScript* GetSpellScript() const override
         {
             return new spell_alysrazor_aggro_closest_SpellScript();
         }
@@ -1172,7 +1172,7 @@ class spell_alysrazor_fieroblast: public SpellScriptLoader
                 }
             };
 
-            SpellScript* GetSpellScript() const
+            SpellScript* GetSpellScript() const override
             {
                 return new spell_alysrazor_fieroblast_SpellScript();
             }
@@ -3004,7 +3004,7 @@ class spell_molthen_feater: public SpellScriptLoader
                 }
         };
 
-        AuraScript* GetAuraScript() const
+        AuraScript* GetAuraScript() const override
         {
             return new spell_molthen_feater_AuraScript();
         }
@@ -3036,7 +3036,7 @@ class spell_fieroblast: public SpellScriptLoader
                 }
         };
 
-        AuraScript* GetAuraScript() const
+        AuraScript* GetAuraScript() const override
         {
             return new spell_fieroblast_AuraScript();
         }
@@ -3069,7 +3069,7 @@ class spell_molthen: public SpellScriptLoader
                 }
         };
 
-        AuraScript* GetAuraScript() const
+        AuraScript* GetAuraScript() const override
         {
             return new spell_molthen_AuraScript();
         }
@@ -3101,7 +3101,7 @@ class spell_hatchling_debuff: public SpellScriptLoader
                 }
         };
 
-        AuraScript* GetAuraScript() const
+        AuraScript* GetAuraScript() const override
         {
             return new spell_hatchling_debuff_AuraScript();
         }

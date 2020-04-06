@@ -2804,7 +2804,7 @@ class boss_alysrazor: public CreatureScript
                     Map::PlayerList const &PlayerList = me->GetMap()->GetPlayers();
                     if (!PlayerList.isEmpty())
                         for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
-                            if (Player *player = i->GetSource()->IsAlive) {
+                            if (Player *player = i->GetSource()) {
                                 if(player->IsAlive()) {
                                     ++players;
                                     player->SetInCombatWith(me->ToUnit());
@@ -2829,7 +2829,7 @@ class boss_alysrazor: public CreatureScript
                     if (!PlayerList.isEmpty())
                         for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
                             if (i->GetSource()->HasAura(SPELL_CAST_ON_MOVE_VISUAL))
-                                i->GetSource()->RemoveAurasDuToSpell(SPELL_CAST_ON_MOVE_VISUAL);
+                                i->GetSource()->RemoveAurasDueToSpell(SPELL_CAST_ON_MOVE_VISUAL);
                 }
 
                 void RemoveEncounterAuras()

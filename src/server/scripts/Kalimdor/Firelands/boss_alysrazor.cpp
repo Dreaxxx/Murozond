@@ -2794,7 +2794,7 @@ class boss_alysrazor: public CreatureScript
                     if (!PlayerList.isEmpty())
                         for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
                             if (Creature* tornado = me->FindNearestCreature(53693, 5000.0f))
-                                if (i->GetSource() && && tornado->IsWithinDistInMap(i->GetSource(), 60.f))
+                                if (i->GetSource() && tornado->IsWithinDistInMap(i->GetSource(), 60.f))
                                     me->AddAura(SPELL_HARSH_WINDS, i->GetSource());
                 }
 
@@ -2805,8 +2805,10 @@ class boss_alysrazor: public CreatureScript
                     if (!PlayerList.isEmpty())
                         for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
                             if (Player *player = i->GetSource()->IsAlive) {
-                                ++players;
-                                player->SetInCombatWith(me->ToUnit());
+                                if(player->IsAlive()) {
+                                    ++players;
+                                    player->SetInCombatWith(me->ToUnit());
+                                }
                             }
                     if (players == 0)
                         EnterEvadeMode();
@@ -2818,7 +2820,7 @@ class boss_alysrazor: public CreatureScript
                     if (!PlayerList.isEmpty())
                         for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
                             if (i->GetSource()->HasAura(SPELL_FLY))
-                                i->GetSource()->RemoveAuraDueToSpell(SPELL_FLY);
+                                i->GetSource()->RemoveAurasDueToSpell(SPELL_FLY);
                 }
 
                 void RemoveAllFeathers()
@@ -2827,7 +2829,7 @@ class boss_alysrazor: public CreatureScript
                     if (!PlayerList.isEmpty())
                         for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
                             if (i->GetSource()->HasAura(SPELL_CAST_ON_MOVE_VISUAL))
-                                i->GetSource()->RemoveAuraDuToSpell(SPELL_CAST_ON_MOVE_VISUAL);
+                                i->GetSource()->RemoveAurasDuToSpell(SPELL_CAST_ON_MOVE_VISUAL);
                 }
 
                 void RemoveEncounterAuras()
@@ -2837,13 +2839,13 @@ class boss_alysrazor: public CreatureScript
                         for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
                         {
                             if (i->GetSource()->HasAura(SPELL_FLY))
-                                i->GetSource()->RemoveAuraDueToSpell(SPELL_FLY);
+                                i->GetSource()->RemoveAurasDueToSpell(SPELL_FLY);
                             if (i->GetSource()->HasAura(SPELL_INDICATOR))
-                                i->GetSource()->RemoveAuraDueToSpell(SPELL_INDICATOR);
+                                i->GetSource()->RemoveAurasDueToSpell(SPELL_INDICATOR);
                             if (i->GetSource()->HasAura(SPELL_CAST_ON_MOVE_VISUAL))
-                                i->GetSource()->RemoveAuraDueToSpell(SPELL_CAST_ON_MOVE_VISUAL);
+                                i->GetSource()->RemoveAurasDueToSpell(SPELL_CAST_ON_MOVE_VISUAL);
                             if (i->GetSource()->HasAura(SPELL_IMPRINTED))
-                                i->GetSource()->RemoveAuraDueToSpell(SPELL_IMPRINTED);
+                                i->GetSource()->RemoveAurasDueToSpell(SPELL_IMPRINTED);
                         }
                 }
 

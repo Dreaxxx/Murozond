@@ -20,6 +20,9 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "ScriptedEscortAI.h"
+#include "DBCStore.h"
+#include "DBCStructure.h"
 #include "ObjectMgr.h"
 #include "ScriptMgr.h"
 #include "ScriptedCreature.h"
@@ -33,6 +36,8 @@
 #include "firelands.h"
 #include "PassiveAI.h"
 #include "CreatureAI.h"
+#include "Spell.h"
+#include "SpellMgr.h"
 
 #define GO_ALYSRAZOR_VOLCANO_GUID 100576
 
@@ -617,7 +622,7 @@ class npc_harbinger_of_flame: public CreatureScript
                 void JustEngagedWith(Unit* /*target*/) override
                 {
                     if (Creature* bird = ObjectAccessor::GetCreature(*me,
-                            me->GetChannelObjectGuid())))
+                            me->GetChannelObjectGuid()))
                         DoZoneInCombat(bird, 200.0f);
 
                     me->InterruptSpell(CURRENT_CHANNELED_SPELL);
@@ -710,17 +715,17 @@ class npc_blazing_monstrosity: public CreatureScript
                     PassiveAI::EnterEvadeMode();
                 }
 
-                void JustDied(Unit* /*killer*/)
+                void JustDied(Unit* /*killer*/) override
                 {
                     _summons.DespawnAll();
                     _events.Reset();
                 }
 
-                void JustEngagedWith(Unit* /*target*/)
+                void JustEngagedWith(Unit* /*target*/) override
                 {
                     DoZoneInCombat();
                     me->RemoveAurasDueToSpell(SPELL_SLEEP_ULTRA_HIGH_PRIORITY);
-                    me->PlayOneShotAnimKit(ANIM_KIT_BIRD_WAKE);
+                    //me->PlayOneShotAnimKit(ANIM_KIT_BIRD_WAKE);
                     _events.Reset();
                     _events.ScheduleEvent(EVENT_START_SPITTING, 6000);
                     _events.ScheduleEvent(EVENT_CONTINUE_SPITTING, 9000);
@@ -736,14 +741,14 @@ class npc_blazing_monstrosity: public CreatureScript
                         (*iter)->DespawnOrUnsummon();
                 }
 
-                void PassengerBoarded(Unit* passenger, int8 /*seat*/, bool apply)
+                void PassengerBoarded(Unit* passenger, int8 /*seat*/, bool apply) override
                 {
                     if (!apply)
                         return;
 
                     // Our passenger is another vehicle (boardable by players)
                     DoCast(passenger, SPELL_SHARE_HEALTH, true);
-                    passenger->setFaction(35);
+                    passenger->SetFaction(35);
                     passenger->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
 
                     Movement::MoveSplineInit init(passenger);
@@ -753,12 +758,12 @@ class npc_blazing_monstrosity: public CreatureScript
                     init.Launch();
                 }
 
-                void JustSummoned(Creature* summon)
+                void JustSummoned(Creature* summon) override
                 {
                     _summons.Summon(summon);
                 }
 
-                void SummonedCreatureDespawn(Creature* summon)
+                void SummonedCreatureDespawn(Creature* summon) override
                 {
                     _summons.Despawn(summon);
                 }
@@ -924,7 +929,7 @@ class npc_egg_pile: public CreatureScript
                                 std::list<Creature*> eggs;
                                 MoltenEggCheck check(me);
                                 Trinity::CreatureListSearcher<MoltenEggCheck> searcher(me, eggs, check);
-                                me->VisitNearbyGridObject(20.0f, searcher);
+                                Cell::VisitAllObjects(me, searcher, 20.0f);
                                 if (!eggs.empty())
                                 {
                                     Creature* egg = Trinity::Containers::SelectRandomContainerElement(eggs);
@@ -969,7 +974,7 @@ class spell_alysrazor_cosmetic_egg_xplosion: public SpellScriptLoader
                 PrepareSpellScript(spell_alysrazor_cosmetic_egg_xplosion_SpellScript)
                 ;
 
-                bool Validate(SpellInfo const* /*spellInfo*/)
+                bool Validate(SpellInfo const* /*spellInfo*/) override
                 {
                     if (!sCreatureDisplayInfoStore.LookupEntry(MODEL_INVISIBLE_STALKER))
                         return false;
@@ -1075,7 +1080,7 @@ class spell_alysrazor_turn_monstrosity: public SpellScriptLoader
                 void TurnBird(SpellEffIndex effIndex)
                 {
                     PreventHitDefaultEffect(effIndex);
-                    GetHitUnit()->PlayOneShotAnimKit(ANIM_KIT_BIRD_TURN);
+                    //GetHitUnit()->PlayOneShotAnimKit(ANIM_KIT_BIRD_TURN);
                 }
 
                 void Register() override
@@ -1187,7 +1192,7 @@ class mob_molten_feather: public CreatureScript // 53089
             if (Creature* alysrazor = creature->FindNearestCreature(NPC_ALYSRAZOR, 5000.0f))
                 player->CastSpell(player, SPELL_CAST_ON_MOVE_VISUAL, true);
             else
-                player->SummonCreature_OP(NPC_ALYSRAZOR, SpawnPos[0]);
+                player->SummonCreature(NPC_ALYSRAZOR, SpawnPos[0]);
 
             creature->DespawnOrUnsummon();
             return true;
@@ -1304,7 +1309,7 @@ class npc_alysrazor_volcano: public CreatureScript // 53158
                 bool started;
                 uint32 timerAur;
 
-                void Reset()
+                void Reset() override
                 {
                     started = false;
                 }
@@ -1357,7 +1362,7 @@ class npc_voracious_hatchling: public CreatureScript // 53509
                 void IsSummonedBy(Unit* summoner) override
                 {
                     me->ModifyAuraState(AURA_STATE_UNKNOWN22, true);
-                    if (Unit* FirstTarget = me->FindNearestPlayer(300.0f, true))
+                    if (Unit* FirstTarget = me->SelectTarget(SELECT_TARGET_RANDOM, 0, 300, true))
                     {
                         me->AI()->AttackStart(FirstTarget);
                         DoCast(FirstTarget, SPELL_IMPRINTED);
@@ -1480,7 +1485,7 @@ class npc_plumb_lava_worm: public CreatureScript // 53520
                         else
                             me->SetFacingTo(me->GetOrientation() + 0.10f);
 
-                        me->SendMovementFlagUpdate();
+                        me->UpdateMovementFlags();
                         timerAur = 200;
 
                     }
@@ -1511,7 +1516,7 @@ class npc_blazing_broodmother: public CreatureScript // 53680
                 {
                 }
 
-                void IsSummonedBy(Unit* summoner) override
+                void IsSummonedBy(Unit* summoner)
                 {
                     me->SetByteFlag(UNIT_FIELD_BYTES_1, 3, 0x02);
                     me->AddUnitMovementFlag(MOVEMENTFLAG_CAN_FLY | MOVEMENTFLAG_FLYING);
@@ -1540,7 +1545,7 @@ class npc_blazing_broodmother: public CreatureScript // 53680
                     AddWaypoint(2, -28.813f, -378.088f, 90.371f); //right bird point to despawn
                 }
 
-                void WaypointReached(uint32 point) override
+                void WaypointReached(uint32 point)
                 {
                     switch (point)
                     {
@@ -1553,7 +1558,7 @@ class npc_blazing_broodmother: public CreatureScript // 53680
                     }
                 }
 
-                void UpdateAI(const uint32 diff) override
+                void UpdateAI(const uint32 diff)
                 {
                     npc_escortAI::UpdateAI(diff);
                 }

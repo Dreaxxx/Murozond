@@ -612,7 +612,7 @@ class npc_harbinger_of_flame: public CreatureScript
                 {
                 }
 
-                void EnterCombat(Unit* /*target*/)
+                void JustEngagedWith(Unit* /*target*/) override
                 {
                     if (Creature* bird = ObjectAccessor::GetCreature(*me,
                             me->GetUInt64Value(UNIT_FIELD_CHANNEL_OBJECT)))
@@ -624,12 +624,12 @@ class npc_harbinger_of_flame: public CreatureScript
                     _events.ScheduleEvent(EVENT_FIEROCLAST_BARRAGE, 6000);
                 }
 
-                void JustReachedHome()
+                void JustReachedHome() override
                 {
 //                    AlysrazorTrashEvaded(me);
                 }
 
-                void MoveInLineOfSight(Unit* unit)
+                void MoveInLineOfSight(Unit* unit) override
                 {
                     if (me->isInCombat())
                         return;
@@ -640,7 +640,7 @@ class npc_harbinger_of_flame: public CreatureScript
                     ScriptedAI::MoveInLineOfSight(unit);
                 }
 
-                void UpdateAI(uint32 const diff)
+                void UpdateAI(uint32 const diff) override
                 {
                     if (!me->isInCombat())
                         if (!me->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
@@ -682,7 +682,7 @@ class npc_harbinger_of_flame: public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return new npc_harbinger_of_flameAI(creature);
+            return GetFirelandsAI<npc_harbinger_of_flameAI>(creature);
         }
 };
 
@@ -708,19 +708,19 @@ class npc_blazing_monstrosity: public CreatureScript
                     PassiveAI::EnterEvadeMode();
                 }
 
-                void JustDied(Unit* /*killer*/)
+                void JustDied(Unit* /*killer*/) override
                 {
                     _summons.DespawnAll();
                     me->DespawnOrUnsummon(5000);
                     _events.Reset();
                 }
 
-                void JustReachedHome()
+                void JustReachedHome() override
                 {
 //                    AlysrazorTrashEvaded(me);
                 }
 
-                void EnterCombat(Unit* /*target*/)
+                void JustEngagedWith(Unit* /*target*/) override
                 {
                     DoZoneInCombat();
                     me->RemoveAurasDueToSpell(SPELL_SLEEP_ULTRA_HIGH_PRIORITY);
@@ -740,7 +740,7 @@ class npc_blazing_monstrosity: public CreatureScript
                         (*iter)->DespawnOrUnsummon();
                 }
 
-                void PassengerBoarded(Unit* passenger, int8 /*seat*/, bool apply)
+                void PassengerBoarded(Unit* passenger, int8 /*seat*/, bool apply) override
                 {
                     if (!apply)
                         return;
@@ -757,17 +757,17 @@ class npc_blazing_monstrosity: public CreatureScript
                     init.Launch();
                 }
 
-                void JustSummoned(Creature* summon)
+                void JustSummoned(Creature* summon) override
                 {
                     _summons.Summon(summon);
                 }
 
-                void SummonedCreatureDespawn(Creature* summon)
+                void SummonedCreatureDespawn(Creature* summon) override
                 {
                     _summons.Despawn(summon);
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!UpdateVictim())
                         return;
@@ -807,7 +807,7 @@ class npc_blazing_monstrosity: public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return new npc_blazing_monstrosityAI(creature);
+            return GetFirelandsAI<npc_blazing_monstrosityAI>(creature);
         }
 };
 
@@ -826,20 +826,20 @@ class npc_molten_barrage: public CreatureScript
                 {
                 }
 
-                void AttackStart(Unit* target)
+                void AttackStart(Unit* target) override
                 {
                     if (target)
                         me->GetMotionMaster()->MoveFollow(target, 0.0f, 0.0f, MOTION_SLOT_IDLE);
                 }
 
-                void IsSummonedBy(Unit* /*summoner*/)
+                void IsSummonedBy(Unit* /*summoner*/) override
                 {
                     DoCastAOE(SPELL_AGGRO_CLOSEST, true);
                     DoCast(me, SPELL_MOLTEN_BARRAGE_VISUAL);
                     DoCast(me, SPELL_INVISIBILITY_AND_STEALTH_DETECTION, true);
                 }
 
-                void MovementInform(uint32 movementType, uint32 /*pointId*/)
+                void MovementInform(uint32 movementType, uint32 /*pointId*/) override
                 {
                     if (movementType != EFFECT_MOTION_TYPE)
                         return;
@@ -851,7 +851,7 @@ class npc_molten_barrage: public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return new npc_molten_barrageAI(creature);
+            return GetFirelandsAI<npc_molten_barrageAI>(creature);
         }
 };
 
@@ -870,18 +870,14 @@ class npc_egg_pile: public CreatureScript
                 {
                 }
 
-                void AttackStart(Unit* /*target*/)
-                {
-                }
-
-                void Reset()
+                void Reset() override
                 {
                     me->SetReactState(REACT_PASSIVE);
                     _events.Reset();
                     _callHatchlingSpell = 0;
                 }
 
-                void JustDied(Unit* /*killer*/)
+                void JustDied(Unit* /*killer*/) override
                 {
                     _events.Reset();
                     std::list<Creature*> eggs;
@@ -892,12 +888,12 @@ class npc_egg_pile: public CreatureScript
                     DoCast(me, SPELL_ALYSRAZOR_COSMETIC_EGG_XPLOSION, true);
                 }
 
-                void JustReachedHome()
+                void JustReachedHome() override
                 {
 //                    AlysrazorTrashEvaded(me);
                 }
 
-                void DoAction(int32 const action)
+                void DoAction(int32 const action) override
                 {
                     if (action != NPC_BLAZING_MONSTROSITY_LEFT && action != NPC_BLAZING_MONSTROSITY_RIGHT)
                         return;
@@ -913,7 +909,7 @@ class npc_egg_pile: public CreatureScript
                     _events.ScheduleEvent(EVENT_SUMMON_SMOULDERING_HATCHLING, 1);
                 }
 
-                void UpdateAI(uint32 const diff)
+                void UpdateAI(uint32 const diff) override
                 {
                     if (!UpdateVictim())
                         return;
@@ -960,7 +956,7 @@ class npc_egg_pile: public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return new npc_egg_pileAI(creature);
+            return GetFirelandsAI<npc_egg_pileAI>(creature);
         }
 };
 
@@ -992,7 +988,7 @@ class spell_alysrazor_cosmetic_egg_xplosion: public SpellScriptLoader
                         creature->DespawnOrUnsummon(4000);
                 }
 
-                void Register()
+                void Register() override
                 {
                     OnEffectHitTarget +=
                             SpellEffectFn(spell_alysrazor_cosmetic_egg_xplosion_SpellScript::HandleExplosion, EFFECT_0, SPELL_EFFECT_DUMMY);
@@ -1018,7 +1014,7 @@ class spell_alysrazor_turn_monstrosity: public SpellScriptLoader
                 PrepareSpellScript(spell_alysrazor_turn_monstrosity_SpellScript)
                 ;
 
-                bool Validate(SpellInfo const* /*spellInfo*/)
+                bool Validate(SpellInfo const* /*spellInfo*/) override
                 {
                     if (!sSpellMgr->GetSpellInfo(SPELL_GENERIC_DUMMY_CAST))
                     return false;
@@ -1086,7 +1082,7 @@ class spell_alysrazor_turn_monstrosity: public SpellScriptLoader
                     GetHitUnit()->PlayOneShotAnimKit(ANIM_KIT_BIRD_TURN);
                 }
 
-                void Register()
+                void Register() override
                 {
                     OnEffectHitTarget += SpellEffectFn(spell_alysrazor_turn_monstrosity_SpellScript::KnockBarrage, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
                     OnEffectHitTarget += SpellEffectFn(spell_alysrazor_turn_monstrosity_SpellScript::TurnBird, EFFECT_1, SPELL_EFFECT_SCRIPT_EFFECT);
@@ -1112,7 +1108,7 @@ class spell_alysrazor_aggro_closest: public SpellScriptLoader
                 PrepareSpellScript(spell_alysrazor_aggro_closest_SpellScript)
                 ;
 
-                bool Load()
+                bool Load() override
                 {
                     return GetCaster()->GetTypeId() == TYPEID_UNIT;
                 }
@@ -1131,7 +1127,7 @@ class spell_alysrazor_aggro_closest: public SpellScriptLoader
                     GetCaster()->GetAI()->AttackStart(GetCaster()->ToCreature()->SelectVictim());
                 }
 
-                void Register()
+                void Register() override
                 {
                     OnEffectHitTarget +=
                             SpellEffectFn(spell_alysrazor_aggro_closest_SpellScript::HandleEffect, EFFECT_0, SPELL_EFFECT_DUMMY);
@@ -1158,7 +1154,7 @@ class spell_alysrazor_fieroblast: public SpellScriptLoader
                 PrepareSpellScript(spell_alysrazor_fieroblast_SpellScript)
                 ;
 
-                bool Validate(SpellInfo const* /*spellInfo*/)
+                bool Validate(SpellInfo const* /*spellInfo*/) override
                 {
                     if (!sSpellMgr->GetSpellInfo(SPELL_FIRE_IT_UP))
                     return false;
@@ -1170,7 +1166,7 @@ class spell_alysrazor_fieroblast: public SpellScriptLoader
                     GetCaster()->CastSpell(GetCaster(), SPELL_FIRE_IT_UP, TRIGGERED_FULL_MASK);
                 }
 
-                void Register()
+                void Register() override
                 {
                     AfterCast += SpellCastFn(spell_alysrazor_fieroblast_SpellScript::FireItUp);
                 }
@@ -1188,11 +1184,6 @@ class mob_molten_feather: public CreatureScript // 53089
         mob_molten_feather() :
                 CreatureScript("mob_molten_feather")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new mob_molten_featherAI(creature);
         }
 
         bool OnGossipHello(Player* player, Creature* creature)
@@ -1214,6 +1205,11 @@ class mob_molten_feather: public CreatureScript // 53089
                     DoCast(me, SPELL_COSMETIC);
                 }
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<mob_molten_featherAI>(creature);
+    }
 };
 
 class mob_incendiary_cloud: public CreatureScript // 53541
@@ -1222,11 +1218,6 @@ class mob_incendiary_cloud: public CreatureScript // 53541
         mob_incendiary_cloud() :
                 CreatureScript("mob_incendiary_cloud")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new mob_incendiary_cloudAI(creature);
         }
 
         struct mob_incendiary_cloudAI: public ScriptedAI
@@ -1239,13 +1230,13 @@ class mob_incendiary_cloud: public CreatureScript // 53541
 
                 uint32 timer;
 
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     DoCast(me, SPELL_INCENDIARY_CLOUD);
                     timer = 10000;
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (timer <= diff)
                         me->DespawnOrUnsummon();
@@ -1253,17 +1244,17 @@ class mob_incendiary_cloud: public CreatureScript // 53541
                         timer -= diff;
                 }
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<mob_incendiary_cloudAI>(creature);
+    }
 };
 
 class mob_blazing_power: public CreatureScript // 53554
 {
     public:
         mob_blazing_power() : CreatureScript("mob_blazing_power") { }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new mob_blazing_powerAI(creature);
-        }
 
         struct mob_blazing_powerAI: public ScriptedAI
         {
@@ -1275,13 +1266,13 @@ class mob_blazing_power: public CreatureScript // 53554
                 bool despawn;
                 uint32 timer;
 
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     DoCast(me, SPELL_BLAZING_POWER);
                     timer = 10000;
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     me->GetMotionMaster()->MovePoint(0, me->GetPositionX(), me->GetPositionY(), me->GetPositionZ());
 
@@ -1291,6 +1282,11 @@ class mob_blazing_power: public CreatureScript // 53554
                         timer -= diff;
                 }
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<mob_blazing_powerAI>(creature);
+    }
 };
 
 class npc_alysrazor_volcano: public CreatureScript // 53158
@@ -1299,11 +1295,6 @@ class npc_alysrazor_volcano: public CreatureScript // 53158
         npc_alysrazor_volcano() :
                 CreatureScript("npc_alysrazor_volcano")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_alysrazor_volcanoAI(creature);
         }
 
         struct npc_alysrazor_volcanoAI: public ScriptedAI
@@ -1322,14 +1313,14 @@ class npc_alysrazor_volcano: public CreatureScript // 53158
                     started = false;
                 }
 
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     summoner->CastSpell(me, SPELL_VOLCANO_DUMMY, false);
                     started = true;
                     timerAur = 2000;
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!started || me->HasUnitState(UNIT_STATE_CASTING))
                         return;
@@ -1343,6 +1334,11 @@ class npc_alysrazor_volcano: public CreatureScript // 53158
                         timerAur -= diff;
                 }
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_alysrazor_volcanoAI>(creature);
+    }
 };
 
 class npc_voracious_hatchling: public CreatureScript // 53509
@@ -1351,11 +1347,6 @@ class npc_voracious_hatchling: public CreatureScript // 53509
         npc_voracious_hatchling() :
                 CreatureScript("npc_voracious_hatchling")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_voracious_hatchlingAI(creature);
         }
 
         struct npc_voracious_hatchlingAI: public ScriptedAI
@@ -1367,7 +1358,7 @@ class npc_voracious_hatchling: public CreatureScript // 53509
 
                 EventMap events;
 
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     me->ModifyAuraState(AURA_STATE_UNKNOWN22, true);
                     if (Unit* FirstTarget = me->FindNearestPlayer(300.0f, true))
@@ -1382,12 +1373,12 @@ class npc_voracious_hatchling: public CreatureScript // 53509
                     }
                 }
 
-                void JustDied(Unit* /*killer*/)
+                void JustDied(Unit* /*killer*/) override
                 {
                     me->DespawnOrUnsummon(5000);
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!UpdateVictim() || me->HasUnitState(UNIT_STATE_CASTING))
                         return;
@@ -1434,6 +1425,11 @@ class npc_voracious_hatchling: public CreatureScript // 53509
                     DoMeleeAttackIfReady();
                 }
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_voracious_hatchlingAI>(creature);
+    }
 };
 
 class npc_plumb_lava_worm: public CreatureScript // 53520
@@ -1442,11 +1438,6 @@ class npc_plumb_lava_worm: public CreatureScript // 53520
         npc_plumb_lava_worm() :
                 CreatureScript("npc_plumb_lava_worm")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_plumb_lava_wormAI(creature);
         }
 
         struct npc_plumb_lava_wormAI: public ScriptedAI
@@ -1460,7 +1451,7 @@ class npc_plumb_lava_worm: public CreatureScript // 53520
                 bool started;
                 uint32 timerAur, castTimer;
 
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     me->SetReactState(REACT_PASSIVE);
                     started = true;
@@ -1468,12 +1459,12 @@ class npc_plumb_lava_worm: public CreatureScript // 53520
                     castTimer = timerAur + 4000;
                 }
 
-                void JustDied(Unit* /*killer*/)
+                void JustDied(Unit* /*killer*/) override
                 {
                     me->DespawnOrUnsummon(5000);
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!started)
                         return;
@@ -1502,6 +1493,11 @@ class npc_plumb_lava_worm: public CreatureScript // 53520
 
                 }
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_plumb_lava_wormAI>(creature);
+    }
 };
 
 class npc_blazing_broodmother: public CreatureScript // 53680
@@ -1512,11 +1508,6 @@ class npc_blazing_broodmother: public CreatureScript // 53680
         {
         }
 
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_blazing_broodmotherAI(creature);
-        }
-
         struct npc_blazing_broodmotherAI: public npc_escortAI
         {
                 npc_blazing_broodmotherAI(Creature* c) :
@@ -1524,7 +1515,7 @@ class npc_blazing_broodmother: public CreatureScript // 53680
                 {
                 }
 
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     me->SetByteFlag(UNIT_FIELD_BYTES_1, 3, 0x02);
                     me->AddUnitMovementFlag(MOVEMENTFLAG_CAN_FLY | MOVEMENTFLAG_FLYING);
@@ -1553,7 +1544,7 @@ class npc_blazing_broodmother: public CreatureScript // 53680
                     AddWaypoint(2, -28.813f, -378.088f, 90.371f); //right bird point to despawn
                 }
 
-                void WaypointReached(uint32 point)
+                void WaypointReached(uint32 point) override
                 {
                     switch (point)
                     {
@@ -1566,11 +1557,16 @@ class npc_blazing_broodmother: public CreatureScript // 53680
                     }
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     npc_escortAI::UpdateAI(diff);
                 }
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_blazing_broodmotherAI>(creature);
+    }
 };
 
 class npc_blazing_talon_clawshaper: public CreatureScript // 53734
@@ -1579,11 +1575,6 @@ class npc_blazing_talon_clawshaper: public CreatureScript // 53734
         npc_blazing_talon_clawshaper() :
                 CreatureScript("npc_blazing_talon_clawshaper")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_blazing_talon_clawshaperAI(creature);
         }
 
         struct npc_blazing_talon_clawshaperAI: public npc_escortAI
@@ -1596,7 +1587,7 @@ class npc_blazing_talon_clawshaper: public CreatureScript // 53734
 
                 EventMap events;
 
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     me->SetByteFlag(UNIT_FIELD_BYTES_1, 3, 0x02);
                     me->AddUnitMovementFlag(MOVEMENTFLAG_CAN_FLY | MOVEMENTFLAG_FLYING);
@@ -1614,7 +1605,7 @@ class npc_blazing_talon_clawshaper: public CreatureScript // 53734
                     Start();
                 }
 
-                void JustDied(Unit* /*killer*/)
+                void JustDied(Unit* /*killer*/) override
                 {
                     me->DespawnOrUnsummon(5000);
                 }
@@ -1629,7 +1620,7 @@ class npc_blazing_talon_clawshaper: public CreatureScript // 53734
                     AddWaypoint(1, -55.794f, -325.271f, 77.766f, 5000);
                 }
 
-                void WaypointReached(uint32 point)
+                void WaypointReached(uint32 point) override
                 {
                     switch (point)
                     {
@@ -1648,7 +1639,7 @@ class npc_blazing_talon_clawshaper: public CreatureScript // 53734
                     }
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     npc_escortAI::UpdateAI(diff);
 
@@ -1704,6 +1695,11 @@ class npc_blazing_talon_clawshaper: public CreatureScript // 53734
                     }
                 }
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_blazing_talon_clawshaperAI>(creature);
+    }
 };
 
 class npc_blazing_talon: public CreatureScript // 53896
@@ -1714,11 +1710,6 @@ class npc_blazing_talon: public CreatureScript // 53896
         {
         }
 
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_blazing_talonAI(creature);
-        }
-
         struct npc_blazing_talonAI: public npc_escortAI
         {
                 npc_blazing_talonAI(Creature* c) : npc_escortAI(c) { }
@@ -1726,7 +1717,7 @@ class npc_blazing_talon: public CreatureScript // 53896
                 EventMap events;
                 uint8 waypoint;
 
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     me->SetByteFlag(UNIT_FIELD_BYTES_1, 3, 0x02);
                     me->AddUnitMovementFlag(MOVEMENTFLAG_CAN_FLY | MOVEMENTFLAG_FLYING);
@@ -1756,7 +1747,7 @@ class npc_blazing_talon: public CreatureScript // 53896
                     Start();
                 }
 
-                void JustDied(Unit* /*killer*/)
+                void JustDied(Unit* /*killer*/) override
                 {
                     me->DespawnOrUnsummon(5000);
                 }
@@ -1767,7 +1758,7 @@ class npc_blazing_talon: public CreatureScript // 53896
                             Talon[waypoint].GetPositionZ(), 3000);
                 }
 
-                void WaypointReached(uint32 point)
+                void WaypointReached(uint32 point) override
                 {
                     switch (point)
                     {
@@ -1786,7 +1777,7 @@ class npc_blazing_talon: public CreatureScript // 53896
                     }
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     npc_escortAI::UpdateAI(diff);
 
@@ -1822,17 +1813,18 @@ class npc_blazing_talon: public CreatureScript // 53896
                     }
                 }
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_blazing_talonAI>(creature);
+    }
+
 };
 
 class npc_brushfire: public CreatureScript // 53372
 {
     public:
         npc_brushfire() : CreatureScript("npc_brushfire") { }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_brushfireAI(creature);
-        }
 
         struct npc_brushfireAI: public ScriptedAI
         {
@@ -1847,7 +1839,7 @@ class npc_brushfire: public CreatureScript // 53372
                 bool started, needJump;
                 uint32 timerMove, jump, timerDespawn;
 
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     me->SetFacingTo(urand(0, 6));
                     DoCast(me, SPELL_BRUSHFIRE_VIS);
@@ -1860,7 +1852,7 @@ class npc_brushfire: public CreatureScript // 53372
                     timerDespawn = 20000;
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!started)
                         return;
@@ -1889,6 +1881,11 @@ class npc_brushfire: public CreatureScript // 53372
                         timerDespawn -= diff;
                 }
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_brushfireAI>(creature);
+    }
 };
 
 class npc_fiery_tornado: public CreatureScript // 53698
@@ -1897,11 +1894,6 @@ class npc_fiery_tornado: public CreatureScript // 53698
         npc_fiery_tornado() :
                 CreatureScript("npc_fiery_tornado")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_fiery_tornadoAI(creature);
         }
 
         struct npc_fiery_tornadoAI: public npc_escortAI
@@ -1914,7 +1906,7 @@ class npc_fiery_tornado: public CreatureScript // 53698
 
                 uint32 numb;
 
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     me->SetReactState(REACT_PASSIVE);
                     me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE);
@@ -2233,17 +2225,22 @@ class npc_fiery_tornado: public CreatureScript // 53698
                     }
                 }
 
-                void WaypointReached(uint32 point)
+                void WaypointReached(uint32 point) override
                 {
                     if ((point == 4 && numb == 0) || (point == 6))
                         InitWaypoints();
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     npc_escortAI::UpdateAI(diff);
                 }
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_fiery_tornadoAI>(creature);
+    }
 };
 
 class npc_molten_egg: public CreatureScript // 53681
@@ -2252,11 +2249,6 @@ class npc_molten_egg: public CreatureScript // 53681
         npc_molten_egg() :
                 CreatureScript("npc_molten_egg")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_molten_eggAI(creature);
         }
 
         struct npc_molten_eggAI: public ScriptedAI
@@ -2270,7 +2262,7 @@ class npc_molten_egg: public CreatureScript // 53681
                 EventMap events;
                 bool started;
 
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     me->UpdatePosition(me->GetPositionX(), me->GetPositionY(), 56.00f, me->GetOrientation());
                     me->SetReactState(REACT_PASSIVE);
@@ -2279,7 +2271,7 @@ class npc_molten_egg: public CreatureScript // 53681
                     started = true;
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!started)
                         return;
@@ -2307,6 +2299,11 @@ class npc_molten_egg: public CreatureScript // 53681
                     }
                 }
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_molten_eggAI>(creature);
+    }
 };
 
 class boss_alysrazor: public CreatureScript
@@ -2315,11 +2312,6 @@ class boss_alysrazor: public CreatureScript
         boss_alysrazor() :
                 CreatureScript("boss_alysrazor")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new boss_alysrazorAI(creature);
         }
 
         struct boss_alysrazorAI: public BossAI
@@ -2339,7 +2331,7 @@ class boss_alysrazor: public CreatureScript
                 uint8 waypoint, phase, LastTalon;
                 bool isNeedJump;
 
-                void Reset()
+                void Reset() override
                 {
                     if (instance)
                         instance->SetBossState(DATA_ALYSRAZAR, NOT_STARTED);
@@ -2394,7 +2386,7 @@ class boss_alysrazor: public CreatureScript
                         (*iter)->DespawnOrUnsummon();
                 }
 
-                void EnterCombat(Unit* /*who*/)
+                void JustEngagedWith(Unit* /*who*/) override
                 {
                     EnterAir();
                     Talk(SAY_ALY_START);
@@ -2410,7 +2402,7 @@ class boss_alysrazor: public CreatureScript
                     _EnterCombat();
                 }
 
-                void KilledUnit(Unit* /*victim*/)
+                void KilledUnit(Unit* /*victim*/) override
                 {
                     Talk(RAND(SAY_ALY_KILLER_1, SAY_ALY_KILLER_2));
                 }
@@ -2431,14 +2423,14 @@ class boss_alysrazor: public CreatureScript
                     me->SetHover(true);
                 }
 
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
 
-                if (GameObject* volcano = instance->instance->GetGameObject(instance->GetData64(DATA_ALYSRAZOR_VOLCANO)))
-                {
-                    volcano->SetDestructibleState(GO_DESTRUCTIBLE_DESTROYED);
-                    volcano->setActive(true);
-                }
+                    if (GameObject* volcano = instance->instance->GetGameObject(instance->GetData64(DATA_ALYSRAZOR_VOLCANO)))
+                    {
+                        volcano->SetDestructibleState(GO_DESTRUCTIBLE_DESTROYED);
+                        volcano->setActive(true);
+                    }
 
                     phase = PHASE_JUMP;
                     isNeedJump = true;
@@ -2479,7 +2471,7 @@ class boss_alysrazor: public CreatureScript
                     events.CancelEvent(EVENT_MOVE_TORNADOS_4);
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!UpdateVictim() || me->HasUnitState(UNIT_STATE_CASTING))
                         return;
@@ -2873,7 +2865,7 @@ class boss_alysrazor: public CreatureScript
                         }
                 }
 
-                void JustDied(Unit* /*killer*/)
+                void JustDied(Unit* /*killer*/) override
                 {
                     me->RemoveAllAuras();
                     RemoveEncounterAuras();
@@ -2887,6 +2879,11 @@ class boss_alysrazor: public CreatureScript
                     _JustDied();
                 }
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<boss_alysrazorAI>(creature);
+    }
 };
 
 class npc_fier_tornado: public CreatureScript // 53158
@@ -2895,11 +2892,6 @@ class npc_fier_tornado: public CreatureScript // 53158
         npc_fier_tornado() :
                 CreatureScript("npc_fier_tornado")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_fier_tornadoAI(creature);
         }
 
         struct npc_fier_tornadoAI: public ScriptedAI
@@ -2915,7 +2907,7 @@ class npc_fier_tornado: public CreatureScript // 53158
                 bool started, needSummon;
                 uint32 timerSummon;
 
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     started = true;
                     DoCast(me, SPELL_SUMMON_DMG);
@@ -2923,7 +2915,7 @@ class npc_fier_tornado: public CreatureScript // 53158
                     needSummon = true;
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!started)
                         return;
@@ -2975,6 +2967,11 @@ class npc_fier_tornado: public CreatureScript // 53158
                         timerSummon -= diff;
                 }
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_fier_tornadoAI>(creature);
+    }
 };
 
 class spell_molthen_feater: public SpellScriptLoader
@@ -3000,7 +2997,7 @@ class spell_molthen_feater: public SpellScriptLoader
                             GetTarget()->RemoveAura(98761 + i);
                 }
 
-                void Register()
+                void Register() override
                 {
                     AfterEffectRemove +=
                             AuraEffectRemoveFn(spell_molthen_feater_AuraScript::OnRemove, EFFECT_1, SPELL_AURA_MOD_INCREASE_SPEED, AURA_EFFECT_HANDLE_REAL);
@@ -3032,7 +3029,7 @@ class spell_fieroblast: public SpellScriptLoader
                         GetCaster()->AddAura(SPELL_FIREITUP, GetCaster());
                 }
 
-                void Register()
+                void Register() override
                 {
                     OnEffectApply +=
                             AuraEffectApplyFn(spell_fieroblast_AuraScript::OnApply, EFFECT_1, SPELL_AURA_PERIODIC_DAMAGE, AURA_EFFECT_HANDLE_REAL);
@@ -3065,7 +3062,7 @@ class spell_molthen: public SpellScriptLoader
                                 GetTarget()->GetPositionY() - urand(-5, -30), 56.500f);
                 }
 
-                void Register()
+                void Register() override
                 {
                     OnEffectPeriodic +=
                             AuraEffectPeriodicFn(spell_molthen_AuraScript::OnPeriodic, EFFECT_0, SPELL_AURA_PERIODIC_TRIGGER_SPELL);
@@ -3097,7 +3094,7 @@ class spell_hatchling_debuff: public SpellScriptLoader
                         GetTarget()->RemoveAura(SPELL_DEBUFF);
                 }
 
-                void Register()
+                void Register() override
                 {
                     OnEffectPeriodic +=
                             AuraEffectPeriodicFn(spell_hatchling_debuff_AuraScript::PeriodicTick, EFFECT_0, SPELL_AURA_PERIODIC_DAMAGE);
@@ -3119,12 +3116,12 @@ class mob_aly_gauntlet_stalker: public CreatureScript
         {
                 mob_aly_gauntlet_stalkerAI(Creature* creature) : ScriptedAI(creature) { }
 
-                void Reset()
+                void Reset() override
                 {
                     detect = false;
                 }
 
-                void MoveInLineOfSight(Unit* who)
+                void MoveInLineOfSight(Unit* who) override
                 {
                     if (who && who->GetTypeId() == TYPEID_PLAYER)
 
@@ -3142,7 +3139,7 @@ class mob_aly_gauntlet_stalker: public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return new mob_aly_gauntlet_stalkerAI(creature);
+            return GetFirelandsAI<mob_aly_gauntlet_stalkerAI>(creature);
         }
 };
 
@@ -3162,14 +3159,12 @@ class mob_strangle_aly_gauntlet: public CreatureScript
 //                    me->GetMotionMaster()->MoveRandom(5.0f);
                 }
 
-                void Reset()
+                void Reset() override
                 {
                     _isGauntletInProgress= false;
                 }
 
-                void EnterCombat(Unit* /*who*/) { }
-
-                void DoAction(int32 const action)
+                void DoAction(int32 const action) override
                 {
                     switch (action)
                     {
@@ -3200,7 +3195,7 @@ class mob_strangle_aly_gauntlet: public CreatureScript
                     }
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!UpdateVictim() && !_isGauntletInProgress)
                         return;
@@ -3270,7 +3265,7 @@ class mob_strangle_aly_gauntlet: public CreatureScript
 
         CreatureAI* GetAI(Creature* creature) const
         {
-            return new mob_strangle_aly_gauntletAI(creature);
+            return GetFirelandsAI<mob_strangle_aly_gauntletAI>(creature);
         }
 };
 

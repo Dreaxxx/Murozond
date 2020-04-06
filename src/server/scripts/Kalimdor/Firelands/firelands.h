@@ -133,7 +133,7 @@ enum FirelandsGameObjects
 enum FirelandsDataTypes
 {
     // Encounter States
-    DATA_BALOROC_EVENT,
+    DATA_BALEROC_EVENT,
     DATA_SHANNOX_EVENT,
     DATA_ALYSRAZAR_EVENT,
     DATA_BETHTILAC_EVENT,
@@ -144,7 +144,7 @@ enum FirelandsDataTypes
 enum FirelandsDataStates
 {
     // Encounter States
-    DATA_BALOROC,
+    DATA_BALEROC,
     DATA_SHANNOX,
     DATA_ALYSRAZAR,
     DATA_BETHTILAC,
@@ -159,7 +159,7 @@ enum FirelandsDataStates
     DATA_SHANNOX_SPEAR,
 
     DATA_BETHTILAC_DOOR,
-    DATA_BALOROC_DOOR,
+    DATA_BALEROC_DOOR,
     DATA_ALYSRAZOR_VOLCANO,
     DATA_SULFURON_DOOR,
     DATA_RAGNAROS_PLATFORM

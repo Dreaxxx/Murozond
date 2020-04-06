@@ -218,11 +218,6 @@ class boss_shannox: public CreatureScript
         {
         }
 
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new boss_shannoxAI(creature);
-        }
-
         struct boss_shannoxAI: public BossAI
         {
                 boss_shannoxAI(Creature* c) : BossAI(c, DATA_SHANNOX)
@@ -233,11 +228,7 @@ class boss_shannox: public CreatureScript
                     Reset();
                 }
 
-                InstanceScript* instance;
-                EventMap events;
-                bool bucketListCheckPoints[5], hurlSpeer, introSpeechDone;
-
-                void DespawnCreatures(uint32 entry, float distance)
+                void DespawnCreatures(uint32 entry, float distance) override
                 {
                     std::list<Creature*> creatures;
                     GetCreatureListWithEntryInGrid(creatures, me, entry, distance);
@@ -249,7 +240,7 @@ class boss_shannox: public CreatureScript
                         (*iter)->DespawnOrUnsummon();
                 }
 
-                void SetData(uint32 type, uint32 data)
+                void SetData(uint32 type, uint32 data) override
                 {
                     switch (type)
                     {
@@ -267,7 +258,7 @@ class boss_shannox: public CreatureScript
                     return true;
                 }
 
-                uint32 GetData(uint32 id) const
+                uint32 GetData(uint32 id) const override
                 {
                     switch (id)
                     {
@@ -277,7 +268,7 @@ class boss_shannox: public CreatureScript
                     return 0;
                 }
 
-                void Reset()
+                void Reset() override
                 {
                     uiPhase = PHASE_NON;
                     introSpeechDone = false;
@@ -332,7 +323,7 @@ class boss_shannox: public CreatureScript
                     _EnterEvadeMode();
                 }
 
-                void JustSummoned(Creature* summon)
+                void JustSummoned(Creature* summon) override
                 {
                     summons.Summon(summon);
                     summon->setActive(true);
@@ -341,12 +332,12 @@ class boss_shannox: public CreatureScript
                         summon->AI()->DoZoneInCombat();
                 }
 
-                void KilledUnit(Unit * /*victim*/)
+                void KilledUnit(Unit * /*victim*/) override
                 {
                     Talk(RAND(SAY_ON_KILL_ONE, SAY_ON_KILL_TWO));
                 }
 
-                void DoAction(const int32 action)
+                void DoAction(const int32 action) override
                 {
                     switch (action)
                     {
@@ -359,7 +350,7 @@ class boss_shannox: public CreatureScript
                     }
                 }
 
-                void JustDied(Unit * /*victim*/)
+                void JustDied(Unit * /*victim*/) override
                 {
                     Talk(SAY_ON_DEAD);
 
@@ -383,7 +374,7 @@ class boss_shannox: public CreatureScript
                     _JustDied();
                 }
 
-                void EnterCombat(Unit* who)
+                void JustEngagedWith(Unit* who) override
                 {
                     Talk(SAY_AGGRO);
                     memset(areas, false, sizeof(areas));
@@ -413,7 +404,7 @@ class boss_shannox: public CreatureScript
                     _EnterCombat();
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!me->GetVictim()) { }
 
@@ -653,7 +644,15 @@ class boss_shannox: public CreatureScript
             private:
                 uint32 uiPhase;
                 bool areas[5];
+                InstanceScript* instance;
+                EventMap events;
+                bool bucketListCheckPoints[5], hurlSpeer, introSpeechDone;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<boss_shannoxAI>(creature);
+    }
 };
 
 /**** Rageface ****/
@@ -664,11 +663,6 @@ class npc_rageface: public CreatureScript
         npc_rageface() :
                 CreatureScript("npc_rageface")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_ragefaceAI(creature);
         }
 
         struct npc_ragefaceAI: public ScriptedAI
@@ -684,11 +678,7 @@ class npc_rageface: public CreatureScript
                     Reset();
                 }
 
-                InstanceScript* instance;
-                EventMap events;
-                bool frenzy, prisonStartAttack;
-
-                void Reset()
+                void Reset() override
                 {
                     if (instance)
                     {
@@ -702,11 +692,7 @@ class npc_rageface: public CreatureScript
                     prisonStartAttack = false;
                 }
 
-                void KilledUnit(Unit * /*victim*/)
-                {
-                }
-
-                void JustDied(Unit * /*victim*/)
+                void JustDied(Unit * /*victim*/) override
                 {
                     if (GetShannox())
                     {
@@ -723,7 +709,7 @@ class npc_rageface: public CreatureScript
                     }
                 }
 
-                void EnterCombat(Unit * /*who*/)
+                void JustEngagedWith(Unit * /*who*/) override
                 {
                     if (instance)
                     {
@@ -761,7 +747,7 @@ class npc_rageface: public CreatureScript
                         }
                 }
 
-                void DamageTaken(Unit* who, uint32& damage)
+                void DamageTaken(Unit* who, uint32& damage) override
                 {
                     if (damage >= 40000
                             && me->HasAura(
@@ -775,7 +761,7 @@ class npc_rageface: public CreatureScript
                     }
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (me->GetVictim())
                         if (!me->HasAura(
@@ -889,7 +875,16 @@ class npc_rageface: public CreatureScript
                     return me->FindNearestCreature(NPC_SHANNOX, 5000.0f, true);
                 }
 
+        private:
+            InstanceScript* instance;
+            EventMap events;
+            bool frenzy, prisonStartAttack;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_ragefaceAI>(creature);
+    }
 };
 
 /**** Riplimb ****/
@@ -902,11 +897,6 @@ class npc_riplimb: public CreatureScript
         {
         }
 
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_riplimbAI(creature);
-        }
-
         struct npc_riplimbAI: public ScriptedAI
         {
                 npc_riplimbAI(Creature *c) :
@@ -917,12 +907,7 @@ class npc_riplimb: public CreatureScript
                     Reset();
                 }
 
-                InstanceScript* instance;
-                EventMap events;
-                bool frenzy, inTakingSpearPhase, firstLimbRip, prisonStartAttack;
-                Vehicle* vehicle;
-
-                void Reset()
+                void Reset() override
                 {
                     if (instance)
                     {
@@ -938,11 +923,7 @@ class npc_riplimb: public CreatureScript
                     firstLimbRip = false;
                 }
 
-                void KilledUnit(Unit * /*victim*/)
-                {
-                }
-
-                void JustDied(Unit * /*victim*/)
+                void JustDied(Unit * /*victim*/) override
                 {
                     if (GetShannox())
                     {
@@ -965,7 +946,7 @@ class npc_riplimb: public CreatureScript
                     }
                 }
 
-                void EnterCombat(Unit * who)
+                void JustEngagedWith(Unit * who) override
                 {
                     if (instance)
                     {
@@ -988,7 +969,7 @@ class npc_riplimb: public CreatureScript
                     events.ScheduleEvent(EVENT_LIMB_RIP, 12000); //TODO Find out the correct Time
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!me->GetVictim())
                     {
@@ -1056,7 +1037,7 @@ class npc_riplimb: public CreatureScript
 
                     if (GetShannox())
                     {
-                        if (GetShannox()->GetHealthPct() <= 30 && frenzy == false && !me->GetMap()->IsHeroic())
+                        if (GetShannox()->GetHealthPct() <= 30 && !frenzy && !me->GetMap()->IsHeroic())
                         {
                             frenzy = true;
                             DoCast(me, SPELL_FRENZIED_DEVOLUTION);
@@ -1109,7 +1090,18 @@ class npc_riplimb: public CreatureScript
                 {
                     return GetShannox()->FindNearestCreature(NPC_SHANNOX_SPEAR, 5000.0f, true);
                 }
+
+        private:
+            InstanceScript* instance;
+            EventMap events;
+            bool frenzy, inTakingSpearPhase, firstLimbRip, prisonStartAttack;
+            Vehicle* vehicle;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_riplimbAI>(creature);
+    }
 };
 
 /**** Shannox Fake Spear ****/
@@ -1120,11 +1112,6 @@ class npc_shannox_fake_spear: public CreatureScript
         npc_shannox_fake_spear() :
                 CreatureScript("npc_shannox_fake_spear")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_shannox_fake_spearAI(creature);
         }
 
         struct npc_shannox_fake_spearAI: public ScriptedAI
@@ -1141,8 +1128,14 @@ class npc_shannox_fake_spear: public CreatureScript
                     me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
                 }
 
-                InstanceScript* instance;
+        private:
+            InstanceScript* instance;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_shannox_fake_spearAI>(creature);
+    }
 };
 
 /**** Shannox Spear ****/
@@ -1153,11 +1146,6 @@ class npc_shannox_spear: public CreatureScript
         npc_shannox_spear() :
                 CreatureScript("npc_shannox_spear")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_shannox_spearAI(creature);
         }
 
         struct npc_shannox_spearAI: public ScriptedAI
@@ -1171,17 +1159,7 @@ class npc_shannox_spear: public CreatureScript
                     me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE);
                 }
 
-                InstanceScript* instance;
-
-                void Reset()
-                {
-                }
-
-                void JustDied(Unit * /*victim*/)
-                {
-                }
-
-                void EnterCombat(Unit * /*who*/)
+                void JustEngagedWith(Unit * /*who*/) override
                 {
                     DoCast(SPELL_MAGMA_FLARE);
 
@@ -1197,7 +1175,7 @@ class npc_shannox_spear: public CreatureScript
                         }
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     if (!UpdateVictim())
                         return;
@@ -1207,7 +1185,15 @@ class npc_shannox_spear: public CreatureScript
                 {
                     return me->FindNearestCreature(NPC_SHANNOX, 5000.0f, true);
                 }
+
+        private:
+            InstanceScript* instance;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_shannox_spearAI>(creature);
+    }
 };
 
 /**** Immolation Trap****/
@@ -1218,11 +1204,6 @@ class npc_immolation_trap: public CreatureScript
         npc_immolation_trap() :
                 CreatureScript("npc_immolation_trap")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_immolation_trapAI(creature);
         }
 
         struct npc_immolation_trapAI: public Scripted_NoMovementAI
@@ -1238,25 +1219,17 @@ class npc_immolation_trap: public CreatureScript
                     events.Reset();
                 }
 
-                InstanceScript* instance;
-                EventMap events;
-                Unit* tempTarget;
-
-                void JustDied(Unit * /*victim*/)
-                {
-                }
-
-                void Reset()
+                void Reset() override
                 {
                     events.Reset();
                 }
 
-                void EnterCombat(Unit * /*who*/)
+                void JustEngagedWith(Unit * /*who*/) override
                 {
                     events.ScheduleEvent(EVENT_IMMOLATION_TRAP_TRIGGER, 2000);
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
                     events.Update(diff);
 
@@ -1319,7 +1292,17 @@ class npc_immolation_trap: public CreatureScript
                 {
                     return me->FindNearestCreature(NPC_RAGEFACE, 5000.0f, true);
                 }
+
+        private:
+            InstanceScript* instance;
+            EventMap events;
+            Unit* tempTarget;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_immolation_trapAI>(creature);
+    }
 };
 
 /**** Crystal Trap ****/
@@ -1330,11 +1313,6 @@ class npc_crystal_trap: public CreatureScript
         npc_crystal_trap() :
                 CreatureScript("npc_crystal_trap")
         {
-        }
-
-        CreatureAI* GetAI(Creature* creature) const
-        {
-            return new npc_crystal_trapAI(creature);
         }
 
         struct npc_crystal_trapAI: public Scripted_NoMovementAI
@@ -1351,26 +1329,17 @@ class npc_crystal_trap: public CreatureScript
                     events.Reset();
                 }
 
-                InstanceScript* instance;
-                EventMap events;
-                Unit* tempTarget;
-                Creature* myPrison;
-
-                void JustDied(Unit * /*victim*/)
-                {
-                }
-
-                void Reset()
+                void Reset() override
                 {
                     events.Reset();
                 }
 
-                void EnterCombat(Unit * /*who*/)
+                void JustEngagedWith(Unit * /*who*/) override
                 {
                     events.ScheduleEvent(EVENT_CRYSTAL_TRAP_TRIGGER, 2000); //  The trap arms after 2 seconds.
                 }
 
-                void UpdateAI(const uint32 diff)
+                void UpdateAI(const uint32 diff) override
                 {
 
                     events.Update(diff);
@@ -1466,7 +1435,18 @@ class npc_crystal_trap: public CreatureScript
                 {
                     return me->FindNearestCreature(NPC_RAGEFACE, 5000.0f, true);
                 }
+
+        private:
+            InstanceScript* instance;
+            EventMap events;
+            Unit* tempTarget;
+            Creature* myPrison;
         };
+
+    CreatureAI* GetAI(Creature* creature) const
+    {
+        return GetFirelandsAI<npc_crystal_trapAI>(creature);
+    }
 };
 
 class spell_shannox_riplimb_dogged_determination : public SpellScriptLoader
@@ -1494,13 +1474,13 @@ class spell_shannox_riplimb_dogged_determination : public SpellScriptLoader
                 }
             }
 
-            void Register()
+            void Register() override
             {
                 OnEffectPeriodic += AuraEffectPeriodicFn(spell_shannox_riplimb_dogged_determination_AuraScript::PeriodicTick, EFFECT_1, SPELL_AURA_PERIODIC_DUMMY);
             }
         };
 
-        AuraScript* GetAuraScript() const
+        AuraScript* GetAuraScript() const override
         {
             return new spell_shannox_riplimb_dogged_determination_AuraScript();
         }
@@ -1535,14 +1515,14 @@ class spell_shannox_crystal_prison_trap : public SpellScriptLoader
                     GetTarget()->CastSpell(GetTarget(), SPELL_WARY_10N, true);
             }
             
-            void Register()
+            void Register() override
             {
                 OnEffectApply += AuraEffectApplyFn(spell_shannox_crystal_prison_trap_AuraScript::OnApply, EFFECT_0, SPELL_AURA_MOD_STUN, AURA_EFFECT_HANDLE_REAL);
                 OnEffectRemove += AuraEffectRemoveFn(spell_shannox_crystal_prison_trap_AuraScript::OnRemove, EFFECT_0, SPELL_AURA_MOD_STUN, AURA_EFFECT_HANDLE_REAL);
             }
         };
 
-        AuraScript* GetAuraScript() const
+        AuraScript* GetAuraScript() const override
         {
             return new spell_shannox_crystal_prison_trap_AuraScript();
         }
@@ -1565,13 +1545,13 @@ class spell_shannox_immolation_trap : public SpellScriptLoader
                     GetHitUnit()->CastSpell(GetHitUnit(), SPELL_WARY_10N, true);
             }
 
-            void Register()
+            void Register() override
             {
                 OnEffectHitTarget += SpellEffectFn(spell_shannox_immolation_trap_SpellScript::HandleScript, EFFECT_0, SPELL_EFFECT_SCHOOL_DAMAGE);
             }
         };
 
-        SpellScript* GetSpellScript() const
+        SpellScript* GetSpellScript() const override
         {
             return new spell_shannox_immolation_trap_SpellScript();
         }
@@ -1584,7 +1564,7 @@ class achievement_bucket_list : public AchievementCriteriaScript
     public:
         achievement_bucket_list() : AchievementCriteriaScript("achievement_bucket_list") { }
 
-        bool OnCheck(Player* source, Unit* target)
+        bool OnCheck(Player* source, Unit* target) override
         {
             if (!target)
                 return false;

@@ -965,13 +965,6 @@ class spell_alysrazor_cosmetic_egg_xplosion: public SpellScriptLoader
                 PrepareSpellScript(spell_alysrazor_cosmetic_egg_xplosion_SpellScript)
                 ;
 
-                bool Validate(SpellInfo const* /*spellInfo*/) override
-                {
-                    if (!sCreatureDisplayInfoStore.LookupEntry(MODEL_INVISIBLE_STALKER))
-                        return false;
-                    return true;
-                }
-
                 void HandleExplosion(SpellEffIndex effIndex)
                 {
                     PreventHitDefaultEffect(effIndex);
@@ -1354,7 +1347,7 @@ class npc_voracious_hatchling: public CreatureScript // 53509
                 void IsSummonedBy(Unit* summoner) override
                 {
                     me->ModifyAuraState(AURA_STATE_UNKNOWN22, true);
-                    if (Unit* FirstTarget = me->SelectTarget(SELECT_TARGET_RANDOM, 0, 300, true))
+                    if (Unit* FirstTarget = SelectTarget(SELECT_TARGET_RANDOM, 0, 300, true))
                     {
                         me->AI()->AttackStart(FirstTarget);
                         DoCast(FirstTarget, SPELL_IMPRINTED);
@@ -1544,7 +1537,7 @@ class npc_blazing_broodmother: public CreatureScript // 53680
                     switch (point)
                     {
                         case 1:
-                            me->SummonCreature_OP(53681, me->GetPositionX(), me->GetPositionY(), me->GetPositionZ());
+                            me->SummonCreature(53681, me->GetPositionX(), me->GetPositionY(), me->GetPositionZ());
                             break;
                         case 2:
                             me->DisappearAndDie();
@@ -1613,7 +1606,7 @@ class npc_blazing_talon_clawshaper: public CreatureScript // 53734
                     AddWaypoint(1, -55.794f, -325.271f, 77.766f, 5000);
                 }
 
-                void WaypointReached(uint32 point) override
+                void WaypointReached(uint32 point)
                 {
                     switch (point)
                     {
@@ -1751,7 +1744,7 @@ class npc_blazing_talon: public CreatureScript // 53896
                             Talon[waypoint].GetPositionZ(), 3000);
                 }
 
-                void WaypointReached(uint32 point) override
+                void WaypointReached(uint32 point)
                 {
                     switch (point)
                     {
@@ -1765,7 +1758,7 @@ class npc_blazing_talon: public CreatureScript // 53896
                             me->SetCanFly(false);
                             me->RemoveByteFlag(UNIT_FIELD_BYTES_1, 3, 0x02);
                             me->RemoveUnitMovementFlag(MOVEMENTFLAG_CAN_FLY | MOVEMENTFLAG_FLYING);
-                            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE);
+                            me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG2_DISABLE_TURN);
                             break;
                     }
                 }
@@ -1953,7 +1946,7 @@ class npc_fiery_tornado: public CreatureScript // 53698
                         }
                     }
                     InitWaypoints();
-                    CombatStart();
+                    Start();
                 }
 
                 void InitWaypoints()
@@ -2221,7 +2214,7 @@ class npc_fiery_tornado: public CreatureScript // 53698
                     }
                 }
 
-                void WaypointReached(uint32 point) override
+                void WaypointReached(uint32 point)
                 {
                     if ((point == 4 && numb == 0) || (point == 6))
                         InitWaypoints();
@@ -2352,7 +2345,7 @@ class boss_alysrazor: public CreatureScript
 
                     me->DespawnOrUnsummon();
 
-                    me->SummonCreature_OP(NPC_MOLTEN_FEATHER, Feather[0]);
+                    me->SummonCreature(NPC_MOLTEN_FEATHER, Feather[0]);
 
                     _EnterEvadeMode();
                 }
@@ -2392,7 +2385,7 @@ class boss_alysrazor: public CreatureScript
 
                     DoCast(me, SPELL_INDICATOR);
 
-                    _EnterCombat();
+                    _JustEngagedWith();
                 }
 
                 void KilledUnit(Unit* /*victim*/) override
@@ -2419,7 +2412,7 @@ class boss_alysrazor: public CreatureScript
                 void IsSummonedBy(Unit* summoner) override
                 {
 
-                    if (GameObject* volcano = instance->instance->GetGameObject(instance->GetData64(DATA_ALYSRAZOR_VOLCANO)))
+                    if (GameObject* volcano = instance->instance->GetGameObject(instance->GetGuidData(DATA_ALYSRAZOR_VOLCANO)))
                     {
                         volcano->SetDestructibleState(GO_DESTRUCTIBLE_DESTROYED);
                         volcano->setActive(true);
@@ -2525,7 +2518,7 @@ class boss_alysrazor: public CreatureScript
                         {
                             case EVENT_START_ENCOUNTER:
                                 for (uint8 i = 0; i < 11; ++i)
-                                    me->SummonCreature_OP(53158, SpawnVolcanos[i].GetPositionX(),
+                                    me->SummonCreature(53158, SpawnVolcanos[i].GetPositionX(),
                                             SpawnVolcanos[i].GetPositionY(), SpawnVolcanos[i].GetPositionZ());
                                 DoCast(me, SPELL_FIRESTORM);
                                 events.ScheduleEvent(EVENT_PHASE_2_TORNADOS_START, 195000); // 5000 perfect for testings
@@ -2547,10 +2540,10 @@ class boss_alysrazor: public CreatureScript
                             case EVENT_INCENDIARY_CLOUD:
                                 if (phase == PHASE_AIR)
                                 {
-                                    me->SummonCreature_OP(53541, me->GetPositionX() - urand(5, 15),
+                                    me->SummonCreature(53541, me->GetPositionX() - urand(5, 15),
                                             me->GetPositionY() - urand(-5, -15),
                                             me->GetPositionZ() > 120.0f ? me->GetPositionZ() : 120.0f);
-                                    me->SummonCreature_OP(53554, me->GetPositionX() + urand(25, 35),
+                                    me->SummonCreature(53554, me->GetPositionX() + urand(25, 35),
                                             me->GetPositionY() + urand(-25, -35),
                                             me->GetPositionZ() > 120.0f ? me->GetPositionZ() : 120.0f,
                                             me->GetOrientation());
@@ -2566,18 +2559,18 @@ class boss_alysrazor: public CreatureScript
 
                             case EVENT_SUMMON_WORMS:
                                 for (uint8 i = 0; i < 4; ++i)
-                                    me->SummonCreature_OP(53520, WormsPos[i]);
+                                    me->SummonCreature(53520, WormsPos[i]);
                                 events.ScheduleEvent(EVENT_SUMMON_WORMS, 60000);
                                 break;
 
                             case EVENT_SUMMON_TALON:
-                                me->SummonCreature_OP(53896, Talon[SelectTalon()]);
+                                me->SummonCreature(53896, Talon[SelectTalon()]);
                                 events.ScheduleEvent(EVENT_SUMMON_TALON, urand(40000, 45000));
                                 break;
 
                             case EVENT_SUMMON_BROODMOTHER:
                                 for (uint8 i = 0; i < 2; ++i)
-                                    me->SummonCreature_OP(53680, BirdsPos[i]);
+                                    me->SummonCreature(53680, BirdsPos[i]);
                                 break;
 
                             case EVENT_MOVE_TO_END_OF_TOP:
@@ -2708,7 +2701,7 @@ class boss_alysrazor: public CreatureScript
                                 events.CancelEvent(EVENT_SUMMON_TALON);
                                 if (me->HasAura(SPELL_BLAZING_CLAW))
                                     me->RemoveAura(SPELL_BLAZING_CLAW);
-                                me->SummonCreature_OP(53693, FallPos[0].GetPositionX(), FallPos[0].GetPositionY(), FallPos[0].GetPositionZ());
+                                me->SummonCreature(53693, FallPos[0].GetPositionX(), FallPos[0].GetPositionY(), FallPos[0].GetPositionZ());
                                 Talk(RAND(SAY_ALY_TORNADO_1, SAY_ALY_TORNADO_2));
                                 waypoint = 26;
                                 phase = PHASE_TORNADO;
@@ -2748,7 +2741,7 @@ class boss_alysrazor: public CreatureScript
 
                             case EVENT_SUMMON_DRUIDS:
                                 for (uint8 i = 0; i < 2; ++i)
-                                    me->SummonCreature_OP(53734, ClawTalon[i]);
+                                    me->SummonCreature(53734, ClawTalon[i]);
                                 break;
 
                             case EVENT_PHASE_2_TORNADOS_ENDS:
@@ -2955,7 +2948,7 @@ class npc_fier_tornado: public CreatureScript // 53158
                             else if (i == 14)
                                 tal = 109;
 
-                            me->SummonCreature_OP(53698, Tornado[tal]);
+                            me->SummonCreature(53698, Tornado[tal]);
                         }
                         needSummon = false;
                     }
@@ -3058,7 +3051,7 @@ class spell_molthen: public SpellScriptLoader
                 void OnPeriodic(AuraEffect const* /*aurEff*/)
                 {
                     if (GetTarget())
-                        GetTarget()->SummonCreature_OP(NPC_MOLTEN_FEATHER, GetTarget()->GetPositionX() - urand(5, 30),
+                        GetTarget()->SummonCreature(NPC_MOLTEN_FEATHER, GetTarget()->GetPositionX() - urand(5, 30),
                                 GetTarget()->GetPositionY() - urand(-5, -30), 56.500f);
                 }
 

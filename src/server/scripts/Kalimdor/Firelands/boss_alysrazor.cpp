@@ -20,7 +20,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ScriptedEscortAI.h"
+#include "SmartScriptMgr.h"
 #include "DBCStore.h"
 #include "DBCStructure.h"
 #include "ObjectMgr.h"
@@ -38,6 +38,7 @@
 #include "CreatureAI.h"
 #include "Spell.h"
 #include "SpellMgr.h"
+#include "MotionMaster.h"
 
 #define GO_ALYSRAZOR_VOLCANO_GUID 100576
 
@@ -1956,7 +1957,7 @@ class npc_fiery_tornado: public CreatureScript // 53698
                         }
                     }
                     InitWaypoints();
-                    Start();
+                    CombatStart();
                 }
 
                 void InitWaypoints()

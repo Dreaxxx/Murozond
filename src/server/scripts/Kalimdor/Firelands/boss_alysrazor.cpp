@@ -1509,12 +1509,10 @@ class npc_blazing_broodmother: public CreatureScript // 53680
         {
         }
 
-        struct npc_blazing_broodmotherAI: public npc_escortAI
+        struct npc_blazing_broodmotherAI: public EscortAI
         {
                 npc_blazing_broodmotherAI(Creature* c) :
-                        npc_escortAI(c)
-                {
-                }
+                        EscortAI(c){}
 
                 void IsSummonedBy(Unit* summoner)
                 {
@@ -1560,7 +1558,7 @@ class npc_blazing_broodmother: public CreatureScript // 53680
 
                 void UpdateAI(const uint32 diff)
                 {
-                    npc_escortAI::UpdateAI(diff);
+                    EscortAI::UpdateAI(diff);
                 }
         };
 
@@ -1578,10 +1576,10 @@ class npc_blazing_talon_clawshaper: public CreatureScript // 53734
         {
         }
 
-        struct npc_blazing_talon_clawshaperAI: public npc_escortAI
+        struct npc_blazing_talon_clawshaperAI: public EscortAI
         {
                 npc_blazing_talon_clawshaperAI(Creature* c) :
-                        npc_escortAI(c)
+                        EscortAI(c)
                 {
                     me->SetReactState(REACT_DEFENSIVE);
                 }
@@ -1642,7 +1640,7 @@ class npc_blazing_talon_clawshaper: public CreatureScript // 53734
 
                 void UpdateAI(const uint32 diff) override
                 {
-                    npc_escortAI::UpdateAI(diff);
+                    EscortAI::UpdateAI(diff);
 
                     events.Update(diff);
 
@@ -1711,9 +1709,9 @@ class npc_blazing_talon: public CreatureScript // 53896
         {
         }
 
-        struct npc_blazing_talonAI: public npc_escortAI
+        struct npc_blazing_talonAI: public EscortAI
         {
-                npc_blazing_talonAI(Creature* c) : npc_escortAI(c) { }
+                npc_blazing_talonAI(Creature* c) : EscortAI(c) { }
 
                 EventMap events;
                 uint8 waypoint;
@@ -1780,7 +1778,7 @@ class npc_blazing_talon: public CreatureScript // 53896
 
                 void UpdateAI(const uint32 diff) override
                 {
-                    npc_escortAI::UpdateAI(diff);
+                    EscortAI::UpdateAI(diff);
 
                     if (me->HasUnitState(UNIT_STATE_CASTING))
                         return;
@@ -1897,10 +1895,10 @@ class npc_fiery_tornado: public CreatureScript // 53698
         {
         }
 
-        struct npc_fiery_tornadoAI: public npc_escortAI
+        struct npc_fiery_tornadoAI: public EscortAI
         {
                 npc_fiery_tornadoAI(Creature* c) :
-                        npc_escortAI(c)
+                        EscortAI(c)
                 {
                     c->SetDisplayId(11686);
                 }
@@ -2234,7 +2232,7 @@ class npc_fiery_tornado: public CreatureScript // 53698
 
                 void UpdateAI(const uint32 diff) override
                 {
-                    npc_escortAI::UpdateAI(diff);
+                    EscortAI::UpdateAI(diff);
                 }
         };
 

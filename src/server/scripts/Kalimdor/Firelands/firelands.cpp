@@ -381,7 +381,7 @@ public:
     };
 
     CreatureAI *GetAI(Creature *pCreature) const {
-        return GetFirelandsAI<npc_firelands_flame_archonAI > (pCreature);
+        return GetFirelandsAI<npc_firelands_flame_archonAI>(pCreature);
     }
 };
 

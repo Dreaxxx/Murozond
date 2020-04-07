@@ -29,6 +29,7 @@
 #include "SpellAuras.h"
 #include "MapManager.h"
 #include "Spell.h"
+#include "SpellMgr.h"
 #include "Vehicle.h"
 #include "Cell.h"
 #include "CellImpl.h"
@@ -137,7 +138,7 @@ class boss_majordomus: public CreatureScript
                 {
                     instance = me->GetInstanceScript();
                     introDone = false;
-                    me->SetSpeed(MOVE_RUN, 1.5f, true);
+                    me->SetSpeed(MOVE_RUN, 1.5f);
                 }
 
                 void Reset() override
@@ -165,7 +166,7 @@ class boss_majordomus: public CreatureScript
                     // events.SetPhase(1);
 
                     me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-                    me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE);
+                    me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG2_DISABLE_TURN);
                     me->SetReactState(REACT_PASSIVE);
 
                     events.ScheduleEvent(EVENT_INTRO_1, 5000);
@@ -195,7 +196,7 @@ class boss_majordomus: public CreatureScript
                     summons.Summon(summon);
                     summon->setActive(true);
 
-                    if (me->isInCombat())
+                    if (me->IsInCombat())
                         summon->AI()->DoZoneInCombat();
                 }
 
@@ -228,12 +229,12 @@ class boss_majordomus: public CreatureScript
                     events.ScheduleEvent(EVENT_ENERGY_REGEN, 12000);
                     events.ScheduleEvent(EVENT_BERSERK, 10 * MINUTE * IN_MILLISECONDS);
 
-                    _EnterCombat();
+                    _JustEngagedWith();
                 }
 
                 void UpdateAI(const uint32 diff) override
                 {
-                    if (!UpdateVictim() && phase != PHASE_NONE || me->HasUnitState(UNIT_STATE_CASTING))
+                    if (!UpdateVictim() && (phase != PHASE_NONE || me->HasUnitState(UNIT_STATE_CASTING)))
                         return;
 
                     if (phase == PHASE_SCORPION && me->GetPower(POWER_ENERGY) == 100)
@@ -270,7 +271,7 @@ class boss_majordomus: public CreatureScript
                                 uint8 numb = 0;
                                 Map::PlayerList const& players = me->GetMap()->GetPlayers();
                                 for (Map::PlayerList::const_iterator itr = players.begin(); itr != players.end(); ++itr)
-                                    if (Player* player = itr->getSource())
+                                    if (Player* player = itr->GetSource())
                                         if (me->GetDistance(player) <= 7.0f)
                                             ++numb;
 
@@ -330,7 +331,7 @@ class boss_majordomus: public CreatureScript
                             case EVENT_INTRO_3:
                                 Talk(SAY_INTRO_3);
                                 me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-                                me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE);
+                                me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG2_DISABLE_TURN);
                                 me->SetReactState(REACT_DEFENSIVE);
                                 break;
 
@@ -514,7 +515,7 @@ class npc_burning_orb: public CreatureScript //53216
                     me->AddAura(SPELL_BURNING_ORBS_VISUAL, me);
                 }
 
-                void JusEngagedWith(Unit* /*who*/) override
+                void JusEngagedWith(Unit* /*who*/)
                 {
                     events.ScheduleEvent(EVENT_ORB_DAMAGE, 3500);
                 }

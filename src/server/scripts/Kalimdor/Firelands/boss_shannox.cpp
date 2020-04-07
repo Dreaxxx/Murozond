@@ -228,7 +228,7 @@ class boss_shannox: public CreatureScript
                     Reset();
                 }
 
-                void DespawnCreatures(uint32 entry, float distance) override
+                void DespawnCreatures(uint32 entry, float distance)
                 {
                     std::list<Creature*> creatures;
                     GetCreatureListWithEntryInGrid(creatures, me, entry, distance);
@@ -328,7 +328,7 @@ class boss_shannox: public CreatureScript
                     summons.Summon(summon);
                     summon->setActive(true);
 
-                    if (me->isInCombat())
+                    if (me->IsInCombat())
                         summon->AI()->DoZoneInCombat();
                 }
 
@@ -401,14 +401,14 @@ class boss_shannox: public CreatureScript
 
                     uiPhase = PHASE_SHANNOX_HAS_SPEER;
 
-                    _EnterCombat();
+                    _JustEngagedWith();
                 }
 
                 void UpdateAI(const uint32 diff) override
                 {
                     if (!me->GetVictim()) { }
 
-                    if ((!introSpeechDone) && (!me->isInCombat()))
+                    if ((!introSpeechDone) && (!me->IsInCombat()))
                     {
                         introSpeechDone = true;
                         Talk(SAY_INTRO_SPECH_PART_ONE);
@@ -417,7 +417,7 @@ class boss_shannox: public CreatureScript
                     }
 
                     if (Creature* crystalprison = me->FindNearestCreature(NPC_CRYSTAL_PRISON, 150.0f))
-                        crystalprison->SetTarget(0);
+                        crystalprison->SetTarget(ObjectGuid::Empty);
 
                     if (me->HasUnitState(UNIT_STATE_CASTING))
                         return;
@@ -580,10 +580,10 @@ class boss_shannox: public CreatureScript
                     if (!UpdateVictim())
                         return;
 
-                    if (((GetRiplimb() && GetRiplimb()->GetDistance2d(me) >= maxDistanceBetweenShannoxAndDogs
+                    if ((GetRiplimb() && GetRiplimb()->GetDistance2d(me) >= maxDistanceBetweenShannoxAndDogs
                             && GetRiplimb()->IsAlive())
                             || (GetRageface() && GetRageface()->GetDistance2d(me) >= maxDistanceBetweenShannoxAndDogs)
-                                    && GetRageface()->IsAlive()) && (!me->HasAura(SPELL_SEPERATION_ANXIETY)))
+                                    && (GetRageface()->IsAlive()) && (!me->HasAura(SPELL_SEPERATION_ANXIETY)))
                         DoCast(me, SPELL_SEPERATION_ANXIETY);
 
                     if (uiPhase == PHASE_RIPLIMB_BRINGS_SPEER && GetRiplimb() && GetRiplimb()->GetDistance(me) <= 1)
@@ -699,8 +699,8 @@ class npc_rageface: public CreatureScript
                         GetShannox()->HasAura(SPELL_FRENZY_SHANNOX) ?
                                 GetShannox()->GetAura(SPELL_FRENZY_SHANNOX)->SetStackAmount(2) :
                                 DoCast(GetShannox(), SPELL_FRENZY_SHANNOX);
-                        GetShannox()->MonsterTextEmote(SAY_ON_DOGS_FALL, 0, true);
-                        GetShannox()->MonsterTextEmote(EMOTE_SOFT_ENRAGE, 0, true);
+                        GetShannox()->TextEmote(SAY_ON_DOGS_FALL, 0, true);
+                        GetShannox()->TextEmote(EMOTE_SOFT_ENRAGE, 0, true);
                     }
                     if (instance)
                     {
@@ -719,7 +719,7 @@ class npc_rageface: public CreatureScript
 
                     if (Creature* shannox = me->FindNearestCreature(NPC_SHANNOX, 250.0f, true))
                     {
-                        if (Unit* player = me->SelectNearestPlayer(250.0f, true))
+                        if (Unit* player = me->SelectNearestPlayer(250.0f))
                             shannox->AI()->AttackStart(player);
                     }
 
@@ -783,7 +783,7 @@ class npc_rageface: public CreatureScript
                             me->GetVictim()->RemoveAurasDueToSpell(SPELL_FACE_RAGE);
                         }
 
-                    if (GetShannox() && !me->isInCombat())
+                    if (GetShannox() && !me->IsInCombat())
                     {
                         if (me->GetDistance(GetShannox()) > 20.0f)
                             me->SetPosition(GetShannox()->GetPositionX() + 5, GetShannox()->GetPositionY() - 5,
@@ -936,8 +936,8 @@ class npc_riplimb: public CreatureScript
                         GetShannox()->HasAura(SPELL_FRENZY_SHANNOX) ?
                                 GetShannox()->GetAura(SPELL_FRENZY_SHANNOX)->SetStackAmount(2) :
                                 DoCast(GetShannox(), SPELL_FRENZY_SHANNOX);
-                        GetShannox()->MonsterTextEmote(SAY_ON_DOGS_FALL, 0, true);
-                        GetShannox()->MonsterTextEmote(EMOTE_SOFT_ENRAGE, 0, true);
+                        GetShannox()->TextEmote(SAY_ON_DOGS_FALL, 0, true);
+                        GetShannox()->TextEmote(EMOTE_SOFT_ENRAGE, 0, true);
                     }
                     if (instance)
                     {
@@ -956,7 +956,7 @@ class npc_riplimb: public CreatureScript
 
                     if (Creature* shannox = me->FindNearestCreature(NPC_SHANNOX, 250.0f, true))
                     {
-                        if (Unit* player = me->SelectNearestPlayer(250.0f, true))
+                        if (Unit* player = me->SelectNearestPlayer(250.0f))
                             shannox->AI()->AttackStart(player);
                     }
 
@@ -975,7 +975,7 @@ class npc_riplimb: public CreatureScript
                     {
                     }
 
-                    if (GetShannox() && !me->isInCombat())
+                    if (GetShannox() && !me->IsInCombat())
                     {
                         if (me->GetDistance(GetShannox()) > 20.0f)
                             me->SetPosition(GetShannox()->GetPositionX() + 5, GetShannox()->GetPositionY() - 5,

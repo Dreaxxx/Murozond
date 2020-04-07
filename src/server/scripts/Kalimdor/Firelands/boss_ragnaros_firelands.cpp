@@ -466,7 +466,7 @@ class boss_ragnaros_firelands: public CreatureScript
                     if (GameObject* door = me->FindNearestGameObject(GO_RAGNAROS_DOOR, 200.0f))
                         door->SetGoState(GO_STATE_READY);
 
-                    _EnterCombat();
+                    _JustEngagedWith();
                 }
 
                 void DoAction(int32 const action) override
@@ -569,7 +569,7 @@ class boss_ragnaros_firelands: public CreatureScript
                         me->SetReactState(REACT_PASSIVE);
                         me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE);
                         me->RemoveAllAuras();
-                        me->SummonGameObject(GO_CACHE_OF_THE_FIRELORD, 1016.043f, -57.436f, 55.333f, 3.151f, 0, 0, 0, 0,
+                        me->SummonGameObject(GO_CACHE_OF_THE_FIRELORD, 1016.043f, -57.436f, 55.333f, 3.151f, QuaternionData(),
                                 30000);
                         if (HeartCheck)
                             me->SummonCreature(NPC_HEART_OF_RAGNAROS, me->GetPositionX(), me->GetPositionY(),
@@ -630,7 +630,7 @@ class boss_ragnaros_firelands: public CreatureScript
                                     for (std::list<HostileReference*>::const_iterator i = m_threatlist.begin();
                                             i != m_threatlist.end(); ++i)
                                     {
-                                        if (Unit* unit = Unit::GetUnit(*me, (*i)->getUnitGuid()))
+                                        if (Unit* unit = ObjectAccessor::GetUnit(*me, (*i)->getUnitGuid()))
                                             if (unit->GetTypeId() == TYPEID_PLAYER)
                                                 if (Player* player = unit->ToPlayer())
                                                     if (player->hasQuest(QUEST_HEART_FLAME))
@@ -651,7 +651,7 @@ class boss_ragnaros_firelands: public CreatureScript
                                 me->GetMotionMaster()->Clear();
                                 me->AttackStop();
                                 float x, y, z;
-                                me->GetClosePoint(x, y, z, me->GetObjectSize() / 3, -12.0f);
+                                me->GetClosePoint(x, y, z, me->GetObjectScale() / 3, -12.0f);
                                 smash = me->SummonCreature(NPC_SMASH, x, y, 55.8f, me->GetOrientation(),
                                         TEMPSUMMON_CORPSE_DESPAWN, 1000);
                                 events.ScheduleEvent(EVENT_SUL_SMASH, 1500);
@@ -1254,7 +1254,7 @@ class npc_magma_trap: public CreatureScript
                 {
                     if (m_uiCheckTimer <= diff)
                     {
-                        if (Unit* who = me->SelectNearestPlayer(4.0f, true))
+                        if (Unit* who = me->SelectNearestPlayer(4.0f))
                             if (who->IsWithinDistInMap(me, 4.0f))
                             {
                                 DoCast(me, SPELL_MAGMA_TRAP_ERUPTION);
@@ -1925,7 +1925,7 @@ class npc_cloudburst: public CreatureScript
                 {
                     _cloudburstCounter = RAID_MODE<uint8>(1, 1, 1, 3);
 
-                    if (Player* player = me->SelectNearestPlayer(6.0f, true))
+                    if (Player* player = me->SelectNearestPlayer(6.0f))
                         if (player->IsWithinDistInMap(me, 6.0f))
                         {
                             --_cloudburstCounter;
@@ -1970,7 +1970,7 @@ class npc_breathoffrost: public CreatureScript
 
                 void UpdateAI(const uint32 uiDiff) override
                 {
-                    if (Player* player = me->SelectNearestPlayer(6.0f, true))
+                    if (Player* player = me->SelectNearestPlayer(6.0f))
                         if (player->IsWithinDistInMap(me, 6.0f))
                         {
                             if (!player->HasAura(SPELL_PROTECT_SUPERHEAT))
@@ -2129,7 +2129,7 @@ class npc_heartofragnaros: public CreatureScript
 
                 void UpdateAI(const uint32 uiDiff) override
                 {
-                    Player* player = me->SelectNearestPlayer(6.0f, true);
+                    Player* player = me->SelectNearestPlayer(6.0f);
                     if (player)
                     {
                         if (player->HasAura(SPELL_RAGE_OF_RAGNAROS) && !IsHeroic())

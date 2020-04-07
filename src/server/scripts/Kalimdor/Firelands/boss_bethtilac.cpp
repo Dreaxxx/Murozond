@@ -781,7 +781,7 @@ class npc_cinderweb_spiderling: public CreatureScript //
                 {
                 }
 
-                void InitializeAI()
+                void InitializeAI() override
                 {
                     if (!me->isDead())
                         Reset();
@@ -820,7 +820,7 @@ class npc_cinderweb_spiderling: public CreatureScript //
                                 if (creatures.empty())
                                 {
                                     sLog;
-                                    if(Unit* target = me->FindNearestPlayer(400.0f, true))
+                                    if(Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 400, true))
                                     {
                                         if(NeedKick)
                                         {
@@ -961,7 +961,7 @@ class npc_web_rip: public CreatureScript
                 {
                 }
 
-                void IsSummonedBy(Unit* summoner)
+                void IsSummonedBy(Unit* summoner) override
                 {
                     events.ScheduleEvent(EVENT_METEOR_DUMMY, 100);
                     me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
@@ -986,7 +986,7 @@ class npc_web_rip: public CreatureScript
                                 Map::PlayerList const& Players = me->GetMap()->GetPlayers();
                                 for (Map::PlayerList::const_iterator itr = Players.begin(); itr != Players.end(); ++itr)
                                 {
-                                    if (Player* player = itr->getSource())
+                                    if (Player* player = itr->GetSource())
                                     {
                                         if (player->GetDistance(me) <= 6.0f)
                                             TargetList.push_back(player);
@@ -1041,7 +1041,7 @@ class npc_web_filament: public CreatureScript
                     {
                         if (!apply)
                             return;
-                        else if (me->isSummon())
+                        else if (me->IsSummon())
                             if (Unit* lifthandler = me->ToTempSummon()->GetSummoner())
                             {
                                 seated = true;
@@ -1125,7 +1125,6 @@ class achievement_death_from_above: public AchievementCriteriaScript //need to c
         {
         }
 
-        bool OnCheck(Player* /*source*/, Unit* target) override
         bool OnCheck(Player* /*source*/, Unit* target) override
         {
             if (!target)

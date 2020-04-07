@@ -1061,7 +1061,7 @@ class npc_rhyolith_volcano: public CreatureScript
                         {
                             uint32 stack = aura->GetStackAmount() - 10;
 
-                            if (stack >= 0)
+                            if (stack > 0)
                             {
                                 GetRhyo()->SetAuraStack(SPELL_OBSIDIAN_ARMOR, GetRhyo(), stack);
                                 

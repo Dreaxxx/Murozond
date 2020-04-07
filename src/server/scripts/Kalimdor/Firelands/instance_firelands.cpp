@@ -40,8 +40,8 @@ class instance_firelands : public InstanceMapScript
     public:
         instance_firelands() : InstanceMapScript(FirelandsScriptName, 720) {}
 
-        struct instance_firelands_InstanceMapScript : public InstanceScript {
-            instance_firelands_InstanceMapScript(InstanceMap *map) :
+        struct instance_firelands_InstanceScript : public InstanceScript {
+            instance_firelands_InstanceScript(InstanceMap *map) :
                     InstanceScript(map) {
                 memset(&uiEncounter, 0, sizeof(uiEncounter));
             }
@@ -313,11 +313,14 @@ class instance_firelands : public InstanceMapScript
             }
         };
 
-        InstanceScript* GetInstanceScript(InstanceMap* map) const override {
-            return new instance_firelands_InstanceMapScript(map);
-        }
+    InstanceScript* GetInstanceScript(InstanceMap* map) const override
+    {
+        return new instance_firelands_InstanceScript(map);
+    }
 };
 
-void AddSC_instance_firelands() {
+void AddSC_instance_firelands()
+{
     new instance_firelands();
 }
+

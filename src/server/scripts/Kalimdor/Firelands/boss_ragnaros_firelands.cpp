@@ -1698,7 +1698,7 @@ class npc_dreadflame: public CreatureScript
                 {
                     if (m_uiCheckDeluge <= diff)
                     {
-                        if (Player* player = me->SelectNearestPlayer(2.5f, true))
+                        if (Player* player = me->SelectNearestPlayer(2.5f))
                             if (player->IsWithinDistInMap(me, 2.5f) && player->HasAura(SPELL_DELUGE))
                             {
                                 DoCast(me, SPELL_WATER_VISUAL);

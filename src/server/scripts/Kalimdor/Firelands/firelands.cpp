@@ -381,7 +381,7 @@ public:
     };
 
     CreatureAI *GetAI(Creature *pCreature) const {
-        return GetFirelandsAI > npc_firelands_flame_archonAI > (pCreature);
+        return GetFirelandsAI<npc_firelands_flame_archonAI > (pCreature);
     }
 };
 
@@ -622,7 +622,7 @@ class npc_tormented_protector : public CreatureScript {
                 _events.CancelEvent(EVENT_SMOULDERING_ROOTS);
                 _events.CancelEvent(EVENT_SUMMON_TREANTS);
 
-                me->setFaction(35);
+                me->SetFaction(35);
                 me->CombatStop(true);
                 me->SetReactState(REACT_PASSIVE);
                 me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IN_COMBAT); // no regen health here

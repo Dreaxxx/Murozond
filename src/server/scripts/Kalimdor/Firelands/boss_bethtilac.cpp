@@ -38,6 +38,7 @@
 #include "ScriptedCreature.h"
 #include "ScriptPCH.h"
 #include "ScriptedEscortAI.h"
+#include "Log.h"
 
 #include "firelands.h"
 
@@ -198,7 +199,7 @@ class boss_bethtilac: public CreatureScript
                     me->ApplySpellImmune(0, IMMUNITY_ID, SPELL_TELEPORT_UNITS, true);
                 }
 
-                void InitializeAI()
+                void InitializeAI() override
                 {
                     if (!me->isDead())
                         Reset();
@@ -270,7 +271,7 @@ class boss_bethtilac: public CreatureScript
                     _EnterEvadeMode();
                 }
 
-                uint32 GetData(uint32 type) const
+                uint32 GetData(uint32 type) const override
                 {
                     if (type == ACHIEVMENT_DFA_CRITERIA)
                         return AchievementChecker ? 1 : 0;
@@ -438,7 +439,7 @@ class boss_bethtilac: public CreatureScript
                                     for (Map::PlayerList::const_iterator itr = Players.begin(); itr != Players.end();
                                             ++itr)
                                     {
-                                        if (Player* player = itr->getSource())
+                                        if (Player* player = itr->GetSource())
                                         {
                                             if (player->GetPositionZ() > 108.0f)
                                                 TargetList.push_back(player);
@@ -517,7 +518,7 @@ class npc_cinderweb_spinner: public CreatureScript  //
                 {
                 }
 
-                void InitializeAI()
+                void InitializeAI() override
                 {
                     if (!me->isDead())
                         Reset();
@@ -560,7 +561,7 @@ class npc_cinderweb_spinner: public CreatureScript  //
 
                 void JustDied(Unit* /*killer*/) override
                 {
-                    if (me->isSummon())
+                    if (me->IsSummon())
                     {
                         if (Unit* summoner = me->ToTempSummon()->GetSummoner())
                             summoner->SummonCreature(NPC_SPIDERWEB_FILAMENT, summoner->GetPositionX(),
@@ -639,7 +640,7 @@ class npc_cinderweb_drone: public CreatureScript   //
                 {
                 }
 
-                void InitializeAI()
+                void InitializeAI() override
                 {
                     if (!me->isDead())
                         Reset();
@@ -790,7 +791,7 @@ class npc_cinderweb_spiderling: public CreatureScript //
                 {
                     NeedKick = true;
                     events.ScheduleEvent(EVENT_LITTLE_CHECK_TARGET, 1000);
-                    me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE);
+                    me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG2_DISABLE_TURN);
                 }
 
                 void UpdateAI(const uint32 diff) override
@@ -805,7 +806,7 @@ class npc_cinderweb_spiderling: public CreatureScript //
                         switch (eventId)
                         {
                             case EVENT_CHECK_PLAYER_SEEPING_VENOM:
-                                if (Unit* target = me->FindNearestPlayer(5.0f, true))
+                                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 5, true))
                                     DoCast(target, SPELL_SEEPING_VENOM);
                                 events.ScheduleEvent(EVENT_CHECK_PLAYER_SEEPING_VENOM, 3000);
                                 break;
@@ -836,7 +837,7 @@ class npc_cinderweb_spiderling: public CreatureScript //
                                 else
                                 for (std::list<Creature*>::iterator iter = creatures.begin(); iter != creatures.end(); ++iter)
                                 {
-                                    if((*iter)->GetPositionZ() < 100.0f && (*iter)->isAlive())
+                                    if((*iter)->GetPositionZ() < 100.0f && (*iter)->IsAlive())
                                     {
                                         me->GetMotionMaster()->MoveFollow(*iter, 1.0f, 0.0f);
                                         Founded = true;
@@ -849,7 +850,7 @@ class npc_cinderweb_spiderling: public CreatureScript //
 
                                 if (!Founded)
                                 {
-                                    if (Unit* target = me->FindNearestPlayer(400.0f, true))
+                                    if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 400, true))
                                     {
                                         sLog;
                                         me->SetReactState(REACT_AGGRESSIVE);
@@ -897,7 +898,7 @@ class npc_engorged_broodling: public CreatureScript // .
                 {
                 }
 
-                void Reset()
+                void Reset() override
                 {
                     events.Reset();
                     events.ScheduleEvent(EVENT_CHECK_PLAYER_RANGE, urand(2000, 9000));
@@ -925,7 +926,7 @@ class npc_engorged_broodling: public CreatureScript // .
                         switch (eventId)
                         {
                             case EVENT_CHECK_PLAYER_RANGE:
-                                if (Unit* target = me->FindNearestPlayer(5.0f, true))
+                                if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 5, true))
                                 {
                                     DoCast(me, SPELL_VOLATILE_BURST_H);
                                     me->DisappearAndDie();
@@ -953,14 +954,14 @@ class npc_web_rip: public CreatureScript
         {
         }
 
-        struct npc_web_ripAI: public Scripted_NoMovementAI
+        struct npc_web_ripAI: public ScriptedAI
         {
                 npc_web_ripAI(Creature* creature) :
-                        Scripted_NoMovementAI(creature)
+                        ScriptedAI(creature)
                 {
                 }
 
-                void IsSummonedBy(Unit* summoner) override
+                void IsSummonedBy(Unit* summoner)
                 {
                     events.ScheduleEvent(EVENT_METEOR_DUMMY, 100);
                     me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);

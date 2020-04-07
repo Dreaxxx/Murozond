@@ -223,7 +223,7 @@ class kar_the_everburning: public CreatureScript
                     if (!UpdateVictim())
                         return;
 
-                    if (Unit* NearPlayer = me->FindNearestPlayer(5.0, true))
+                    if (Unit* NearPlayer = SelectTarget(SELECT_TARGET_RANDOM, 0, 10, true))
                     {
                         events.ScheduleEvent(EVENT_NEAR_PLAYER, 1000);
                         SetCombatMovement(true);
@@ -251,8 +251,10 @@ class kar_the_everburning: public CreatureScript
                                 events.ScheduleEvent(EVENT_SUM_LAVA, 5000);
                                 break;
                             case EVENT_BEAM:
-                                DoCastRandom(SPELL_SOUL_BEAM, 40.0f);
-                                events.ScheduleEvent(EVENT_BEAM, 10000);
+                                if (Unit* Random = SelectTarget(SELECT_TARGET_RANDOM, 0, 40, true)) {
+                                    DoCast(Random, SPELL_SOUL_BEAM);
+                                    events.ScheduleEvent(EVENT_BEAM, 10000);
+                                }
                                 break;
                             case EVENT_SUM_LAVA:
                                 DoCast(me, SPELL_SUM_LAVA_SPAWN, false);
@@ -349,7 +351,7 @@ class Unstable_Pyrelord: public CreatureScript
                         falltimer -= diff;
 
                     if (!UpdateVictim())
-                        me->GetMotionMaster()->MovePoint(1, -167.431f, -307.385f, me->GetPositionZMinusOffset());
+                        me->GetMotionMaster()->MovePoint(1, -167.431f, -307.385f, me->GetPositionZ());
 
                     if (!GetKar())
                         me->DespawnOrUnsummon();
@@ -396,7 +398,7 @@ class boss_lord_rhyolith: public CreatureScript
 
                 void SummonAndSetLegsInBoss()
                 {
-                    if (!me || !me->isAlive())
+                    if (!me || !me->IsAlive())
                         return;
 
                     if (GetRightLeg())
@@ -409,13 +411,13 @@ class boss_lord_rhyolith: public CreatureScript
                             {
                                 RightSet = true;
                                 GetRightLeg()->EnterVehicle(me, 1);
-                                GetRightLeg()->ClearUnitState(UNIT_STATE_ONVEHICLE);
+                                // GetRightLeg()->ClearUnitState(UNIT_MASK_VEHICLE);
                             }
                     }
 
                     if (GetLeftLeg())
                     {
-                        if (!GetLeftLeg()->isAlive())
+                        if (!GetLeftLeg()->IsAlive())
                             GetLeftLeg()->Respawn(true);
 
                         if (Vehicle* pVehicle = me->GetVehicleKit())
@@ -423,7 +425,7 @@ class boss_lord_rhyolith: public CreatureScript
                             {
                                 LeftSet = true;
                                 GetLeftLeg()->EnterVehicle(me, 0);
-                                GetLeftLeg()->ClearUnitState(UNIT_STATE_ONVEHICLE);
+                                //GetLeftLeg()->ClearUnitState(UNIT_STATE_ONVEHICLE);
                             }
                     }
                 }
@@ -452,14 +454,13 @@ class boss_lord_rhyolith: public CreatureScript
                     if (!PlayerList.isEmpty())
                         for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
                         {
-                            if (i->getSource()->HasAura(SPELL_ORIENTATION_BAR))
-                                i->getSource()->RemoveAura(SPELL_ORIENTATION_BAR);
+                            if (i->GetSource()->HasAura(SPELL_ORIENTATION_BAR))
+                                i->GetSource()->RemoveAurasDueToSpell(SPELL_ORIENTATION_BAR);
                         }
                 }
 
                 void JustEngagedWith(Unit* /*who*/) override
                 {
-                    instance->NormaliseAltPower();
                     Phase = PHASE_0;
                     events.SetPhase(PHASE_0);
 
@@ -488,7 +489,7 @@ class boss_lord_rhyolith: public CreatureScript
 
                     events.ScheduleEvent(EVENT_ZONE_COMBAT, 1000);
 
-                    _EnterCombat();
+                    _JustEngagedWith();
                 }
 
                 void KilledUnit(Unit* /*who*/) override
@@ -586,8 +587,8 @@ class boss_lord_rhyolith: public CreatureScript
                     Map::PlayerList const &PlayerList = me->GetMap()->GetPlayers();
                     if (!PlayerList.isEmpty())
                         for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
-                            if (Player *player = i->getSource())
-                                if (player->isAlive() && player->GetDistance(me) <= 150.0f)
+                            if (Player *player = i->GetSource())
+                                if (player->IsAlive() && player->GetDistance(me) <= 150.0f)
                                 {
                                     ++players;
                                     player->SetInCombatWith(me->ToUnit());
@@ -610,7 +611,7 @@ class boss_lord_rhyolith: public CreatureScript
 
                     if (me->HasAura(SPELL_OBSIDIAN_ARMOR) && Phase != PHASE_2)
                     {
-                        if (GetLeftLeg() && GetLeftLeg()->isAlive())
+                        if (GetLeftLeg() && GetLeftLeg()->IsAlive())
                         {
                             if (!GetLeftLeg()->HasAura(SPELL_OBSIDIAN_ARMOR))
                                 GetLeftLeg()->CastSpell(GetLeftLeg(), SPELL_OBSIDIAN_ARMOR, true);
@@ -707,7 +708,7 @@ class boss_lord_rhyolith: public CreatureScript
                         if (!lavaFlow)
                         {
                             float x, y, z;
-                            me->GetClosePoint(x, y, z, me->GetObjectSize() / 3);
+                            me->GetClosePoint(x, y, z, me->GetObjectScale() / 3);
                             me->GetMotionMaster()->MovePoint(0, x, y, z);
                         }
                     }
@@ -739,12 +740,12 @@ class boss_lord_rhyolith: public CreatureScript
                                 for (int32 i = 0; i < RAID_MODE(2, 3, 2, 3); ++i)
                                 {
                                     Position pos;
-                                    me->GetRandomNearPosition(pos, urand(10, 90));
+                                    me->GetRandomNearPosition(urand(10, 90));
                                     while (pos.GetPositionZ() < 100.0f || pos.GetPositionZ() > 101.0f
                                             || me->GetDistance(pos) < 15.0f
                                             || CenterPlatform[0].GetExactDist(pos.GetPositionX(), pos.GetPositionY(),
                                                     pos.GetPositionZ()) > 50.0f)
-                                        me->GetRandomNearPosition(pos, 90);
+                                        me->GetRandomNearPosition(90);
                                     me->CastSpell(pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(),
                                             SPELL_VOLCANIC_BIRTH, true);
                                 }
@@ -838,8 +839,8 @@ class npc_left_leg: public CreatureScript
                     Map::PlayerList const &PlayerList = me->GetMap()->GetPlayers();
                     if (!PlayerList.isEmpty())
                         for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
-                            if (Player *player = i->getSource())
-                                if (player->isAlive() && GetRhyo() && player->GetDistance(GetRhyo()) <= 150.0f)
+                            if (Player *player = i->GetSource())
+                                if (player->IsAlive() && GetRhyo() && player->GetDistance(GetRhyo()) <= 150.0f)
                                     player->SetPower(POWER_ALTERNATE_POWER,
                                             player->GetPower(POWER_ALTERNATE_POWER) + power);
                 }
@@ -854,7 +855,7 @@ class npc_left_leg: public CreatureScript
                 void JustEngagedWith(Unit* /*who*/) override
                 {
                     me->SetInCombatWithZone();
-                    if (GetRhyo() && GetRhyo()->isAlive())
+                    if (GetRhyo() && GetRhyo()->IsAlive())
                         GetRhyo()->AI()->DoZoneInCombat();
                 }
 

@@ -719,7 +719,7 @@ class npc_rageface: public CreatureScript
 
                     if (Creature* shannox = me->FindNearestCreature(NPC_SHANNOX, 250.0f, true))
                     {
-                        if (Unit* player = me->FindNearestPlayer(250.0f, true))
+                        if (Unit* player = me->SelectNearestPlayer(250.0f, true))
                             shannox->AI()->AttackStart(player);
                     }
 
@@ -956,7 +956,7 @@ class npc_riplimb: public CreatureScript
 
                     if (Creature* shannox = me->FindNearestCreature(NPC_SHANNOX, 250.0f, true))
                     {
-                        if (Unit* player = me->FindNearestPlayer(250.0f, true))
+                        if (Unit* player = me->SelectNearestPlayer(250.0f, true))
                             shannox->AI()->AttackStart(player);
                     }
 

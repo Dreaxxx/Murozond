@@ -1254,7 +1254,7 @@ class npc_magma_trap: public CreatureScript
                 {
                     if (m_uiCheckTimer <= diff)
                     {
-                        if (Unit* who = me->FindNearestPlayer(4.0f, true))
+                        if (Unit* who = me->SelectNearestPlayer(4.0f, true))
                             if (who->IsWithinDistInMap(me, 4.0f))
                             {
                                 DoCast(me, SPELL_MAGMA_TRAP_ERUPTION);
@@ -1698,7 +1698,7 @@ class npc_dreadflame: public CreatureScript
                 {
                     if (m_uiCheckDeluge <= diff)
                     {
-                        if (Player* player = me->FindNearestPlayer(2.5f, true))
+                        if (Player* player = me->SelectNearestPlayer(2.5f, true))
                             if (player->IsWithinDistInMap(me, 2.5f) && player->HasAura(SPELL_DELUGE))
                             {
                                 DoCast(me, SPELL_WATER_VISUAL);
@@ -1925,7 +1925,7 @@ class npc_cloudburst: public CreatureScript
                 {
                     _cloudburstCounter = RAID_MODE<uint8>(1, 1, 1, 3);
 
-                    if (Player* player = me->FindNearestPlayer(6.0f, true))
+                    if (Player* player = me->SelectNearestPlayer(6.0f, true))
                         if (player->IsWithinDistInMap(me, 6.0f))
                         {
                             --_cloudburstCounter;
@@ -1970,7 +1970,7 @@ class npc_breathoffrost: public CreatureScript
 
                 void UpdateAI(const uint32 uiDiff) override
                 {
-                    if (Player* player = me->FindNearestPlayer(6.0f, true))
+                    if (Player* player = me->SelectNearestPlayer(6.0f, true))
                         if (player->IsWithinDistInMap(me, 6.0f))
                         {
                             if (!player->HasAura(SPELL_PROTECT_SUPERHEAT))
@@ -2025,7 +2025,7 @@ class npc_malfurion: public CreatureScript
                 {
                     if (m_uiCloudTimer <= uiDiff)
                     {
-                        if (Unit* that = me->FindNearestPlayer(60.0f))
+                        if (Unit* that = me->SelectNearestPlayer(60.0f))
                             me->SummonCreature(NPC_CLOUDBURST, that->GetPositionX() + urand(10, 15),
                                     that->GetPositionY() + urand(10, 15), that->GetPositionZ(), that->GetOrientation(),
                                     TEMPSUMMON_CORPSE_DESPAWN, 1000);
@@ -2080,7 +2080,7 @@ class npc_cenarius: public CreatureScript
                 {
                     if (m_uiFrostyTimer <= uiDiff)
                     {
-                        if (Unit* that = me->FindNearestPlayer(60.0f)) //why like this? Because fuck knows how blizz did it, and it's already a 1700 word script. If you correct this shit and go "Fuck this guy for not doing it properly." suck the shit out of my ass cause you are already full of it.
+                        if (Unit* that = me->SelectNearestPlayer(60.0f)) //why like this? Because fuck knows how blizz did it, and it's already a 1700 word script. If you correct this shit and go "Fuck this guy for not doing it properly." suck the shit out of my ass cause you are already full of it.
                             me->SummonCreature(NPC_BREATH_OF_FROST, that->GetPositionX() + urand(5, 12),
                                     that->GetPositionY() + urand(5, 12), that->GetPositionZ(), that->GetOrientation(),
                                     TEMPSUMMON_CORPSE_DESPAWN, 1000);
@@ -2129,7 +2129,7 @@ class npc_heartofragnaros: public CreatureScript
 
                 void UpdateAI(const uint32 uiDiff) override
                 {
-                    Player* player = me->FindNearestPlayer(6.0f, true);
+                    Player* player = me->SelectNearestPlayer(6.0f, true);
                     if (player)
                     {
                         if (player->HasAura(SPELL_RAGE_OF_RAGNAROS) && !IsHeroic())
@@ -2192,7 +2192,7 @@ class npc_hamuul: public CreatureScript
                 {
                     if (m_uiRootTimer <= uiDiff)
                     {
-                        if (Unit* that = me->FindNearestPlayer(60.0f))
+                        if (Unit* that = me->SelectNearestPlayer(60.0f))
                             me->SummonCreature(NPC_ENTRAPPING_ROOTS, that->GetPositionX() + urand(10, 15),
                                     that->GetPositionY() + urand(10, 15), that->GetPositionZ(), that->GetOrientation(),
                                     TEMPSUMMON_CORPSE_DESPAWN, 1000);

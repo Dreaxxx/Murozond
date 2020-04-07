@@ -1219,12 +1219,12 @@ class npc_immolation_trap: public CreatureScript
                     events.Reset();
                 }
 
-                void Reset()
+                void Reset() override
                 {
                     events.Reset();
                 }
 
-                void JustEngagedWith(Unit * /*who*/)
+                void JustEngagedWith(Unit * /*who*/) override
                 {
                     events.ScheduleEvent(EVENT_IMMOLATION_TRAP_TRIGGER, 2000);
                 }
@@ -1501,7 +1501,7 @@ class spell_shannox_crystal_prison_trap : public SpellScriptLoader
                     return;
 
                 Position pos;
-                GetTarget()->GetPosition(&pos);
+                GetTarget()->GetPosition();
                 if (Creature* pCrystalPrison = GetCaster()->SummonCreature(NPC_CRYSTAL_PRISON, pos))
                     pCrystalPrison->AI()->SetGUID(GetTarget()->GetGUID(), (GetTarget()->GetTypeId() == TYPEID_PLAYER)? DATA_TRAPPED_PLAYER: DATA_TRAPPED_DOG);
             }

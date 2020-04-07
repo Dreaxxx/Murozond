@@ -583,7 +583,7 @@ class boss_shannox: public CreatureScript
                     if ((GetRiplimb() && GetRiplimb()->GetDistance2d(me) >= maxDistanceBetweenShannoxAndDogs
                             && GetRiplimb()->IsAlive())
                             || (GetRageface() && GetRageface()->GetDistance2d(me) >= maxDistanceBetweenShannoxAndDogs)
-                                    && (GetRageface()->IsAlive()) && (!me->HasAura(SPELL_SEPERATION_ANXIETY)))
+                                    && (GetRageface()->IsAlive() && !me->HasAura(SPELL_SEPERATION_ANXIETY)))
                         DoCast(me, SPELL_SEPERATION_ANXIETY);
 
                     if (uiPhase == PHASE_RIPLIMB_BRINGS_SPEER && GetRiplimb() && GetRiplimb()->GetDistance(me) <= 1)
@@ -1206,10 +1206,10 @@ class npc_immolation_trap: public CreatureScript
         {
         }
 
-        struct npc_immolation_trapAI: public Scripted_NoMovementAI
+        struct npc_immolation_trapAI: public ScriptedAI
         {
                 npc_immolation_trapAI(Creature *c) :
-                        Scripted_NoMovementAI(c)
+                        ScriptedAI(c)
                 {
                     instance = me->GetInstanceScript();
                     tempTarget = NULL;
@@ -1219,12 +1219,12 @@ class npc_immolation_trap: public CreatureScript
                     events.Reset();
                 }
 
-                void Reset() override
+                void Reset()
                 {
                     events.Reset();
                 }
 
-                void JustEngagedWith(Unit * /*who*/) override
+                void JustEngagedWith(Unit * /*who*/)
                 {
                     events.ScheduleEvent(EVENT_IMMOLATION_TRAP_TRIGGER, 2000);
                 }
@@ -1315,10 +1315,10 @@ class npc_crystal_trap: public CreatureScript
         {
         }
 
-        struct npc_crystal_trapAI: public Scripted_NoMovementAI
+        struct npc_crystal_trapAI: public ScriptedAI
         {
                 npc_crystal_trapAI(Creature *c) :
-                        Scripted_NoMovementAI(c)
+                        ScriptedAI(c)
                 {
                     instance = me->GetInstanceScript();
                     tempTarget = NULL;

@@ -46,7 +46,7 @@ class instance_firelands : public InstanceMapScript
                 memset(&uiEncounter, 0, sizeof(uiEncounter));
             }
 
-            uint32 uiEncounter[ENCOUNTERS];
+            uint32 uiEncounter[EncounterCount];
 
             // Creatures
             uint64 uiShannox;
@@ -68,9 +68,9 @@ class instance_firelands : public InstanceMapScript
             uint64 SulfuronWallGUID;
             uint64 RagnarosPlatformGUID;
 
-            void Initialize()
+            void Initialize() override
             {
-                for (uint8 i = 0; i < ENCOUNTERS; ++i)
+                for (uint8 i = 0; i < EncounterCount; ++i)
                     uiEncounter[i] = NOT_STARTED;
 
                 uiShannox = 0;
@@ -90,9 +90,9 @@ class instance_firelands : public InstanceMapScript
                 uiShannoxSpear = 0;
             }
 
-            bool IsEncounterInProgress() const
+            bool IsEncounterInProgress() const override
             {
-                for (uint8 i = 0; i < ENCOUNTERS; ++i) {
+                for (uint8 i = 0; i < EncounterCount; ++i) {
                     if (uiEncounter[i] == IN_PROGRESS)
                         return true;
                 }
@@ -107,7 +107,7 @@ class instance_firelands : public InstanceMapScript
                         BethtilacDoorGUID = go->GetGUID();
                         break;
 
-                    case GOB_DOOR_BALOROC:
+                    case GOB_DOOR_BALEROC:
                         BalorocDoorGUID = go->GetGUID();
                         break;
 
@@ -140,7 +140,7 @@ class instance_firelands : public InstanceMapScript
                     case NPC_ALYSRAZOR:
                         uiAlysrazor = creature->GetGUID();
                         break;
-                    case NPC_BALOROC:
+                    case NPC_BALEROC:
                         uiBaloroc = creature->GetGUID();
                         break;
                     case NPC_MAJORDOMUS:
@@ -176,7 +176,7 @@ class instance_firelands : public InstanceMapScript
                         return uiBethtilac;
                     case DATA_ALYSRAZAR:
                         return uiAlysrazor;
-                    case DATA_BALOROC:
+                    case DATA_BALEROC:
                         return uiBaloroc;
                     case DATA_MAJORDOMUS:
                         return uiMajordomus;
@@ -198,7 +198,7 @@ class instance_firelands : public InstanceMapScript
                         return BethtilacDoorGUID;
                         break;
 
-                    case DATA_BALOROC_DOOR:
+                    case DATA_BALEROC_DOOR:
                         return BalorocDoorGUID;
                         break;
 
@@ -218,7 +218,7 @@ class instance_firelands : public InstanceMapScript
                         break;
                 }
 
-                return NULL;
+                return nullptr;
             }
 
             void SetData(uint32 type, uint32 data) override
@@ -249,7 +249,7 @@ class instance_firelands : public InstanceMapScript
                         };
                         break;
 
-                    case DATA_BALOROC:
+                    case DATA_BALEROC:
                         uiEncounter[4] = data;
                         if (data == DONE) {
                         };
@@ -276,17 +276,17 @@ class instance_firelands : public InstanceMapScript
                 return uiEncounter[type];
             }
 
-            std::string GetSaveData() {
+            std::string GetSaveData() override {
                 OUT_SAVE_INST_DATA;
 
                 std::ostringstream saveStream;
-                saveStream << "F L" << GetBossSaveData();
+                saveStream << "F L" << GetSaveData();
 
                 OUT_SAVE_INST_DATA_COMPLETE;
                 return saveStream.str();
             }
 
-            void Load(const char *in) {
+            void Load(const char *in) override {
                 if (!in) {
                     OUT_LOAD_INST_DATA_FAIL;
                     return;
@@ -300,7 +300,7 @@ class instance_firelands : public InstanceMapScript
                 loadStream >> dataHead1 >> dataHead2;
 
                 if (dataHead1 == 'F' && dataHead2 == 'L') {
-                    for (uint8 i = 0; i < ENCOUNTERS; ++i) {
+                    for (uint8 i = 0; i < EncounterCount; ++i) {
                         uint32 tmpState;
                         loadStream >> tmpState;
                         if (tmpState == IN_PROGRESS || tmpState > SPECIAL)
@@ -313,7 +313,7 @@ class instance_firelands : public InstanceMapScript
             }
         };
 
-        InstanceScript *GetInstanceScript(InstanceMap *map) const override {
+        InstanceScript* GetInstanceScript(InstanceMap* map) const override {
             return new instance_firelands_InstanceMapScript(map);
         }
 };

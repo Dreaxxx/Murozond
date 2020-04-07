@@ -22,6 +22,7 @@
 
 #include "ScriptPCH.h"
 #include "firelands.h"
+#include "ObjectMgr.h"
 
 enum Adds {
     NPC_MAGMAKIN = 54144, NPC_MAGMA_CONDUIT = 54145, // 97699, 98250, 100746
@@ -136,8 +137,6 @@ public:
             me->ApplySpellImmune(0, IMMUNITY_MECHANIC, MECHANIC_DISORIENTED, true);
         }
 
-        EventMap events;
-
         void Reset() override {
             events.Reset();
         }
@@ -176,6 +175,9 @@ public:
 
             DoMeleeAttackIfReady();
         }
+
+    private:
+        EventMap events;
     };
 
     CreatureAI *GetAI(Creature *pCreature) const {
@@ -190,14 +192,13 @@ public:
             CreatureScript("npc_firelands_ancient_lava_dweller") {
     }
 
-    struct npc_firelands_ancient_lava_dwellerAI : public Scripted_NoMovementAI {
+    struct npc_firelands_ancient_lava_dwellerAI : public ScriptedAI {
         npc_firelands_ancient_lava_dwellerAI(Creature *pCreature) :
-                Scripted_NoMovementAI(pCreature) {
+                ScriptedAI(pCreature) {
         }
 
-        EventMap events;
-
-        void Reset() override {
+        void Reset() override
+        {
             events.Reset();
         }
 
@@ -225,6 +226,9 @@ public:
 
             DoSpellAttackIfReady(SPELL_LAVA_SPIT);
         }
+
+    private:
+        EventMap events;
     };
 
     CreatureAI *GetAI(Creature *pCreature) const {
@@ -277,8 +281,6 @@ public:
             me->ApplySpellImmune(0, IMMUNITY_MECHANIC, MECHANIC_DISORIENTED, true);
         }
 
-        EventMap events;
-
         void Reset() override {
             events.Reset();
         }
@@ -307,10 +309,13 @@ public:
 
             DoMeleeAttackIfReady();
         }
+
+    private:
+        EventMap events;
     };
 
     CreatureAI *GetAI(Creature *pCreature) const {
-        return GetFirelandsAI > npc_firelands_fire_turtle_hatchlingAI > (pCreature);
+        return GetFirelandsAI<npc_firelands_fire_turtle_hatchlingAI > (pCreature);
     }
 
 };
@@ -336,8 +341,6 @@ public:
             me->ApplySpellImmune(0, IMMUNITY_MECHANIC, MECHANIC_CHARM, true);
             me->ApplySpellImmune(0, IMMUNITY_MECHANIC, MECHANIC_DISORIENTED, true);
         }
-
-        EventMap events;
 
         void Reset() override {
             events.Reset();
@@ -372,6 +375,9 @@ public:
 
             DoMeleeAttackIfReady();
         }
+
+    private:
+        EventMap events;
     };
 
     CreatureAI *GetAI(Creature *pCreature) const {
@@ -401,9 +407,6 @@ public:
             me->ApplySpellImmune(0, IMMUNITY_MECHANIC, MECHANIC_DISORIENTED, true);
             pInstance = pCreature->GetInstanceScript();
         }
-
-        InstanceScript *pInstance;
-        EventMap events;
 
         void Reset() override {
             events.Reset();
@@ -480,6 +483,10 @@ public:
 
             DoMeleeAttackIfReady();
         }
+
+    private:
+        InstanceScript *pInstance;
+        EventMap events;
     };
 
     CreatureAI *GetAI(Creature *pCreature) const {
@@ -650,7 +657,7 @@ class npc_burning_treant : public CreatureScript {
             if (who && who->GetTypeId() == TYPEID_PLAYER && me->IsValidAttackTarget(who))
 
                 if (me->IsWithinDistInMap(who, 130.0f)) {
-                    me->SetSpeed(MOVE_RUN, 0.2f, true);
+                    me->SetSpeed(MOVE_RUN, 0.2f);
                     me->GetMotionMaster()->MoveChase(who, 0.0f, 0.0f);
                     ScriptedAI::MoveInLineOfSight(who);
                 }

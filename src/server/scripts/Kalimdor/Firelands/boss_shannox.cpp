@@ -581,9 +581,9 @@ class boss_shannox: public CreatureScript
                         return;
 
                     if (((GetRiplimb() && GetRiplimb()->GetDistance2d(me) >= maxDistanceBetweenShannoxAndDogs
-                            && GetRiplimb()->isAlive())
+                            && GetRiplimb()->IsAlive())
                             || (GetRageface() && GetRageface()->GetDistance2d(me) >= maxDistanceBetweenShannoxAndDogs)
-                                    && GetRageface()->isAlive()) && (!me->HasAura(SPELL_SEPERATION_ANXIETY)))
+                                    && GetRageface()->IsAlive()) && (!me->HasAura(SPELL_SEPERATION_ANXIETY)))
                         DoCast(me, SPELL_SEPERATION_ANXIETY);
 
                     if (uiPhase == PHASE_RIPLIMB_BRINGS_SPEER && GetRiplimb() && GetRiplimb()->GetDistance(me) <= 1)
@@ -603,7 +603,7 @@ class boss_shannox: public CreatureScript
                         GetRiplimb()->GetMotionMaster()->MoveChase(GetRiplimb()->GetVictim());
                         GetRiplimb()->AI()->AttackStart(GetRiplimb()->GetVictim());
                     }
-                    else if (uiPhase == PHASE_RIPLIMB_GOS_TO_SPEER && GetRiplimb() && GetRiplimb()->isAlive())
+                    else if (uiPhase == PHASE_RIPLIMB_GOS_TO_SPEER && GetRiplimb() && GetRiplimb()->IsAlive())
                     {
                         if (GetSpear() && !GetRiplimb()->HasAura(CRYSTAL_PRISON_EFFECT))
                         {
@@ -612,7 +612,7 @@ class boss_shannox: public CreatureScript
                                     GetSpear()->GetPositionY(), GetSpear()->GetPositionZ());
                         }
                     }
-                    else if (uiPhase == PHASE_RIPLIMB_BRINGS_SPEER && GetRiplimb() && GetRiplimb()->isAlive())
+                    else if (uiPhase == PHASE_RIPLIMB_BRINGS_SPEER && GetRiplimb() && GetRiplimb()->IsAlive())
                     {
                         GetRiplimb()->GetMotionMaster()->MoveIdle();
                         GetRiplimb()->GetMotionMaster()->MovePoint(0, me->GetPositionX(), me->GetPositionY(),
@@ -824,7 +824,7 @@ class npc_rageface: public CreatureScript
                                 {
                                     int32 dmg = prison->GetMaxHealth() * 0.20;
                                     me->DealDamage(prison, dmg);
-                                    if (prison->isAlive())
+                                    if (prison->IsAlive())
                                         events.ScheduleEvent(EVENT_PRISON_DOG_ATTACK_RAGEFACE, 1000);
                                 }
                                 break;
@@ -1018,7 +1018,7 @@ class npc_riplimb: public CreatureScript
                                 {
                                     int32 dmg = prison->GetMaxHealth() * 0.10;
                                     me->DealDamage(prison, dmg);
-                                    if (prison->isAlive())
+                                    if (prison->IsAlive())
                                         events.ScheduleEvent(EVENT_PRISON_DOG_ATTACK_RIPLIMB, 1000);
                                 }
                                 break;
@@ -1215,7 +1215,7 @@ class npc_immolation_trap: public CreatureScript
                     tempTarget = NULL;
                     me->SetReactState(REACT_PASSIVE);
                     me->SetFlag(UNIT_FIELD_FLAGS,
-                            UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_DISABLE_MOVE | UNIT_FLAG_NOT_SELECTABLE);
+                            UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG2_DISABLE_TURN | UNIT_FLAG_NOT_SELECTABLE);
                     events.Reset();
                 }
 
@@ -1243,13 +1243,13 @@ class npc_immolation_trap: public CreatureScript
                                 if (GetRiplimb() && GetRiplimb()->GetDistance(me) <= 3.0f
                                         && !GetRiplimb()->HasAura(
                                                 RAID_MODE(SPELL_WARY_10N, SPELL_WARY_25N, SPELL_WARY_10H,
-                                                        SPELL_WARY_25H)) && GetRiplimb()->isAlive()
+                                                        SPELL_WARY_25H)) && GetRiplimb()->IsAlive()
                                         && GetShannox()->AI()->GetData(DATA_PHASE) == PHASE_SHANNOX_HAS_SPEER)
                                     tempTarget = GetRiplimb();
                                 else if (GetRageface() && GetRageface()->GetDistance(me) <= 3.0f
                                         && !GetRageface()->HasAura(
                                                 RAID_MODE(SPELL_WARY_10N, SPELL_WARY_25N, SPELL_WARY_10H,
-                                                        SPELL_WARY_25H)) && GetRageface()->isAlive())
+                                                        SPELL_WARY_25H)) && GetRageface()->IsAlive())
                                     tempTarget = GetRageface();
                                 else
                                     tempTarget = SelectTarget(SELECT_TARGET_RANDOM, 0, 1.0f, true);
@@ -1325,7 +1325,7 @@ class npc_crystal_trap: public CreatureScript
                     myPrison = NULL;
                     me->SetReactState(REACT_PASSIVE);
                     me->SetFlag(UNIT_FIELD_FLAGS,
-                            UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_DISABLE_MOVE | UNIT_FLAG_NOT_SELECTABLE);
+                            UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG2_DISABLE_TURN | UNIT_FLAG_NOT_SELECTABLE);
                     events.Reset();
                 }
 
@@ -1355,13 +1355,13 @@ class npc_crystal_trap: public CreatureScript
                                 if (GetRiplimb() && GetRiplimb()->GetDistance(me) <= 2.0f
                                         && (!GetRiplimb()->HasAura(
                                                 RAID_MODE(SPELL_WARY_10N, SPELL_WARY_25N, SPELL_WARY_10H,
-                                                        SPELL_WARY_25H))) && GetRiplimb()->isAlive()
+                                                        SPELL_WARY_25H))) && GetRiplimb()->IsAlive()
                                         && GetShannox()->AI()->GetData(DATA_PHASE) == PHASE_SHANNOX_HAS_SPEER)
                                     tempTarget = GetRiplimb();
                                 else if (GetRageface() && GetRageface()->GetDistance(me) <= 3.0f
                                         && !GetRageface()->HasAura(
                                                 RAID_MODE(SPELL_WARY_10N, SPELL_WARY_25N, SPELL_WARY_10H,
-                                                        SPELL_WARY_25H)) && GetRageface()->isAlive())
+                                                        SPELL_WARY_25H)) && GetRageface()->IsAlive())
                                     tempTarget = GetRageface();
                                 else
                                     tempTarget = SelectTarget(SELECT_TARGET_RANDOM, 0, 2.0f, true);
@@ -1379,7 +1379,7 @@ class npc_crystal_trap: public CreatureScript
                                     if (myPrison)
                                     {
                                         me->SetReactState(REACT_AGGRESSIVE);
-                                        myPrison->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE);
+                                        myPrison->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG2_DISABLE_TURN);
                                     }
 
                                     events.ScheduleEvent(EVENT_CRYSTAL_PRISON_DESPAWN, 20000);

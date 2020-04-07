@@ -415,7 +415,7 @@ public:
                 if (!PlayerList.isEmpty()) {
                     for (Map::PlayerList::const_iterator itr = PlayerList.begin(); itr != PlayerList.end();
                          ++itr) {
-                        if (Player * pPlayer = itr->getSource()) {
+                        if (Player * pPlayer = itr->GetSource()) {
                             if (!pPlayer->IsAtGroupRewardDistance(me))
                                 continue;
 

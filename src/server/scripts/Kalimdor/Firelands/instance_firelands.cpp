@@ -218,7 +218,7 @@ class instance_firelands : public InstanceMapScript
                         break;
                 }
 
-                return nullptr;
+                return nullptr_t;
             }
 
             void SetData(uint32 type, uint32 data) override
@@ -232,7 +232,7 @@ class instance_firelands : public InstanceMapScript
 
                     case DATA_BETHTILAC:
                         uiEncounter[1] = data;
-                        HandleGameObject(BethtilacDoorGUID, data != IN_PROGRESS);
+                        HandleGameObject(GOB_DOOR_BETHILAC, data != IN_PROGRESS);
                         if (data == DONE) {
                         };
                         break;

@@ -123,7 +123,7 @@ enum FirelandsCreatures
 enum FirelandsGameObjects
 {
     GOB_DOOR_BETHILAC = 208877,
-    GOB_DOOR_BALOROC  = 209066,
+    GOB_DOOR_BALEROC  = 209066,
     GOB_VOLCANO_ALYS  = 209253, // destructable
     GOB_WALL_SULFURON = 208873,
     GOB_DOOR_RAGNAROS = 209073,

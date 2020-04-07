@@ -942,7 +942,6 @@ public:
                 who->ToPlayer()->TeleportTo(720, -542.885f, 316.925f, 115.493f, 5.947003f);
         }
     };
-
     CreatureAI *GetAI(Creature *creature) const {
         return GetFirelandsAI<mob_fl_teleportAI>(creature);
     }

@@ -403,7 +403,7 @@ class boss_lord_rhyolith: public CreatureScript
 
                     if (GetRightLeg())
                     {
-                        if (!GetRightLeg()->isAlive())
+                        if (!GetRightLeg()->IsAlive())
                             GetRightLeg()->Respawn(true);
 
                         if (Vehicle* pVehicle = me->GetVehicleKit())
@@ -620,7 +620,7 @@ class boss_lord_rhyolith: public CreatureScript
                                 GetLeftLeg()->SetAuraStack(SPELL_OBSIDIAN_ARMOR, GetLeftLeg(),
                                         me->GetAura(SPELL_OBSIDIAN_ARMOR)->GetStackAmount());
                         }
-                        if (GetRightLeg() && GetRightLeg()->isAlive())
+                        if (GetRightLeg() && GetRightLeg()->IsAlive())
                         {
                             if (!GetRightLeg()->HasAura(SPELL_OBSIDIAN_ARMOR))
                                 GetRightLeg()->CastSpell(GetRightLeg(), SPELL_OBSIDIAN_ARMOR, true);
@@ -931,8 +931,8 @@ class npc_right_leg: public CreatureScript
                     Map::PlayerList const &PlayerList = me->GetMap()->GetPlayers();
                     if (!PlayerList.isEmpty())
                         for (Map::PlayerList::const_iterator i = PlayerList.begin(); i != PlayerList.end(); ++i)
-                            if (Player *player = i->getSource())
-                                if (player->isAlive() && GetRhyo() && player->GetDistance(GetRhyo()) <= 150.0f)
+                            if (Player *player = i->GetSource())
+                                if (player->IsAlive() && GetRhyo() && player->GetDistance(GetRhyo()) <= 150.0f)
                                     player->SetPower(POWER_ALTERNATE_POWER,
                                             player->GetPower(POWER_ALTERNATE_POWER) + power);
                 }
@@ -947,7 +947,7 @@ class npc_right_leg: public CreatureScript
                 void JustEngagedWith(Unit* /*who*/) override
                 {
                     me->SetInCombatWithZone();
-                    if (GetRhyo() && GetRhyo()->isAlive())
+                    if (GetRhyo() && GetRhyo()->IsAlive())
                         GetRhyo()->AI()->DoZoneInCombat();
                 }
 
@@ -1195,7 +1195,7 @@ class npc_rhyolith_crater: public CreatureScript
 
                             case EVENT_ACTIVATE_CRATER:
                                 me->SummonCreature(53585, me->GetPositionX(), me->GetPositionY(),
-                                        me->GetPositionZMinusOffset());
+                                        me->GetPositionZ());
                                 events.ScheduleEvent(EVENT_LAVA_LINE, 5000);
                                 events.ScheduleEvent(EVENT_LAVA_LINES_BLOW, 17000);
                                 events.ScheduleEvent(EVENT_DESPAWN_CRATER, 45000);
@@ -1205,17 +1205,17 @@ class npc_rhyolith_crater: public CreatureScript
                                 if (number <= 45)
                                 {
                                     me->SummonCreature(53585, me->GetPositionX(), me->GetPositionY() - float(number),
-                                            me->GetPositionZMinusOffset());
+                                            me->GetPositionZ());
                                     me->SummonCreature(53585, me->GetPositionX() + float(number), me->GetPositionY(),
-                                            me->GetPositionZMinusOffset());
+                                            me->GetPositionZ());
                                     me->SummonCreature(53585, me->GetPositionX(), me->GetPositionY() + float(number),
-                                            me->GetPositionZMinusOffset());
+                                            me->GetPositionZ());
                                     me->SummonCreature(53585, me->GetPositionX() - float(number), me->GetPositionY(),
-                                            me->GetPositionZMinusOffset());
+                                            me->GetPositionZ());
                                     me->SummonCreature(53585, me->GetPositionX() + float(number),
-                                            me->GetPositionY() - float(number), me->GetPositionZMinusOffset());
+                                            me->GetPositionY() - float(number), me->GetPositionZ());
                                     me->SummonCreature(53585, me->GetPositionX() - float(number),
-                                            me->GetPositionY() + float(number), me->GetPositionZMinusOffset());
+                                            me->GetPositionY() + float(number), me->GetPositionZ());
                                     number += 1;
                                     events.ScheduleEvent(EVENT_LAVA_LINE, 100);
                                 }
@@ -1235,7 +1235,7 @@ class npc_rhyolith_crater: public CreatureScript
 
                                 for (std::list<Creature*>::iterator iter = creatures.begin(); iter != creatures.end();
                                         ++iter)
-                                    if ((*iter)->isSummon()
+                                    if ((*iter)->IsSummon()
                                             && (*iter)->ToTempSummon()->GetSummonerGUID() == me->GetGUID())
                                     {
                                         (*iter)->CastSpell((*iter), 97234, true);

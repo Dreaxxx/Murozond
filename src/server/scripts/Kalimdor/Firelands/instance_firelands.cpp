@@ -34,6 +34,8 @@
 #include "GameObject.h"
 #include "MotionMaster.h"
 #include "TemporarySummon.h"
+#include "Log.h"
+#include "Player.h"
 
 class instance_firelands : public InstanceMapScript
 {
@@ -286,7 +288,7 @@ class instance_firelands : public InstanceMapScript
                 return saveStream.str();
             }
 
-            void Load(const char *in) override {
+            void Load(char const* in) override {
                 if (!in) {
                     OUT_LOAD_INST_DATA_FAIL;
                     return;

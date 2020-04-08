@@ -3208,8 +3208,9 @@ void Spell::prepare(SpellCastTargets const* targets, AuraEffect const* triggered
     if ((_triggeredCastFlags & TRIGGERED_IGNORE_COMBO_POINTS) || m_CastItem || !m_caster->m_playerMovingMe)
         m_needComboPoints = false;
 
+    MountResult mountResult = MountResult::Ok;
     uint32 param1 = 0, param2 = 0;
-    SpellCastResult result = CheckCast(true, &param1, &param2);
+    SpellCastResult result = CheckCast(true, &param1, &param2, &mountResult);
     // target is checked in too many locations and with different results to handle each of them
     // handle just the general SPELL_FAILED_BAD_TARGETS result which is the default result for most DBC target checks
     if (_triggeredCastFlags & TRIGGERED_IGNORE_TARGET_CHECK && result == SPELL_FAILED_BAD_TARGETS)
@@ -3225,6 +3226,10 @@ void Spell::prepare(SpellCastTargets const* targets, AuraEffect const* triggered
             SendChannelUpdate(0);
             triggeredByAura->GetBase()->SetDuration(0);
         }
+
+        // Send mount result
+        if (mountResult != MountResult::Ok)
+            SendMountResult(mountResult);
 
         if (param1 || param2)
             SendCastResult(result, &param1, &param2);
@@ -4238,6 +4243,24 @@ void Spell::SendPetCastResult(SpellCastResult result)
     WriteCastResultInfo(data, player, m_spellInfo, m_cast_count, result, m_customError);
 
     player->SendDirectMessage(&data);
+}
+
+
+void Spell::SendMountResult(MountResult result)
+{
+    if (result == MountResult::Ok)
+        return;
+
+    if (!m_caster->IsPlayer())
+        return;
+
+    Player* caster = m_caster->ToPlayer();
+    if (caster->IsLoading())  // don't send mount results at loading time
+        return;
+
+    WorldPackets::Spells::MountResult packet;
+    packet.Result = AsUnderlyingType(result);
+    caster->SendDirectMessage(packet.Write());
 }
 
 void Spell::SendSpellStart()
@@ -5347,7 +5370,7 @@ void Spell::HandleEffects(Unit* pUnitTarget, Item* pItemTarget, GameObject* pGoT
     }
 }
 
-SpellCastResult Spell::CheckCast(bool strict, uint32* param1 /*= nullptr*/, uint32* param2 /*= nullptr*/)
+SpellCastResult Spell::CheckCast(bool strict, uint32* param1 /*= nullptr*/, uint32* param2 /*= nullptr*/, MountResult* mountResult /*= mountResult*/)
 {
     // check death state
     if (!m_caster->IsAlive() && !m_spellInfo->IsPassive() && !(m_spellInfo->HasAttribute(SPELL_ATTR0_CASTABLE_WHILE_DEAD) || (IsTriggered() && !m_triggeredByAuraSpell)))
@@ -6120,7 +6143,15 @@ SpellCastResult Spell::CheckCast(bool strict, uint32* param1 /*= nullptr*/, uint
                     return SPELL_FAILED_NO_MOUNTS_ALLOWED;
 
                 if (m_caster->IsInDisallowedMountForm())
-                    return SPELL_FAILED_NOT_SHAPESHIFT;
+                {
+                    if (mountResult)
+                    {
+                        *mountResult = MountResult::Shapeshifted;
+                        return SPELL_FAILED_DONT_REPORT;
+                    }
+                    else
+                        return SPELL_FAILED_NOT_SHAPESHIFT;
+                }
 
                 break;
             }

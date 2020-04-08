@@ -22,6 +22,8 @@
 #include "ObjectGuid.h"
 #include "Optional.h"
 
+enum WeatherState : uint32;
+
 namespace WorldPackets
 {
     namespace Misc
@@ -176,6 +178,97 @@ namespace WorldPackets
             ObjectGuid SourceObjectGUID;
             ObjectGuid TargetObjectGUID;
             uint32 SoundKitID = 0;
+        };
+
+        class PlayMusic final : public ServerPacket
+        {
+        public:
+            PlayMusic() : ServerPacket(SMSG_PLAY_MUSIC, 4 + 8) { }
+            PlayMusic(uint32 soundKitID, ObjectGuid sourceObjectGuid) : ServerPacket(SMSG_PLAY_MUSIC, 4), SoundKitID(soundKitID), SourceObjectGUID(sourceObjectGuid) { }
+
+            WorldPacket const* Write() override;
+
+            uint32 SoundKitID = 0;
+            ObjectGuid SourceObjectGUID;
+        };
+
+        class TC_GAME_API Weather final : public ServerPacket
+        {
+        public:
+            Weather();
+            Weather(WeatherState weatherID, float intensity = 0.0f, bool abrupt = false);
+
+            WorldPacket const* Write() override;
+
+            bool Abrupt = false;
+            float Intensity = 0.0f;
+            WeatherState WeatherID = WeatherState(0);
+        };
+
+        class OverrideLight final : public ServerPacket
+        {
+        public:
+            OverrideLight() : ServerPacket(SMSG_OVERRIDE_LIGHT, 4 + 4 + 4) { }
+
+            WorldPacket const* Write() override;
+
+            int32 AreaLightID = 0;
+            int32 TransitionMilliseconds = 0;
+            int32 OverrideLightID = 0;
+        };
+
+        class DurabilityDamageDeath final : public ServerPacket
+        {
+        public:
+            DurabilityDamageDeath() : ServerPacket(SMSG_DURABILITY_DAMAGE_DEATH, 4) { }
+
+            WorldPacket const* Write() override;
+
+            int32 Percent = 0;
+        };
+
+        class PlayOneShotAnimKit final : public ServerPacket
+        {
+        public:
+            PlayOneShotAnimKit() : ServerPacket(SMSG_PLAY_ONE_SHOT_ANIM_KIT, 8 + 2) { }
+
+            WorldPacket const* Write() override;
+
+            ObjectGuid Unit;
+            uint16 AnimKitID = 0;
+        };
+
+        class SetAIAnimKit final : public ServerPacket
+        {
+        public:
+            SetAIAnimKit() : ServerPacket(SMSG_SET_AI_ANIM_KIT, 8 + 2) { }
+
+            WorldPacket const* Write() override;
+
+            ObjectGuid Unit;
+            uint16 AnimKitID = 0;
+        };
+
+        class SetMovementAnimKit final : public ServerPacket
+        {
+        public:
+            SetMovementAnimKit() : ServerPacket(SMSG_SET_MOVEMENT_ANIM_KIT, 8 + 2) { }
+
+            WorldPacket const* Write() override;
+
+            ObjectGuid Unit;
+            uint16 AnimKitID = 0;
+        };
+
+        class SetMeleeAnimKit final : public ServerPacket
+        {
+        public:
+            SetMeleeAnimKit() : ServerPacket(SMSG_SET_MELEE_ANIM_KIT, 8 + 2) { }
+
+            WorldPacket const* Write() override;
+
+            ObjectGuid Unit;
+            uint16 AnimKitID = 0;
         };
     }
 }

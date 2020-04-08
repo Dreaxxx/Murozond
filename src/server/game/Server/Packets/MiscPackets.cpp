@@ -154,3 +154,73 @@ WorldPacket const* WorldPackets::Misc::PlayObjectSound::Write()
 
     return &_worldPacket;
 }
+
+WorldPacket const* WorldPackets::Misc::PlayMusic::Write()
+{
+    _worldPacket << uint32(SoundKitID);
+    _worldPacket << SourceObjectGUID;
+
+    return &_worldPacket;
+}
+
+WorldPackets::Misc::Weather::Weather() : ServerPacket(SMSG_WEATHER, 4 + 4 + 1) { }
+
+WorldPackets::Misc::Weather::Weather(WeatherState weatherID, float intensity /*= 0.0f*/, bool abrupt /*= false*/)
+    : ServerPacket(SMSG_WEATHER, 4 + 4 + 1), Abrupt(abrupt), Intensity(intensity), WeatherID(weatherID) { }
+
+WorldPacket const* WorldPackets::Misc::Weather::Write()
+{
+    _worldPacket << uint32(WeatherID);
+    _worldPacket << float(Intensity);
+    _worldPacket << uint8(Abrupt);
+
+    return &_worldPacket;
+}
+
+WorldPacket const* WorldPackets::Misc::OverrideLight::Write()
+{
+    _worldPacket << uint32(AreaLightID);
+    _worldPacket << uint32(OverrideLightID);
+    _worldPacket << uint32(TransitionMilliseconds);
+
+    return &_worldPacket;
+}
+
+WorldPacket const* WorldPackets::Misc::DurabilityDamageDeath::Write()
+{
+    _worldPacket << int32(Percent);
+
+    return &_worldPacket;
+}
+
+WorldPacket const* WorldPackets::Misc::PlayOneShotAnimKit::Write()
+{
+    _worldPacket << Unit.WriteAsPacked();
+    _worldPacket << uint16(AnimKitID);
+
+    return &_worldPacket;
+}
+
+WorldPacket const* WorldPackets::Misc::SetAIAnimKit::Write()
+{
+    _worldPacket << Unit.WriteAsPacked();
+    _worldPacket << uint16(AnimKitID);
+
+    return &_worldPacket;
+}
+
+WorldPacket const* WorldPackets::Misc::SetMeleeAnimKit::Write()
+{
+    _worldPacket << Unit.WriteAsPacked();
+    _worldPacket << uint16(AnimKitID);
+
+    return &_worldPacket;
+}
+
+WorldPacket const* WorldPackets::Misc::SetMovementAnimKit::Write()
+{
+    _worldPacket << Unit.WriteAsPacked();
+    _worldPacket << uint16(AnimKitID);
+
+    return &_worldPacket;
+}

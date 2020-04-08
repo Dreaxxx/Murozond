@@ -388,13 +388,7 @@ class boss_lord_rhyolith: public CreatureScript
         struct boss_lord_rhyolithAI: public BossAI
         {
                 boss_lord_rhyolithAI(Creature* c) :
-                        BossAI(c, DATA_LORD_RHYOLITH), vehicle(c->GetVehicleKit()), summons(me)
-                {
-                    instance = me->GetInstanceScript();
-                    LeftSet = false;
-                    RightSet = false;
-                    Reset();
-                }
+                        BossAI(c, DATA_LORD_RHYOLITH), vehicle(c->GetVehicleKit()), summons(me){}
 
                 void SummonAndSetLegsInBoss()
                 {
@@ -432,20 +426,21 @@ class boss_lord_rhyolith: public CreatureScript
 
                 void Reset() override
                 {
+                    _Reset();
+
                     events.Reset();
                     Phase = PHASE_0;
                     me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
                     phaseTwo = false;
                     lavaFlow = false;
                     drinkMagma = false;
+                    LeftSet = false;
+                    RightSet = false;
                     summons.DespawnAll();
                     me->SetReactState(REACT_PASSIVE);
                     me->SetDisplayId(MODEL_DEFAULT);
                     me->GetVehicleKit();
                     SummonAndSetLegsInBoss();
-                    instance->SetBossState(DATA_LORD_RHYOLITH, NOT_STARTED);
-
-                    _Reset();
                 }
 
                 void RemoveEncounterAuras()
@@ -461,6 +456,8 @@ class boss_lord_rhyolith: public CreatureScript
 
                 void JustEngagedWith(Unit* /*who*/) override
                 {
+                    _JustEngagedWith();
+
                     Phase = PHASE_0;
                     events.SetPhase(PHASE_0);
 
@@ -469,7 +466,7 @@ class boss_lord_rhyolith: public CreatureScript
                     me->SetSpeed(MOVE_RUN, speedRateLow);
 
                     Talk(SAY_AGGRO);
-                    instance->SetBossState(DATA_LORD_RHYOLITH, IN_PROGRESS);
+                    instance->SendEncounterUnit(ENCOUNTER_FRAME_ENGAGE, me);
 
                     Phase = PHASE_1;
 
@@ -488,8 +485,6 @@ class boss_lord_rhyolith: public CreatureScript
                         GetRightLeg()->AI()->DoZoneInCombat();
 
                     events.ScheduleEvent(EVENT_ZONE_COMBAT, 1000);
-
-                    _JustEngagedWith();
                 }
 
                 void KilledUnit(Unit* /*who*/) override
@@ -499,7 +494,9 @@ class boss_lord_rhyolith: public CreatureScript
 
                 void JustDied(Unit* /*killer*/) override
                 {
-                    instance->SetBossState(DATA_LORD_RHYOLITH, DONE);
+                    _JustDied();
+
+                    instance->SendEncounterUnit(ENCOUNTER_FRAME_DISENGAGE, me);
 
                     Talk(SAY_DIED);
                     summons.DespawnAll();
@@ -509,13 +506,12 @@ class boss_lord_rhyolith: public CreatureScript
 
                     if (GetRightLeg())
                         GetRightLeg()->DisappearAndDie();
-
-                    _JustDied();
                 }
 
                 void EnterEvadeMode()
                 {
-                    Reset();
+
+                    _EnterEvadeMode();
 
                     DespawnCreatures(53585);
 
@@ -523,7 +519,7 @@ class boss_lord_rhyolith: public CreatureScript
 
                     me->SetSpeed(MOVE_RUN, speedRateNormal);
 
-                    instance->SetBossState(DATA_LORD_RHYOLITH, FAIL);
+                    instance->SendEncounterUnit(ENCOUNTER_FRAME_DISENGAGE, me);
 
                     me->GetMotionMaster()->MoveTargetedHome();
 
@@ -533,7 +529,7 @@ class boss_lord_rhyolith: public CreatureScript
                     if (GetRightLeg())
                         GetRightLeg()->AI()->EnterEvadeMode();
 
-                    _EnterEvadeMode();
+                    _DespawnAtEvade();
                 }
 
                 void JustSummoned(Creature *summon) override

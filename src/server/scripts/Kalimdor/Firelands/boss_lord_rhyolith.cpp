@@ -269,7 +269,7 @@ class kar_the_everburning: public CreatureScript
                 SummonList Summons;
         };
 
-        CreatureAI* GetAI(Creature* creature) const
+        CreatureAI* GetAI(Creature* creature) const override
         {
             return GetFirelandsAI<kar_the_everburningAI>(creature);
         }
@@ -307,7 +307,7 @@ class mob_kar_combat_stalker: public CreatureScript
                 bool detect;
         };
 
-        CreatureAI* GetAI(Creature* creature) const
+        CreatureAI* GetAI(Creature* creature) const override
         {
             return GetFirelandsAI<mob_kar_combat_stalkerAI>(creature);
         }
@@ -371,7 +371,7 @@ class Unstable_Pyrelord: public CreatureScript
             InstanceScript* instance;
         };
 
-    CreatureAI* GetAI(Creature* creature) const
+    CreatureAI* GetAI(Creature* creature) const override
     {
         return GetFirelandsAI<Unstable_PyrelordAI>(creature);
     }
@@ -802,7 +802,7 @@ class boss_lord_rhyolith: public CreatureScript
             bool phaseTwo, LeftSet, RightSet, lavaFlow, drinkMagma;
         };
 
-        CreatureAI* GetAI(Creature* creature) const
+        CreatureAI* GetAI(Creature* creature) const override
         {
             return GetFirelandsAI<boss_lord_rhyolithAI>(creature);
         }
@@ -898,7 +898,7 @@ class npc_left_leg: public CreatureScript
             uint32 side;
         };
 
-    CreatureAI* GetAI(Creature* creature) const
+    CreatureAI* GetAI(Creature* creature) const override
     {
         return GetFirelandsAI<npc_left_legAI>(creature);
     }
@@ -989,7 +989,7 @@ class npc_right_leg: public CreatureScript
             uint32 side;
         };
 
-    CreatureAI* GetAI(Creature* creature) const
+    CreatureAI* GetAI(Creature* creature) const override
     {
         return GetFirelandsAI<npc_right_legAI>(creature);
     }
@@ -1117,7 +1117,7 @@ class npc_rhyolith_volcano: public CreatureScript
             bool blow;
         };
 
-    CreatureAI* GetAI(Creature* creature) const
+    CreatureAI* GetAI(Creature* creature) const override
     {
         return GetFirelandsAI<npc_rhyolith_volcanoAI>(creature);
     }
@@ -1256,7 +1256,7 @@ class npc_rhyolith_crater: public CreatureScript
             SummonList summons;
         };
 
-    CreatureAI* GetAI(Creature* creature) const
+    CreatureAI* GetAI(Creature* creature) const override
     {
         return GetFirelandsAI<npc_rhyolith_craterAI>(creature);
     }
@@ -1341,7 +1341,7 @@ class npc_lava_line: public CreatureScript
             EventMap events;
         };
 
-    CreatureAI* GetAI(Creature* creature) const
+    CreatureAI* GetAI(Creature* creature) const override
     {
         return GetFirelandsAI<npc_lava_lineAI>(creature);
     }
@@ -1404,7 +1404,7 @@ class npc_liquid_obsidian: public CreatureScript
             InstanceScript* instance;
         };
 
-    CreatureAI* GetAI(Creature* creature) const
+    CreatureAI* GetAI(Creature* creature) const override
     {
         return GetFirelandsAI<npc_liquid_obsidianAI>(creature);
     }
@@ -1471,7 +1471,7 @@ class npc_spark_of_rhyolith: public CreatureScript
             EventMap events;
         };
 
-    CreatureAI* GetAI(Creature* creature) const
+    CreatureAI* GetAI(Creature* creature) const override
     {
         return GetFirelandsAI<npc_spark_of_rhyolithAI>(creature);
     }

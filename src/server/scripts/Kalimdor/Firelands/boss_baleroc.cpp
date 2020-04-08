@@ -394,7 +394,7 @@ class npc_shard_of_torment : public CreatureScript
                 EventMap _events;
         };
 
-        CreatureAI* GetAI(Creature* creature) const
+        CreatureAI* GetAI(Creature* creature) const override
         {
             return GetFirelandsAI<npc_shard_of_tormentAI>(creature);
         }

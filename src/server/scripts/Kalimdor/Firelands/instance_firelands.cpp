@@ -48,8 +48,7 @@ class instance_firelands : public InstanceMapScript
                 memset(&uiEncounter, 0, sizeof(uiEncounter));
             }
 
-            void Initialize() override
-            {
+            void Initialize() override {
                 for (uint8 i = 0; i < EncounterCount; ++i)
                     uiEncounter[i] = NOT_STARTED;
 
@@ -70,8 +69,7 @@ class instance_firelands : public InstanceMapScript
                 uiShannoxSpear = 0;
             }
 
-            bool IsEncounterInProgress() const override
-            {
+            bool IsEncounterInProgress() const override {
                 for (uint8 i = 0; i < EncounterCount; ++i) {
                     if (uiEncounter[i] == IN_PROGRESS)
                         return true;
@@ -80,8 +78,7 @@ class instance_firelands : public InstanceMapScript
                 return false;
             }
 
-            void OnGameObjectCreate(GameObject *go) override
-            {
+            void OnGameObjectCreate(GameObject *go) override {
                 switch (go->GetEntry()) {
                     case GOB_DOOR_BETHILAC:
                         BethtilacDoorGUID = go->GetGUID();
@@ -105,8 +102,7 @@ class instance_firelands : public InstanceMapScript
                 }
             }
 
-            void OnCreatureCreate(Creature *creature) override
-            {
+            void OnCreatureCreate(Creature *creature) override {
                 switch (creature->GetEntry()) {
                     case NPC_SHANNOX:
                         uiShannox = creature->GetGUID();
@@ -145,8 +141,7 @@ class instance_firelands : public InstanceMapScript
                 }
             }
 
-            uint32 GetData(uint32 identifier) const override
-            {
+            uint32 GetData(uint32 identifier) const override {
                 switch (identifier) {
                     case DATA_SHANNOX:
                         return uiShannox;
@@ -201,8 +196,7 @@ class instance_firelands : public InstanceMapScript
                 return 0;
             }
 
-            void SetData(uint32 type, uint32 data) override
-            {
+            void SetData(uint32 type, uint32 data) override {
                 switch (type) {
                     case DATA_SHANNOX:
                         uiEncounter[0] = data;
@@ -252,8 +246,7 @@ class instance_firelands : public InstanceMapScript
                     SaveToDB();
             }
 
-            void Save()
-            {
+            void Save() {
                 OUT_SAVE_INST_DATA;
 
                 std::ostringstream saveStream;
@@ -268,15 +261,12 @@ class instance_firelands : public InstanceMapScript
                 NeedSave = false;
             }
 
-            std::string GetSaveData() override
-            {
+            std::string GetSaveData() override {
                 return SaveDataBuffer;
             }
 
-            void Load(char const* strIn) override
-            {
-                if (!strIn)
-                {
+            void Load(char const *strIn) override {
+                if (!strIn) {
                     OUT_LOAD_INST_DATA_FAIL;
                     return;
                 }
@@ -285,25 +275,24 @@ class instance_firelands : public InstanceMapScript
 
                 char dataHead1, dataHead2;
 
-                std::istringstream loadStream(in);
+                std::istringstream loadStream(strIn);
                 loadStream >> dataHead1 >> dataHead2;
 
                 if (dataHead1 == 'F' && dataHead2 == 'L') {
-                    for (uint8 i = 0; i < EncounterCount; ++i)
-                    {
+                    for (uint8 i = 0; i < EncounterCount; ++i) {
                         uint32 tmpState;
                         loadStream >> tmpState;
                         if (tmpState == IN_PROGRESS || tmpState > SPECIAL)
                             tmpState = NOT_STARTED;
                         uiEncounter[i] = tmpState;
                     }
-                }
-                else {
+                } else {
                     OUT_LOAD_INST_DATA_FAIL;
                 }
 
                 OUT_LOAD_INST_DATA_COMPLETE;
             }
+        }
 
         protected:
             std::string SaveDataBuffer;

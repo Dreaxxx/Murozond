@@ -48,28 +48,6 @@ class instance_firelands : public InstanceMapScript
                 memset(&uiEncounter, 0, sizeof(uiEncounter));
             }
 
-            uint32 uiEncounter[EncounterCount];
-
-            // Creatures
-            uint64 uiShannox;
-            uint64 uiRhyolith;
-            uint64 uiBethtilac;
-            uint64 uiAlysrazor;
-            uint64 uiBaloroc;
-            uint64 uiMajordomus;
-            uint64 uiRagnarosCata;
-            uint64 uiTeamInInstance;
-            uint64 uiRageface;
-            uint64 uiRiplimb;
-            uint64 uiShannoxSpear;
-
-            // Gobs
-            uint64 BethtilacDoorGUID;
-            uint64 BalorocDoorGUID;
-            uint64 AlysrazorVolcanoGUID;
-            uint64 SulfuronWallGUID;
-            uint64 RagnarosPlatformGUID;
-
             void Initialize() override
             {
                 for (uint8 i = 0; i < EncounterCount; ++i)
@@ -167,7 +145,7 @@ class instance_firelands : public InstanceMapScript
                 }
             }
 
-            uint64 GetData(uint32 identifier) const override
+            uint32 GetData(uint32 identifier) const override
             {
                 switch (identifier) {
                     case DATA_SHANNOX:
@@ -273,41 +251,85 @@ class instance_firelands : public InstanceMapScript
                 if (data == DONE)
                     SaveToDB();
             }
-            
-            void WriteSaveDataMore(std::ostringstream& data) override
+
+            void Save()
             {
                 OUT_SAVE_INST_DATA;
 
-                data << "F L" << WriteSaveDataMore();
+                std::ostringstream saveStream;
 
+                for (uint8 i = 0; i < EncounterCount; ++i)
+                    saveStream << uiEncounter[i] << 'F L';
+
+                SaveDataBuffer = saveStream.str();
+
+                SaveToDB();
                 OUT_SAVE_INST_DATA_COMPLETE;
+                NeedSave = false;
             }
 
-            void ReadSaveDataMore(std::istringstream& data) override
+            std::string GetSaveData() override
             {
-                if (!data) {
+                return SaveDataBuffer;
+            }
+
+            void Load(char const* strIn) override
+            {
+                if (!strIn)
+                {
                     OUT_LOAD_INST_DATA_FAIL;
                     return;
                 }
 
-                OUT_LOAD_INST_DATA(data);
+                OUT_LOAD_INST_DATA(strIn);
 
                 char dataHead1, dataHead2;
 
-                data >> dataHead1 >> dataHead2;
+                std::istringstream loadStream(in);
+                loadStream >> dataHead1 >> dataHead2;
 
                 if (dataHead1 == 'F' && dataHead2 == 'L') {
-                    for (uint8 i = 0; i < EncounterCount; ++i) {
+                    for (uint8 i = 0; i < EncounterCount; ++i)
+                    {
                         uint32 tmpState;
-                        data >> tmpState;
+                        loadStream >> tmpState;
                         if (tmpState == IN_PROGRESS || tmpState > SPECIAL)
                             tmpState = NOT_STARTED;
                         uiEncounter[i] = tmpState;
                     }
-                } else OUT_LOAD_INST_DATA_FAIL;
+                }
+                else {
+                    OUT_LOAD_INST_DATA_FAIL;
+                }
 
                 OUT_LOAD_INST_DATA_COMPLETE;
-        };
+            }
+
+        protected:
+            std::string SaveDataBuffer;
+            bool NeedSave;
+
+            uint32 uiEncounter[EncounterCount];
+
+            // Creatures
+            uint64 uiShannox;
+            uint64 uiRhyolith;
+            uint64 uiBethtilac;
+            uint64 uiAlysrazor;
+            uint64 uiBaloroc;
+            uint64 uiMajordomus;
+            uint64 uiRagnarosCata;
+            uint64 uiTeamInInstance;
+            uint64 uiRageface;
+            uint64 uiRiplimb;
+            uint64 uiShannoxSpear;
+
+            // Gobs
+            uint64 BethtilacDoorGUID;
+            uint64 BalorocDoorGUID;
+            uint64 AlysrazorVolcanoGUID;
+            uint64 SulfuronWallGUID;
+            uint64 RagnarosPlatformGUID;
 
     InstanceScript* GetInstanceScript(InstanceMap* map) const override
     {
@@ -319,4 +341,3 @@ void AddSC_instance_firelands()
 {
     new instance_firelands();
 }
-

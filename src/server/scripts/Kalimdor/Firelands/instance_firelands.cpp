@@ -167,7 +167,7 @@ class instance_firelands : public InstanceMapScript
                 }
             }
 
-            uint64 GetData64(uint32 identifier) const override
+            uint64 GetData(uint32 identifier) const override
             {
                 switch (identifier) {
                     case DATA_SHANNOX:
@@ -273,38 +273,33 @@ class instance_firelands : public InstanceMapScript
                 if (data == DONE)
                     SaveToDB();
             }
-
-            uint32 GetData(uint32 type) const override {
-                return uiEncounter[type];
-            }
-
-            std::string GetSaveData() override {
+            
+            void WriteSaveDataMore(std::ostringstream& data) override
+            {
                 OUT_SAVE_INST_DATA;
 
-                std::ostringstream saveStream;
-                saveStream << "F L" << GetSaveData();
+                data << "F L" << WriteSaveDataMore();
 
                 OUT_SAVE_INST_DATA_COMPLETE;
-                return saveStream.str();
             }
 
-            void Load(char const* in) override {
-                if (!in) {
+            void ReadSaveDataMore(std::istringstream& data) override
+            {
+                if (!data) {
                     OUT_LOAD_INST_DATA_FAIL;
                     return;
                 }
 
-                OUT_LOAD_INST_DATA(in);
+                OUT_LOAD_INST_DATA(data);
 
                 char dataHead1, dataHead2;
 
-                std::istringstream loadStream(in);
-                loadStream >> dataHead1 >> dataHead2;
+                data >> dataHead1 >> dataHead2;
 
                 if (dataHead1 == 'F' && dataHead2 == 'L') {
                     for (uint8 i = 0; i < EncounterCount; ++i) {
                         uint32 tmpState;
-                        loadStream >> tmpState;
+                        data >> tmpState;
                         if (tmpState == IN_PROGRESS || tmpState > SPECIAL)
                             tmpState = NOT_STARTED;
                         uiEncounter[i] = tmpState;
@@ -312,7 +307,6 @@ class instance_firelands : public InstanceMapScript
                 } else OUT_LOAD_INST_DATA_FAIL;
 
                 OUT_LOAD_INST_DATA_COMPLETE;
-            }
         };
 
     InstanceScript* GetInstanceScript(InstanceMap* map) const override

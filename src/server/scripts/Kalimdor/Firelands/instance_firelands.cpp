@@ -292,7 +292,6 @@ class instance_firelands : public InstanceMapScript
 
                 OUT_LOAD_INST_DATA_COMPLETE;
             }
-        };
 
         protected:
             std::string SaveDataBuffer;
@@ -320,6 +319,8 @@ class instance_firelands : public InstanceMapScript
             uint64 SulfuronWallGUID;
             uint64 RagnarosPlatformGUID;
 
+        };
+        
     InstanceScript* GetInstanceScript(InstanceMap* map) const override
     {
         return new instance_firelands_InstanceScript(map);

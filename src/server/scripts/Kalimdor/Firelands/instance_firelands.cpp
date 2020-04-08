@@ -292,7 +292,7 @@ class instance_firelands : public InstanceMapScript
 
                 OUT_LOAD_INST_DATA_COMPLETE;
             }
-        }
+        };
 
         protected:
             std::string SaveDataBuffer;

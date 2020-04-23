@@ -73,15 +73,15 @@ struct PreparedStatementData
 class MySQLPreparedStatement;
 
 //- Upper-level class that is used in code
-class TC_DATABASE_API PreparedStatement
+class TC_DATABASE_API PreparedStatementBase
 {
     friend class PreparedStatementTask;
     friend class MySQLPreparedStatement;
     friend class MySQLConnection;
 
     public:
-        PreparedStatement(uint32 index, uint8 capacity);
-        ~PreparedStatement();
+        explicit PreparedStatementBase(uint32 index, uint8 capacity);
+        virtual ~PreparedStatementBase();
 
         void setNull(uint8 index);
         void setBool(uint8 index, bool value);
@@ -98,6 +98,7 @@ class TC_DATABASE_API PreparedStatement
         void setString(uint8 index, std::string const& value);
         void setBinary(uint8 index, std::vector<uint8> const& value);
 
+        uint32 GetIndex() const { return m_index; }
     protected:
         void BindParameters(MySQLPreparedStatement* stmt);
 
@@ -108,69 +109,35 @@ class TC_DATABASE_API PreparedStatement
         //- Buffer of parameters, not tied to MySQL in any way yet
         std::vector<PreparedStatementData> statement_data;
 
-        PreparedStatement(PreparedStatement const& right) = delete;
-        PreparedStatement& operator=(PreparedStatement const& right) = delete;
+        PreparedStatementBase(PreparedStatementBase const& right) = delete;
+        PreparedStatementBase& operator=(PreparedStatementBase const& right) = delete;
 };
 
-//- Class of which the instances are unique per MySQLConnection
-//- access to these class objects is only done when a prepared statement task
-//- is executed.
-class TC_DATABASE_API MySQLPreparedStatement
+template<typename T>
+class PreparedStatement : public PreparedStatementBase
 {
-    friend class MySQLConnection;
-    friend class PreparedStatement;
+public:
+    explicit PreparedStatement(uint32 index, uint8 capacity) : PreparedStatementBase(index, capacity)
+    {
+    }
 
-    public:
-        MySQLPreparedStatement(MYSQL_STMT* stmt, std::string queryString);
-        ~MySQLPreparedStatement();
-
-        void setNull(uint8 index);
-        void setBool(uint8 index, bool value);
-        void setUInt8(uint8 index, uint8 value);
-        void setUInt16(uint8 index, uint16 value);
-        void setUInt32(uint8 index, uint32 value);
-        void setUInt64(uint8 index, uint64 value);
-        void setInt8(uint8 index, int8 value);
-        void setInt16(uint8 index, int16 value);
-        void setInt32(uint8 index, int32 value);
-        void setInt64(uint8 index, int64 value);
-        void setFloat(uint8 index, float value);
-        void setDouble(uint8 index, double value);
-        void setBinary(uint8 index, std::vector<uint8> const& value, bool isString);
-
-        uint32 GetParameterCount() const { return m_paramCount; }
-
-    protected:
-        MYSQL_STMT* GetSTMT() { return m_Mstmt; }
-        MYSQL_BIND* GetBind() { return m_bind; }
-        PreparedStatement* m_stmt;
-        void ClearParameters();
-        void AssertValidIndex(uint8 index);
-        std::string getQueryString() const;
-
-    private:
-        MYSQL_STMT* m_Mstmt;
-        uint32 m_paramCount;
-        std::vector<bool> m_paramsSet;
-        MYSQL_BIND* m_bind;
-        std::string const m_queryString;
-
-        MySQLPreparedStatement(MySQLPreparedStatement const& right) = delete;
-        MySQLPreparedStatement& operator=(MySQLPreparedStatement const& right) = delete;
+private:
+    PreparedStatement(PreparedStatement const& right) = delete;
+    PreparedStatement& operator=(PreparedStatement const& right) = delete;
 };
 
 //- Lower-level class, enqueuable operation
 class TC_DATABASE_API PreparedStatementTask : public SQLOperation
 {
     public:
-        PreparedStatementTask(PreparedStatement* stmt, bool async = false);
+        PreparedStatementTask(PreparedStatementBase* stmt, bool async = false);
         ~PreparedStatementTask();
 
         bool Execute() override;
         PreparedQueryResultFuture GetFuture() { return m_result->get_future(); }
 
     protected:
-        PreparedStatement* m_stmt;
+        PreparedStatementBase* m_stmt;
         bool m_has_result;
         PreparedQueryResultPromise* m_result;
 };

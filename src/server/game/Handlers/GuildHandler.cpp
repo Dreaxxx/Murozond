@@ -881,12 +881,12 @@ void WorldSession::HandleGuildRenameRequest(WorldPacket& recvPacket)
 
     if(pGuild)
     {
-        PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_GUILD_NAME);
+        CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_UPD_GUILD_NAME);
 
         stmt->setUInt32(1, pGuild->GetId());
         stmt->setString(0, newName);
 
-        _queryProcessor.AddQuery(CharacterDatabase.AsyncQuery(stmt).WithPreparedCallback(std::bind(&WorldSession::HandleGuildRenameCallback, this, newName, std::placeholders::_1)));
+        _queryProcessor.AddCallback(CharacterDatabase.AsyncQuery(stmt).WithPreparedCallback(std::bind(&WorldSession::HandleGuildRenameCallback, this, newName, std::placeholders::_1)));
 
         WorldPacket data(SMSG_GUILD_FLAGGED_FOR_RENAME,1);
 

@@ -189,6 +189,7 @@ enum FactionTemplates
     FACTION_ESCORTEE_A_PASSIVE          = 774,
     FACTION_ESCORTEE_H_PASSIVE          = 775,
     FACTION_UNDEAD_SCOURGE              = 974,
+    FACTION_GUILD                       = 1168,
     FACTION_EARTHEN_RING                = 1726,
     FACTION_ALLIANCE_GENERIC_WG         = 1732,
     FACTION_HORDE_GENERIC_WG            = 1735,
@@ -245,6 +246,7 @@ enum Powers
 };
 
 #define MAX_POWERS_PER_CLASS            5
+#define REGENERATION_INTERVAL           2 * IN_MILLISECONDS
 
 enum SpellSchools
 {

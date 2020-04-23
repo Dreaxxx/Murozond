@@ -735,7 +735,7 @@ void Spell::CalculateJumpSpeeds(uint8 i, float dist, float & speedXY, float & sp
     if (Creature* creature = m_caster->ToCreature())
         runSpeed *= creature->GetCreatureTemplate()->speed_run;
 
-    float multiplier = m_spellInfo->Effects[i].ValueMultiplier;
+    float multiplier = m_spellInfo->Effects[i].Amplitude;
     if (multiplier <= 0.0f)
         multiplier = 1.0f;
 
@@ -935,7 +935,7 @@ void Spell::EffectPowerDrain(SpellEffIndex effIndex)
 
     Powers powerType = Powers(m_spellInfo->Effects[effIndex].MiscValue);
 
-    if (!unitTarget || !unitTarget->IsAlive() || unitTarget->getPowerType() != powerType || damage < 0)
+    if (!unitTarget || !unitTarget->IsAlive() || unitTarget->GetPowerType() != powerType || damage < 0)
         return;
 
     // add spell damage bonus
@@ -1011,7 +1011,7 @@ void Spell::EffectPowerBurn(SpellEffIndex effIndex)
 
     Powers powerType = Powers(m_spellInfo->Effects[effIndex].MiscValue);
 
-    if (!unitTarget || !unitTarget->IsAlive() || unitTarget->getPowerType() != powerType || damage < 0)
+    if (!unitTarget || !unitTarget->IsAlive() || unitTarget->GetPowerType() != powerType || damage < 0)
         return;
 
     // burn x% of target's mana, up to maximum of 2x% of caster's mana (Mana Burn)
@@ -1433,7 +1433,7 @@ void Spell::EffectEnergize(SpellEffIndex effIndex)
 
     Powers power = Powers(m_spellInfo->Effects[effIndex].MiscValue);
 
-    if (unitTarget->GetTypeId() == TYPEID_PLAYER && unitTarget->getPowerType() != power && m_spellInfo->SpellFamilyName != SPELLFAMILY_POTION
+    if (unitTarget->GetTypeId() == TYPEID_PLAYER && unitTarget->GetPowerType() != power && m_spellInfo->SpellFamilyName != SPELLFAMILY_POTION
         && !m_spellInfo->HasAttribute(SPELL_ATTR7_CAN_RESTORE_SECONDARY_POWER))
         return;
 
@@ -1497,7 +1497,7 @@ void Spell::EffectEnergizePct(SpellEffIndex effIndex)
 
     Powers power = Powers(m_spellInfo->Effects[effIndex].MiscValue);
 
-    if (unitTarget->GetTypeId() == TYPEID_PLAYER && unitTarget->getPowerType() != power && !m_spellInfo->HasAttribute(SPELL_ATTR7_CAN_RESTORE_SECONDARY_POWER))
+    if (unitTarget->GetTypeId() == TYPEID_PLAYER && unitTarget->GetPowerType() != power && !m_spellInfo->HasAttribute(SPELL_ATTR7_CAN_RESTORE_SECONDARY_POWER))
         return;
 
     uint32 maxPower = unitTarget->GetMaxPower(power);
@@ -1849,8 +1849,6 @@ void Spell::EffectSummonType(SpellEffIndex effIndex)
     if (Player* modOwner = m_originalCaster->GetSpellModOwner())
         modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_DURATION, duration);
 
-    TempSummon* summon = nullptr;
-
     // determine how many units should be summoned
     uint32 numSummons = std::max(1, damage);
 
@@ -1865,129 +1863,45 @@ void Spell::EffectSummonType(SpellEffIndex effIndex)
     if ((m_spellInfo->HasAttribute(SPELL_ATTR8_UNK21) && !m_spellInfo->HasAttribute(SPELL_ATTR8_UNK13)) || m_spellInfo->HasAttribute(SPELL_ATTR10_UNK6))
         numSummons = 1;
 
-    switch (properties->Control)
+    // Some totems are being summoned with a certain amount of health
+    uint32 health = (properties->Flags & SUMMON_PROP_FLAG_TOTEM) != 0 && damage ? damage : 0;
+
+    if (numSummons == 1)
     {
-        case SUMMON_CATEGORY_WILD:
-        case SUMMON_CATEGORY_ALLY:
-        case SUMMON_CATEGORY_UNK:
-            if (properties->Flags & 512)
-            {
-                SummonGuardian(effIndex, entry, properties, numSummons, personalSpawn);
-                break;
-            }
-            switch (SummonTitle(properties->Title))
-            {
-                case SummonTitle::Pet:
-                case SummonTitle::Guardian:
-                case SummonTitle::Runeblade:
-                case SummonTitle::Minion:
-                    SummonGuardian(effIndex, entry, properties, numSummons, personalSpawn);
-                    break;
-                // Summons a vehicle, but doesn't force anyone to enter it (see SUMMON_CATEGORY_VEHICLE)
-                case SummonTitle::Vehicle:
-                case SummonTitle::Mount:
-                    summon = m_caster->GetMap()->SummonCreature(entry, *destTarget, properties, duration, m_originalCaster, m_spellInfo->Id, 0, personalSpawn);
-                    break;
-                case SummonTitle::Lightwell:
-                case SummonTitle::Totem:
-                {
-                    summon = m_caster->GetMap()->SummonCreature(entry, *destTarget, properties, duration, m_originalCaster, m_spellInfo->Id, 0, personalSpawn);
-                    if (!summon || !summon->IsTotem())
-                        return;
-
-                    // Mana Tide Totem
-                    if (m_spellInfo->Id == 16190)
-                        damage = m_caster->CountPctFromMaxHealth(10);
-
-                    if (damage)                                            // if not spell info, DB values used
-                    {
-                        summon->SetMaxHealth(damage);
-                        summon->SetHealth(damage);
-                    }
-                    break;
-                }
-                case SummonTitle::Companion:
-                {
-                    summon = m_caster->GetMap()->SummonCreature(entry, *destTarget, properties, duration, m_originalCaster, m_spellInfo->Id, 0, personalSpawn);
-                    if (!summon || !summon->HasUnitTypeMask(UNIT_MASK_MINION))
-                        return;
-
-                    summon->SelectLevel();       // some summoned creaters have different from 1 DB data for level/hp
-                    summon->SetUInt32Value(UNIT_NPC_FLAGS, summon->GetCreatureTemplate()->npcflag);
-
-                    summon->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PC | UNIT_FLAG_IMMUNE_TO_NPC);
-                    break;
-                }
-                default:
-                {
-                    float radius = m_spellInfo->Effects[effIndex].CalcRadius();
-
-                    for (uint32 count = 0; count < numSummons; ++count)
-                    {
-                        Position pos;
-                        if (count == 0)
-                            pos = *destTarget;
-                        else
-                            // randomize position for multiple summons
-                            pos = m_caster->GetRandomPoint(*destTarget, radius);
-
-                        summon = m_caster->GetMap()->SummonCreature(entry, *destTarget, properties, duration, m_originalCaster, m_spellInfo->Id, 0, personalSpawn);
-                        if (!summon)
-                            continue;
-
-                        ExecuteLogEffectSummonObject(effIndex, summon);
-                    }
-                    return;
-                }
-            }//switch
-            break;
-        case SUMMON_CATEGORY_PET:
-            SummonGuardian(effIndex, entry, properties, numSummons, personalSpawn);
-            break;
-        case SUMMON_CATEGORY_PUPPET:
-            summon = m_caster->GetMap()->SummonCreature(entry, *destTarget, properties, duration, m_originalCaster, m_spellInfo->Id, 0, personalSpawn);
-            break;
-        case SUMMON_CATEGORY_VEHICLE:
-            // Summoning spells (usually triggered by npc_spellclick) that spawn a vehicle and that cause the clicker
-            // to cast a ride vehicle spell on the summoned unit.
-            summon = m_originalCaster->GetMap()->SummonCreature(entry, *destTarget, properties, duration, m_caster, m_spellInfo->Id, 0, personalSpawn);
-            if (!summon || !summon->IsVehicle())
-                return;
-
-            // The spell that this effect will trigger. It has SPELL_AURA_CONTROL_VEHICLE
-            uint32 spellId = VEHICLE_SPELL_RIDE_HARDCODED;
-            int32 basePoints = m_spellInfo->Effects[effIndex].CalcValue();
-            if (basePoints > MAX_VEHICLE_SEATS)
-            {
-                SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(basePoints);
-                if (spellInfo && spellInfo->HasAura(SPELL_AURA_CONTROL_VEHICLE))
-                    spellId = spellInfo->Id;
-            }
-
-            // if we have small value, it indicates seat position
-            if (basePoints > 0 && basePoints < MAX_VEHICLE_SEATS)
-                m_originalCaster->CastCustomSpell(spellId, SPELLVALUE_BASE_POINT0, basePoints, summon, true);
-            else
-                m_originalCaster->CastSpell(summon, spellId, true);
-
-            uint32 faction = properties->Faction;
-            if (!faction)
-                faction = m_originalCaster->GetFaction();
-
-            summon->SetFaction(faction);
-            break;
-    }
-
-    if (summon)
-    {
-        if (entry == ENTRY_GHOUL)
+        if (TempSummon* summon = m_caster->GetMap()->SummonCreature(entry, *destTarget, properties, duration, m_originalCaster, m_spellInfo->Id, 0, personalSpawn, health))
         {
-            summon->CastSpell(summon, SPELL_PET_RISEN_GHOUL_SPAWN_IN, true);
-            summon->CastSpell(summon, SPELL_PET_RISEN_GHOUL_SELF_STUN, true);
-        }
+            // Summoned vehicles shall be mounted right away if possible
+            if (properties->Control == SUMMON_CATEGORY_VEHICLE && summon->IsVehicle())
+            {
+                // The spell that this effect will trigger. It has SPELL_AURA_CONTROL_VEHICLE
+                uint32 spellId = VEHICLE_SPELL_RIDE_HARDCODED;
+                int32 basePoints = m_spellInfo->Effects[effIndex].CalcValue();
+                if (basePoints > MAX_VEHICLE_SEATS)
+                {
+                    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(basePoints);
+                    if (spellInfo && spellInfo->HasAura(SPELL_AURA_CONTROL_VEHICLE))
+                        spellId = spellInfo->Id;
+                }
 
-        summon->SetCreatorGUID(m_originalCaster->GetGUID());
-        ExecuteLogEffectSummonObject(effIndex, summon);
+                // if we have small value, it indicates seat position
+                if (basePoints > 0 && basePoints < MAX_VEHICLE_SEATS)
+                    m_originalCaster->CastCustomSpell(spellId, SPELLVALUE_BASE_POINT0, basePoints, summon, true);
+                else
+                    m_originalCaster->CastSpell(summon, spellId, true);
+            }
+            ExecuteLogEffectSummonObject(effIndex, summon);
+        }
+    }
+    else
+    {
+        float radius = m_spellInfo->Effects[effIndex].CalcRadius();
+        for (uint8 i = 0; i < numSummons; ++i)
+        {
+            // Multiple summons are summoned at random points within the destination radius
+            Position pos = m_caster->GetRandomPoint(*destTarget, radius);
+            if (TempSummon* summon = m_caster->GetMap()->SummonCreature(entry, pos, properties, duration, m_originalCaster, m_spellInfo->Id, 0, personalSpawn, health))
+                ExecuteLogEffectSummonObject(effIndex, summon);
+        }
     }
 }
 
@@ -2558,18 +2472,19 @@ void Spell::EffectSummonPet(SpellEffIndex effIndex)
         if (!owner && m_originalCaster->IsTotem())
             owner = m_originalCaster->GetCharmerOrOwnerPlayerOrPlayerItself();
     }
+
     // SUMMON_PET SummonPet's entries are at MiscValue, HunterPetSlot at BasePoints
     uint32 petentry = (m_spellInfo->Effects[effIndex].MiscValue == 0 && m_spellInfo->Effects[effIndex].BasePoints <= PET_SLOT_LAST_ACTIVE_SLOT) ?
         m_spellInfo->Effects[effIndex].BasePoints : m_spellInfo->Effects[effIndex].MiscValue;
 
-    PetType petType = (m_spellInfo->Effects[effIndex].MiscValue == 0 && m_spellInfo->Effects[effIndex].BasePoints <= PET_SLOT_LAST_ACTIVE_SLOT) ?
-        HUNTER_PET : SUMMON_PET;
+    PetType petType = (m_spellInfo->Effects[effIndex].MiscValue == 0 && m_spellInfo->Effects[effIndex].BasePoints <= PET_SLOT_LAST_ACTIVE_SLOT) ? HUNTER_PET : SUMMON_PET;
 
+    // Pet is summoned by a npc
     if (!owner)
     {
-        SummonPropertiesEntry const* properties = sSummonPropertiesStore.LookupEntry(67);
-        if (properties)
-            SummonGuardian(effIndex, petentry, properties, 1);
+        if (SummonPropertiesEntry const* properties = sSummonPropertiesStore.LookupEntry(67))
+            if (TempSummon* summon = m_caster->GetMap()->SummonCreature(petentry, *destTarget, properties, m_spellInfo->GetDuration(), m_originalCaster, m_spellInfo->Id, false))
+                ExecuteLogEffectSummonObject(effIndex, summon);
         return;
     }
 
@@ -2598,8 +2513,8 @@ void Spell::EffectSummonPet(SpellEffIndex effIndex)
             if (OldSummon->getPetType() == SUMMON_PET)
             {
                 OldSummon->SetHealth(OldSummon->GetMaxHealth());
-                OldSummon->SetPower(OldSummon->getPowerType(),
-                    OldSummon->GetMaxPower(OldSummon->getPowerType()));
+                OldSummon->SetPower(OldSummon->GetPowerType(),
+                    OldSummon->GetMaxPower(OldSummon->GetPowerType()));
             }
 
             if (owner->GetTypeId() == TYPEID_PLAYER && OldSummon->isControlled())
@@ -4424,7 +4339,7 @@ void Spell::EffectKnockBack(SpellEffIndex effIndex)
     if (!unitTarget)
         return;
 
-    if (m_caster->GetTypeId() == TYPEID_PLAYER || m_caster->GetOwnerGUID().IsPlayer() || m_caster->IsHunterPet())
+    if (m_caster->GetTypeId() == TYPEID_PLAYER || m_caster->GetOwnerOrCreatorGUID().IsPlayer() || m_caster->IsHunterPet())
         if (Creature* creatureTarget = unitTarget->ToCreature())
             if (creatureTarget->isWorldBoss() || creatureTarget->IsDungeonBoss())
                 return;
@@ -4558,9 +4473,20 @@ void Spell::EffectPullTowards(SpellEffIndex effIndex)
 
     // This is a blizzlike mistake: this should be 2D distance according to projectile motion formulas, but Blizzard erroneously used 3D distance.
     float distXY = unitTarget->GetExactDist(pos);
+
+    // Avoid division by 0
+    if (distXY < 0.001)
+        return;
+
     float distZ = pos.GetPositionZ() - unitTarget->GetPositionZ();
     float speedXY = m_spellInfo->Effects[effIndex].MiscValue ? m_spellInfo->Effects[effIndex].MiscValue / 10.0f : 30.0f;
     float speedZ = (2 * speedXY * speedXY * distZ + Movement::gravity * distXY * distXY) / (2 * speedXY * distXY);
+
+    if (!std::isfinite(speedZ))
+    {
+        TC_LOG_ERROR("spells", "Spell %u with SPELL_EFFECT_PULL_TOWARDS called with invalid speedZ.", m_spellInfo->Id);
+        return;
+    }
 
     unitTarget->JumpTo(speedXY, speedZ, true, pos);
 }
@@ -4582,10 +4508,21 @@ void Spell::EffectPullTowardsDest(SpellEffIndex effIndex)
     Position const* pos = m_targets.GetDstPos();
     // This is a blizzlike mistake: this should be 2D distance according to projectile motion formulas, but Blizzard erroneously used 3D distance
     float distXY = unitTarget->GetExactDist(pos);
+
+    // Avoid division by 0
+    if (distXY < 0.001)
+        return;
+
     float distZ = pos->GetPositionZ() - unitTarget->GetPositionZ();
 
     float speedXY = m_spellInfo->Effects[effIndex].MiscValue ? m_spellInfo->Effects[effIndex].MiscValue / 10.0f : 30.0f;
     float speedZ = (2 * speedXY * speedXY * distZ + Movement::gravity * distXY * distXY) / (2 * speedXY * distXY);
+
+    if (!std::isfinite(speedZ))
+    {
+        TC_LOG_ERROR("spells", "Spell %u with SPELL_EFFECT_PULL_TOWARDS_DEST called with invalid speedZ", m_spellInfo->Id);
+        return;
+    }
 
     unitTarget->JumpTo(speedXY, speedZ, true, *pos);
 }
@@ -4874,8 +4811,17 @@ void Spell::EffectTransmitted(SpellEffIndex effIndex)
         case GAMEOBJECT_TYPE_DUEL_ARBITER: // 52991
             m_caster->AddGameObject(pGameObj);
             break;
-        case GAMEOBJECT_TYPE_FISHINGHOLE:
-        case GAMEOBJECT_TYPE_CHEST:
+        case GAMEOBJECT_TYPE_SPELLCASTER:
+        case GAMEOBJECT_TYPE_GUILD_BANK:
+            if (m_caster->IsPlayer())
+            {
+                if (ObjectGuid guildGUID = m_caster->GetGuidValue(OBJECT_FIELD_DATA))
+                {
+                    pGameObj->SetGuidValue(OBJECT_FIELD_DATA, m_caster->GetGuidValue(OBJECT_FIELD_DATA));
+                    pGameObj->SetUInt16Value(OBJECT_FIELD_TYPE, 1, 1); // Has guild data
+                }
+            }
+            break;
         default:
             break;
     }
@@ -5314,76 +5260,6 @@ void Spell::EffectGameObjectSetDestructionState(SpellEffIndex effIndex)
 
     Player* player = m_originalCaster->GetCharmerOrOwnerPlayerOrPlayerItself();
     gameObjTarget->SetDestructibleState(GameObjectDestructibleState(m_spellInfo->Effects[effIndex].MiscValue), player, true);
-}
-
-void Spell::SummonGuardian(uint32 i, uint32 entry, SummonPropertiesEntry const* properties, uint32 numGuardians, bool visibleBySummonerOny /*= false*/)
-{
-    Unit* caster = m_originalCaster;
-    if (!caster)
-        return;
-
-    if (caster->IsTotem())
-        caster = caster->ToTotem()->GetOwner();
-
-    // in another case summon new
-    uint8 level = caster->getLevel();
-
-    // level of pet summoned using engineering item based at engineering skill level
-    if (m_CastItem && caster->GetTypeId() == TYPEID_PLAYER)
-        if (ItemTemplate const* proto = m_CastItem->GetTemplate())
-            if (proto->GetRequiredSkill() == SKILL_ENGINEERING)
-                if (uint16 skill202 = caster->ToPlayer()->GetSkillValue(SKILL_ENGINEERING))
-                    level = skill202 / 5;
-
-    float radius = 5.0f;
-    int32 duration = m_spellInfo->GetDuration();
-
-    if (Player* modOwner = m_originalCaster->GetSpellModOwner())
-        modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_DURATION, duration);
-
-    //TempSummonType summonType = (duration == 0) ? TEMPSUMMON_DEAD_DESPAWN : TEMPSUMMON_TIMED_DESPAWN;
-    Map* map = caster->GetMap();
-
-    for (uint32 count = 0; count < numGuardians; ++count)
-    {
-        Position pos;
-        if (count == 0)
-            pos = *destTarget;
-        else
-            // randomize position for multiple summons
-            pos = m_caster->GetRandomPoint(*destTarget, radius);
-
-        TempSummon* summon = map->SummonCreature(entry, pos, properties, duration, caster, m_spellInfo->Id, 0, visibleBySummonerOny);
-        if (!summon)
-            return;
-
-        if (summon->HasUnitTypeMask(UNIT_MASK_GUARDIAN))
-        {
-            ((Guardian*)summon)->InitStatsForLevel(level);
-            ((Guardian*)summon)->UpdateAllStats();
-            summon->SetPower(POWER_MANA, summon->GetMaxPower(POWER_MANA));
-            summon->SetFullHealth();
-        }
-
-        if (properties && properties->Control == SUMMON_CATEGORY_ALLY)
-            summon->SetFaction(caster->GetFaction());
-
-        if (summon->HasUnitTypeMask(UNIT_MASK_MINION) && m_targets.HasDst())
-            ((Minion*)summon)->SetFollowAngle(m_caster->GetAngle(summon));
-
-        if (summon->GetEntry() == 27893)
-        {
-            if (uint32 weapon = m_caster->GetUInt32Value(PLAYER_VISIBLE_ITEM_16_ENTRYID))
-            {
-                summon->SetDisplayId(11686); // modelid2
-                summon->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID, weapon);
-            }
-            else
-                summon->SetDisplayId(1126); // modelid1
-        }
-
-        ExecuteLogEffectSummonObject(i, summon);
-    }
 }
 
 void Spell::EffectRenamePet(SpellEffIndex /*effIndex*/)

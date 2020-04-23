@@ -72,7 +72,8 @@ void RASession::Start()
     TC_LOG_INFO("commands.ra", "User %s (IP: %s) authenticated correctly to RA", username.c_str(), GetRemoteIpAddress().c_str());
 
     // Authentication successful, send the motd
-    Send(std::string(std::string(sWorld->GetMotd()) + "\r\n").c_str());
+    for (std::string const& line : sWorld->GetMotd())
+        Send(line.c_str());
 
     // Read commands
     for (;;)
@@ -122,7 +123,7 @@ bool RASession::CheckAccessLevel(const std::string& user)
 
     Utf8ToUpperOnlyLatin(safeUser);
 
-    PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_ACCOUNT_ACCESS);
+    LoginDatabasePreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_ACCOUNT_ACCESS);
     stmt->setString(0, safeUser);
     PreparedQueryResult result = LoginDatabase.Query(stmt);
 
@@ -158,7 +159,7 @@ bool RASession::CheckPassword(const std::string& user, const std::string& pass)
 
     std::string hash = AccountMgr::CalculateShaPassHash(safe_user, safe_pass);
 
-    PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_CHECK_PASSWORD_BY_NAME);
+    LoginDatabasePreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_CHECK_PASSWORD_BY_NAME);
 
     stmt->setString(0, safe_user);
     stmt->setString(1, hash);

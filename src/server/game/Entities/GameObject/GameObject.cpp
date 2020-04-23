@@ -58,7 +58,7 @@ QuaternionData QuaternionData::fromEulerAnglesZYX(float Z, float Y, float X)
 }
 
 GameObject::GameObject() : WorldObject(false), MapObject(),
-    m_model(nullptr), m_goValue(), m_AI(nullptr), m_respawnCompatibilityMode(false)
+    m_model(nullptr), m_goValue(), m_AI(nullptr), m_respawnCompatibilityMode(false), _triggerJustAppeared(true)
 {
     m_objectType |= TYPEMASK_GAMEOBJECT;
     m_objectTypeId = TYPEID_GAMEOBJECT;
@@ -74,6 +74,7 @@ GameObject::GameObject() : WorldObject(false), MapObject(),
     m_lootState = GO_NOT_READY;
     m_spawnedByDefault = true;
     m_usetimes = 0;
+    _charges = 0;
     m_spellId = 0;
     m_cooldownTime = 0;
     m_prevGoState = GO_STATE_ACTIVE;
@@ -282,6 +283,7 @@ bool GameObject::Create(ObjectGuid::LowType guidlow, uint32 name_id, Map* map, P
     m_prevGoState = go_state;
     SetGoState(go_state);
     SetGoArtKit(artKit);
+    SetCharges(goinfo->GetCharges());
 
     switch (goinfo->type)
     {
@@ -361,6 +363,12 @@ void GameObject::Update(uint32 diff)
         AI()->UpdateAI(diff);
     else if (!AIM_Initialize())
         TC_LOG_ERROR("misc", "Could not initialize GameObjectAI");
+
+    if (AI() && _triggerJustAppeared)
+    {
+        _triggerJustAppeared = false;
+        AI()->JustAppeared();
+    }
 
     if (m_despawnDelay)
     {
@@ -574,9 +582,9 @@ void GameObject::Update(uint32 diff)
                         SetLootState(GO_ACTIVATED, target);
 
                 }
-                else if (uint32 max_charges = goInfo->GetCharges())
+                else if (_charges)
                 {
-                    if (m_usetimes >= max_charges)
+                    if (m_usetimes >= _charges)
                     {
                         m_usetimes = 0;
                         SetLootState(GO_JUST_DEACTIVATED);      // can be despawned or destroyed
@@ -899,11 +907,11 @@ void GameObject::SaveToDB(uint32 mapid, uint8 spawnMask)
     data.phaseGroup = GetDBPhase() < 0 ? -GetDBPhase() : data.phaseGroup;
 
     // Update in DB
-    SQLTransaction trans = WorldDatabase.BeginTransaction();
+    WorldDatabaseTransaction trans = WorldDatabase.BeginTransaction();
 
     uint8 index = 0;
 
-    PreparedStatement* stmt = WorldDatabase.GetPreparedStatement(WORLD_DEL_GAMEOBJECT);
+    WorldDatabasePreparedStatement* stmt = WorldDatabase.GetPreparedStatement(WORLD_DEL_GAMEOBJECT);
     stmt->setUInt32(0, m_spawnId);
     trans->Append(stmt);
 
@@ -1006,7 +1014,7 @@ bool GameObject::LoadFromDB(ObjectGuid::LowType spawnId, Map* map, bool addToMap
     if (!data)
         return false;
 
-    SQLTransaction trans = WorldDatabase.BeginTransaction();
+    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
 
     sMapMgr->DoForAllMapsWithMapId(data->spawnPoint.GetMapId(),
         [spawnId, trans](Map* map) -> void
@@ -1021,22 +1029,24 @@ bool GameObject::LoadFromDB(ObjectGuid::LowType spawnId, Map* map, bool addToMap
         }
     );
 
+    WorldDatabaseTransaction trans2 = WorldDatabase.BeginTransaction();
+
     // delete data from memory
     sObjectMgr->DeleteGameObjectData(spawnId);
-    PreparedStatement* stmt = WorldDatabase.GetPreparedStatement(WORLD_DEL_GAMEOBJECT);
+    WorldDatabasePreparedStatement* stmt = WorldDatabase.GetPreparedStatement(WORLD_DEL_GAMEOBJECT);
     stmt->setUInt32(0, spawnId);
-    trans->Append(stmt);
+    trans2->Append(stmt);
 
     stmt = WorldDatabase.GetPreparedStatement(WORLD_DEL_SPAWNGROUP_MEMBER);
     stmt->setUInt8(0, uint8(SPAWN_TYPE_GAMEOBJECT));
     stmt->setUInt32(1, spawnId);
-    trans->Append(stmt);
+    trans2->Append(stmt);
 
     stmt = WorldDatabase.GetPreparedStatement(WORLD_DEL_EVENT_GAMEOBJECT);
     stmt->setUInt32(0, spawnId);
-    trans->Append(stmt);
+    trans2->Append(stmt);
 
-    WorldDatabase.CommitTransaction(trans);
+    WorldDatabase.CommitTransaction(trans2);
 
     return true;
 }
@@ -1198,6 +1208,9 @@ void GameObject::Respawn()
         m_respawnTime = GameTime::GetGameTime();
         GetMap()->Respawn(SPAWN_TYPE_GAMEOBJECT, m_spawnId);
     }
+
+    if (m_respawnCompatibilityMode)
+        _triggerJustAppeared = true;
 }
 
 bool GameObject::ActivateToQuest(Player* target) const

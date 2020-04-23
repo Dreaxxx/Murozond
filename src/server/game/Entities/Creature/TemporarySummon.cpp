@@ -194,40 +194,38 @@ void TempSummon::InitStats(uint32 duration)
             owner->m_SummonSlot[slot] = GetGUID();
         }
 
-        if (m_Properties->Control == SUMMON_CATEGORY_ALLY)
+        if (m_Properties->Control == SUMMON_CATEGORY_ALLY || m_Properties->Control == SUMMON_CATEGORY_PET)
         {
             if (!m_Properties->Faction)
                 SetFaction(owner->GetFaction());
 
-            switch (SummonTitle(m_Properties->Title))
-            {
+            // Creator guid is always set for allied summons
+            SetCreatorGUID(owner->GetGUID());
 
-                case SummonTitle::Pet:
-                case SummonTitle::Guardian:
-                case SummonTitle::Runeblade:
-                case SummonTitle::Minion:
-                case SummonTitle::Vehicle:
-                case SummonTitle::Mount:
-                case SummonTitle::Lightwell:
-                case SummonTitle::Totem:
-                case SummonTitle::Companion:
-                    break;
-                default:
-                    SetOwnerGUID(owner->GetGUID());
-                    break;
+            // Summons inherit their player summoner's guild data
+            if (owner && (owner->IsPlayer() || owner->IsTotem()))
+            {
+                ObjectGuid guildGUID = owner->GetGuidValue(OBJECT_FIELD_DATA);
+                if (guildGUID)
+                {
+                    SetGuidValue(OBJECT_FIELD_DATA, owner->GetGuidValue(OBJECT_FIELD_DATA));
+                    SetUInt16Value(OBJECT_FIELD_TYPE, 1, 1); // Has guild data
+                }
             }
         }
+
+        if (owner->IsTotem())
+            owner->m_Controlled.insert(this);
     }
 
-    // If property has a faction defined, use it. Otherwise fallback to owner faction whe summon is a vehicle
+    // If property has a faction defined, use it.
     if (m_Properties->Faction)
         SetFaction(m_Properties->Faction);
 }
 
 void TempSummon::InitSummon()
 {
-    Unit* owner = GetSummoner();
-    if (owner)
+    if (Unit* owner = GetSummoner())
     {
         if (owner->GetTypeId() == TYPEID_UNIT && owner->ToCreature()->IsAIEnabled)
             owner->ToCreature()->AI()->JustSummoned(this);
@@ -265,8 +263,11 @@ void TempSummon::UnSummon(uint32 msTime)
     }
 
     Unit* owner = GetSummoner();
-    if (owner && owner->GetTypeId() == TYPEID_UNIT && owner->ToCreature()->IsAIEnabled)
-        owner->ToCreature()->AI()->SummonedCreatureDespawn(this);
+    if (owner)
+    {
+        if (owner->GetTypeId() == TYPEID_UNIT && owner->ToCreature()->IsAIEnabled)
+            owner->ToCreature()->AI()->SummonedCreatureDespawn(this);
+    }
 
     AddObjectToRemoveList();
 }
@@ -314,13 +315,27 @@ Minion::Minion(SummonPropertiesEntry const* properties, Unit* owner, bool isWorl
 void Minion::InitStats(uint32 duration)
 {
     TempSummon::InitStats(duration);
-
     SetReactState(REACT_PASSIVE);
 
-    SetCreatorGUID(GetOwner()->GetGUID());
-    SetFaction(GetOwner()->GetFaction());
+    // Only controlable guardians and companions get a owner guid
+    if (HasUnitTypeMask(UNIT_MASK_CONTROLABLE_GUARDIAN) || (m_Properties && m_Properties->Title == AsUnderlyingType(SummonTitle::Companion)))
+        GetOwner()->SetMinion(this, true);
+    else if (!HasUnitTypeMask(UNIT_MASK_PET | UNIT_MASK_HUNTER_PET))
+    {
+        GetOwner()->m_Controlled.insert(this);
 
-    GetOwner()->SetMinion(this, true);
+        // Store the totem elementals in players controlled list as well to trigger aggro mechanics
+        if (GetOwner()->IsTotem())
+            if (Unit* totemOwner = GetOwner()->GetOwner())
+                totemOwner->m_Controlled.insert(this);
+    }
+
+    if (m_Properties && m_Properties->Title == AsUnderlyingType(SummonTitle::Companion))
+    {
+        SelectLevel();       // some summoned creaters have different from 1 DB data for level/hp
+        SetUInt32Value(UNIT_NPC_FLAGS, GetCreatureTemplate()->npcflag);
+        SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PC | UNIT_FLAG_IMMUNE_TO_NPC);
+    }
 }
 
 void Minion::RemoveFromWorld()
@@ -328,7 +343,17 @@ void Minion::RemoveFromWorld()
     if (!IsInWorld())
         return;
 
-    GetOwner()->SetMinion(this, false);
+    if (HasUnitTypeMask(UNIT_MASK_CONTROLABLE_GUARDIAN) || (m_Properties && m_Properties->Title == AsUnderlyingType(SummonTitle::Companion)))
+        GetOwner()->SetMinion(this, false);
+    else if (!HasUnitTypeMask(UNIT_MASK_PET | UNIT_MASK_HUNTER_PET))
+    {
+        GetOwner()->m_Controlled.erase(this);
+
+        if (GetOwner()->IsTotem())
+            if (Unit* totemOwner = GetOwner()->GetOwner())
+                totemOwner->m_Controlled.erase(this);
+    }
+
     TempSummon::RemoveFromWorld();
 }
 

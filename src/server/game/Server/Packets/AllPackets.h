@@ -20,6 +20,8 @@
 
 #include "AuthenticationPackets.h"
 #include "CharacterPackets.h"
+#include "CombatLogPackets.h"
+#include "CombatPackets.h"
 #include "GuildPackets.h"
 #include "LFGPackets.h"
 #include "MiscPackets.h"
@@ -28,6 +30,7 @@
 #include "QuestPackets.h"
 #include "QueryPackets.h"
 #include "SystemPackets.h"
+#include "WhoPackets.h"
 #include "WorldStatePackets.h"
 
 #endif // AllPackets_h__
